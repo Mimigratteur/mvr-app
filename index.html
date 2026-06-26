@@ -39,6 +39,19 @@ async function _ensurePdfjs(){
   });
 }
 
+// ── Mammoth.js loader (lecture .docx) ──
+var _mammothLib = null;
+async function _ensureMammoth(){
+  if(_mammothLib) return _mammothLib;
+  return new Promise(function(resolve,reject){
+    var s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js';
+    s.onload=function(){ _mammothLib=window.mammoth; resolve(_mammothLib); };
+    s.onerror=reject;
+    document.head.appendChild(s);
+  });
+}
+
 </script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -241,6 +254,19 @@ input[type=range]{accent-color:var(--G);touch-action:pan-y}
 #scene-hint{flex-shrink:0;text-align:center;font-size:11px;color:var(--tx3);
             padding:3px;background:var(--bg)}
 
+/* ─── SCÈNE MODE PAROLES ─── */
+.lyr-row{justify-content:flex-start!important;padding:0 5%;width:100%}
+.lyr-wrap{position:relative;display:inline-block;white-space:nowrap;
+          padding-top:1.3em;line-height:1.3}
+.lyr-text{color:#222;font-weight:600;white-space:pre}
+.lyr-chord{position:absolute;top:0;transform:translateX(0);
+           font-weight:700;color:#1A6EB5;background:transparent;
+           padding:1px 3px;border-radius:5px;white-space:nowrap}
+.lyr-chord.lit{color:#fff!important;background:var(--G)!important;
+               box-shadow:0 0 16px rgba(29,158,117,.6)!important;
+               transform:scale(1.12)}
+.lyr-ghost{opacity:0;pointer-events:none}
+
 /* ─── GRID EDITOR ─── */
 .ged-section{background:var(--bg2);border:.5px solid var(--bd);
              border-radius:10px;padding:10px 12px;
@@ -275,11 +301,11 @@ input[type=range]{accent-color:var(--G);touch-action:pan-y}
 #tun-center{position:absolute;left:50%;top:0;height:100%;width:1px;background:#444}
 
 /* ─── PDF ─── */
-#drop-zone{border:2px dashed var(--bd2);border-radius:10px;padding:28px 16px;
+#drop-zone, .drop-zone{border:2px dashed var(--bd2);border-radius:10px;padding:28px 16px;
            text-align:center;cursor:pointer;background:var(--bg2);
            transition:border-color .2s,background .2s}
-#drop-zone.over{border-color:var(--G);background:var(--Gl)}
-#drop-zone input{display:none}
+#drop-zone.over, .drop-zone.over{border-color:var(--G);background:var(--Gl)}
+#drop-zone input, .drop-zone input{display:none}
 
 /* ─── SETTINGS ─── */
 .cfg-row{display:flex;align-items:center;gap:10px;padding:10px 0;
@@ -474,6 +500,65 @@ body.fullscreen #topbar{display:none}
     </div>
   </div>
 
+  <!-- ══ IMPORT PAROLES + ACCORDS ══ -->
+  <div style="border-top:.5px solid var(--bd);padding-top:12px;margin-top:4px;
+              display:flex;flex-direction:column;gap:10px">
+    <div style="font-weight:600;font-size:15px">🎤 Import Paroles + Accords</div>
+    <div style="font-size:12px;color:var(--tx2)">
+      Pour les grilles "accords au-dessus des paroles" (Word, PDF, texte collé).
+      Les accords du 1er couplet sont automatiquement répétés sur les couplets suivants identiques.
+    </div>
+
+    <div id="lyc-drop-zone" class="drop-zone"
+         onclick="document.getElementById('lyc-input').click()"
+         ondragover="lycDzOver(event)" ondragleave="lycDzLeave()" ondrop="lycDzDrop(event)">
+      <input type="file" id="lyc-input" accept=".docx,.pdf,.txt,application/pdf"
+             onchange="lycLoadFile(this.files[0])">
+      <div style="font-size:30px;margin-bottom:6px">🎤</div>
+      <div style="font-weight:600;font-size:14px;margin-bottom:4px">Déposer le fichier ici</div>
+      <div style="font-size:12px;color:var(--tx2);margin-bottom:10px">.docx, .pdf, ou .txt</div>
+      <button class="btn-g" onclick="event.stopPropagation();
+              document.getElementById('lyc-input').click()">
+        📂 Choisir un fichier
+      </button>
+    </div>
+
+    <div style="font-size:12px;color:var(--tx2)">…ou colle directement le texte :</div>
+    <textarea id="lyc-paste" style="min-height:100px;font-family:monospace;font-size:12px"
+              placeholder="Do          Fa         Do&#10;J'ai voulu planter un oranger…"></textarea>
+    <div class="row">
+      <button class="btn-g" onclick="lycLoadPaste()">Analyser le texte collé</button>
+    </div>
+
+    <div id="lyc-status" style="font-size:13px;min-height:18px;padding:4px 0"></div>
+
+    <div id="lyc-result" style="display:none;flex-direction:column;gap:10px">
+      <div style="font-size:12px;color:var(--tx2)">
+        Résultat — corrige directement si besoin (accords sur une ligne, paroles sur la ligne suivante) :
+      </div>
+      <textarea id="lyc-text" style="min-height:240px;font-family:monospace;font-size:12px;line-height:1.5"></textarea>
+
+      <div class="mrow"><label>Titre</label>
+        <input type="text" id="lyc-name" placeholder="Nom du morceau">
+      </div>
+      <div class="mrow"><label>Capo</label>
+        <select id="lyc-capo" style="flex:1">
+          <option value="0">Sans capo</option>
+          <option value="1">Capo 1</option><option value="2">Capo 2</option>
+          <option value="3">Capo 3</option><option value="4">Capo 4</option>
+          <option value="5">Capo 5</option><option value="6">Capo 6</option>
+        </select>
+      </div>
+      <div class="mrow"><label>BPM</label>
+        <input type="number" id="lyc-bpm" placeholder="120" min="40" max="300">
+      </div>
+      <div class="row">
+        <button class="btn-g" onclick="lycCreate()">✓ Créer le morceau</button>
+        <button onclick="lycReset()">Annuler</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ══ ÉDITEUR DE GRILLE ══ -->
   <div style="border-top:.5px solid var(--bd);padding-top:12px;margin-top:4px;
               display:flex;flex-direction:column;gap:10px">
@@ -625,6 +710,11 @@ body.fullscreen #topbar{display:none}
     <label style="font-size:12px;color:var(--tx2)">Grille d'accords</label></div>
   <textarea id="sm-grid" style="min-height:180px"
     placeholder="[Intro]&#10;Am | F | C | G&#10;&#10;[Couplet]&#10;Am | F | C | G&#10;&#10;[Refrain]&#10;F | G | Am | C">
+  </textarea>
+  <div style="margin-bottom:5px;margin-top:8px">
+    <label style="font-size:12px;color:var(--tx2)">Paroles + accords (mode scène paroles)</label></div>
+  <textarea id="sm-lyrics" style="min-height:180px;font-family:monospace;font-size:12px;line-height:1.5"
+    placeholder="Do          Fa         Do&#10;J'ai voulu planter un oranger">
   </textarea>
   <div class="mrow" style="margin-top:8px"><label>Notes</label>
     <input type="text" id="sm-notes" placeholder="capo 2, rappel, son particulier…"></div>
@@ -785,6 +875,7 @@ function openSongModal(id){
   document.getElementById('sm-tags').value  = s ? s.tags  : '';
   document.getElementById('sm-capo').value  = s ? s.capo||'0' : '0';
   document.getElementById('sm-grid').value  = s ? s.grid  : '';
+  document.getElementById('sm-lyrics').value = s ? (s.lyrics||'') : '';
   document.getElementById('sm-notes').value = s ? s.notes : '';
   document.getElementById('sm-del').style.display = id ? '' : 'none';
   showModal('song-modal');
@@ -803,6 +894,7 @@ function saveSong(){
     tags    : document.getElementById('sm-tags').value.trim(),
     capo    : document.getElementById('sm-capo').value,
     grid    : document.getElementById('sm-grid').value,
+    lyrics  : document.getElementById('sm-lyrics').value,
     notes   : document.getElementById('sm-notes').value.trim(),
     created : editingSong ? (songs.find(function(x){ return x.id===editingSong; })||{}).created||Date.now() : Date.now()
   };
@@ -1116,6 +1208,13 @@ function renderScene(){
   runner.innerHTML = '';
   allChords = []; litIdx = -1;
 
+  // Mode "paroles + accords" si le morceau a des paroles importées/saisies
+  if(song.lyrics && song.lyrics.trim()){
+    renderSceneLyrics(song, nttn, fs);
+    return;
+  }
+
+  // ── Mode grille (comportement existant, par mesures) ──
   // Build rows: each grid line → one .row
   // Each row scrolls horizontally; rows stack vertically
   var stageH = document.getElementById('stage').clientHeight || 300;
@@ -1199,6 +1298,102 @@ function renderScene(){
   // Init engine state
   curRowIdx = 0;
   curRowX   = 0;
+  applyTransform();
+  highlightAt(0);
+}
+
+// ═══════════════════════════════════════════════════════
+// SCÈNE — MODE PAROLES + ACCORDS
+// Réutilise le même moteur de défilement/surbrillance/BPM que le mode
+// grille (allChords, applyTransform, rafLoop) — seul le rendu visuel change :
+// chaque ligne de paroles devient une .s-row, les accords sont positionnés
+// au-dessus des mots concernés plutôt qu'alignés en mesures.
+// ═══════════════════════════════════════════════════════
+function renderSceneLyrics(song, nttn, fs){
+  var runner = document.getElementById('runner');
+  var stageH = document.getElementById('stage').clientHeight || 300;
+  var rowH   = Math.floor(stageH / 4);
+
+  var lines = song.lyrics.replace(/\r/g,'').split('\n');
+  var secColorIdx = -1;
+
+  // Ignorer la ligne d'en-tête (titre + capo) si elle est en première position
+  var i = 0;
+  while(i < lines.length && lines[i].trim() === '') i++;
+  if(i < lines.length && /capo/i.test(lines[i]) && lines[i].trim().split(/\s+/).length <= 14){
+    i++;
+  }
+
+  // Regroupe les lignes 2 à 2 : ligne d'accords (si présente) + ligne de paroles
+  while(i < lines.length){
+    var line = lines[i];
+    if(line.trim() === ''){ i++; continue; }
+
+    // En-tête style "[Couplet]" optionnel pour colorer les sections
+    if(line.trim().charAt(0)==='['){
+      secColorIdx++;
+      i++;
+      continue;
+    }
+
+    var chordPositions = null, lyricLine;
+    if(lycIsChordLine(line)){
+      chordPositions = lycExtractChordPositions(line);
+      lyricLine = (i+1 < lines.length) ? lines[i+1] : '';
+      i += 2;
+    } else {
+      lyricLine = line;
+      i += 1;
+    }
+
+    var row = document.createElement('div');
+    row.className = 's-row lyr-row';
+    row.style.height = rowH + 'px';
+    row.dataset.sc = (Math.max(secColorIdx,0) % 8).toString();
+
+    var lyricWrap = document.createElement('div');
+    lyricWrap.className = 'lyr-wrap';
+    lyricWrap.style.fontSize = fs + 'px';
+
+    if(chordPositions && chordPositions.length){
+      chordPositions.forEach(function(cp){
+        var marker = document.createElement('span');
+        marker.className = 'chord lyr-chord';
+        marker.style.left = (cp.col * 0.62) + 'em';
+        var tp = transposeChord(cp.chord, transposeOff, nttn);
+        marker.textContent = tp;
+        marker.dataset.chord = tp;
+        lyricWrap.appendChild(marker);
+        allChords.push(marker);
+      });
+    } else {
+      // Ligne sans accord (suite du couplet) : un marqueur invisible
+      // garde la synchronisation du défilement/surbrillance
+      var ghost = document.createElement('span');
+      ghost.className = 'chord lyr-chord lyr-ghost';
+      ghost.style.left = '0em';
+      ghost.dataset.chord = allChords.length ? allChords[allChords.length-1].dataset.chord : '';
+      lyricWrap.appendChild(ghost);
+      allChords.push(ghost);
+    }
+
+    var lyricText = document.createElement('div');
+    lyricText.className = 'lyr-text';
+    lyricText.style.fontSize = fs + 'px';
+    lyricText.textContent = lyricLine;
+    lyricWrap.appendChild(lyricText);
+
+    row.appendChild(lyricWrap);
+    runner.appendChild(row);
+  }
+
+  if(!allChords.length){
+    runner.innerHTML = '<div style="color:#888;padding:40px 20px;text-align:center;font-size:14px">'+
+      'Aucune parole détectée dans ce morceau</div>';
+    return;
+  }
+
+  curRowIdx = 0; curRowX = 0;
   applyTransform();
   highlightAt(0);
 }
@@ -1736,6 +1931,254 @@ function pdfReset(){
   document.getElementById('pdf-input').value          = '';
   document.getElementById('pdf-raw').value            = '';
   document.getElementById('pdf-grid').value           = '';
+}
+
+// ═══════════════════════════════════════════════════════
+// IMPORT PAROLES + ACCORDS
+// Détecte des lignes "accords au-dessus des mots" + lignes de paroles,
+// depuis .docx / .pdf / texte collé. Répète automatiquement les accords
+// du 1er couplet sur les couplets suivants identiques en longueur.
+// ═══════════════════════════════════════════════════════
+
+var lycRawText = '';      // texte brut tel qu'extrait du fichier
+var lycFileName = '';
+var lycParsed = null;     // résultat du dernier parsing {capos, blocks}
+
+var LYC_CHORD_TOKEN_RE = /^(do|ré|re|mi|fa|sol|la|si|[a-g])(#|b)?(maj7|maj|min7|min|m7|m6|m|dim7|dim|aug|sus4|sus2|sus|add9|add|6|7|9|11|13)?(\/(do|ré|re|mi|fa|sol|la|si|[a-g])(#|b)?)?$/i;
+
+function lycIsChordLine(line){
+  var trimmed = line.trim();
+  if(!trimmed) return false;
+  var tokens = trimmed.split(/\s+/);
+  if(!tokens.length) return false;
+  var chordCount = 0;
+  tokens.forEach(function(t){ if(LYC_CHORD_TOKEN_RE.test(t)) chordCount++; });
+  return (chordCount / tokens.length) >= 0.8;
+}
+
+function lycExtractChordPositions(chordLine){
+  var positions = [];
+  var re = /\S+/g, m;
+  while((m = re.exec(chordLine)) !== null){
+    if(LYC_CHORD_TOKEN_RE.test(m[0])) positions.push({chord:m[0], col:m.index});
+  }
+  return positions;
+}
+
+function lycDetectCapos(headerLine){
+  var matches = headerLine.match(/capo\s*(\d+)/ig) || [];
+  return matches.map(function(s){ return parseInt(s.replace(/\D/g,''),10); });
+}
+
+// ── Extraction des "unités de contenu" en ignorant le nombre de lignes
+// vides (peu fiable lors d'un export Word/Mammoth : chaque paragraphe
+// produit déjà une ligne vide, qu'on ne peut pas distinguer a priori d'un
+// vrai saut de couplet). On garde malgré tout le compte de lignes vides
+// PRÉCÉDENTES (gapBefore) car il sert à séparer les couplets de paroles
+// seules (cf. groupIntoVerses).
+function lycExtractUnits(raw){
+  raw = raw.replace(/\r/g,'');
+  var lines = raw.split('\n');
+  var units = [];
+  var i = 0;
+  while(i < lines.length){
+    if(lines[i].trim() === ''){ i++; continue; }
+
+    var gapBefore = 0, k = i-1;
+    while(k >= 0 && lines[k].trim() === ''){ gapBefore++; k--; }
+
+    if(lycIsChordLine(lines[i])){
+      var positions = lycExtractChordPositions(lines[i]);
+      var j = i+1;
+      while(j < lines.length && lines[j].trim() === '') j++;
+      var lyric = '';
+      if(j < lines.length && !lycIsChordLine(lines[j])){ lyric = lines[j]; i = j+1; }
+      else i = j;
+      units.push({type:'chordpair', chords:positions, lyric:lyric, gapBefore:gapBefore});
+    } else {
+      units.push({type:'lyric', text:lines[i], gapBefore:gapBefore});
+      i++;
+    }
+  }
+  return units;
+}
+
+// ── Regroupement en couplets ──
+// - Un changement de type (chordpair <-> lyric) démarre toujours un nouveau couplet.
+// - Au sein d'un run 'lyric', un gapBefore >= 2 démarre aussi un nouveau couplet
+//   (signal de saut de paragraphe renforcé = vraie séparation de couplet).
+// - Au sein d'un run 'chordpair', le gap n'est PAS un signal fiable (Word insère
+//   systématiquement un gap renforcé entre chaque paire accord+parole) : on ne
+//   segmente jamais sur le gap dans ce cas.
+function lycGroupIntoVerses(units){
+  var verses = [];
+  var cur = null;
+  units.forEach(function(u){
+    var startNew = false;
+    if(!cur || cur.kind !== u.type) startNew = true;
+    else if(u.type === 'lyric' && u.gapBefore >= 2) startNew = true;
+    if(startNew){ cur = {kind:u.type, items:[]}; verses.push(cur); }
+    cur.items.push(u);
+  });
+  return verses;
+}
+
+// Parse le texte brut en {capos, header, blocks:[{lyricLines, chordLines, inferred}]}
+function lycParseSongText(raw){
+  var header = '', capos = [];
+  var allLines = raw.replace(/\r/g,'').split('\n');
+  var startIdx = 0;
+  while(startIdx < allLines.length && allLines[startIdx].trim()==='') startIdx++;
+  if(startIdx < allLines.length && /capo/i.test(allLines[startIdx]) && allLines[startIdx].trim().split(/\s+/).length <= 14){
+    header = allLines[startIdx].trim();
+    capos = lycDetectCapos(header);
+    allLines[startIdx] = '';
+  }
+  raw = allLines.join('\n');
+
+  var units = lycExtractUnits(raw);
+  var verses = lycGroupIntoVerses(units);
+
+  var patternVerse = verses.find(function(v){ return v.kind === 'chordpair'; });
+  var patternChords = patternVerse ? patternVerse.items.map(function(u){ return u.chords; }) : null;
+  var patternLen = patternVerse ? patternVerse.items.length : 0;
+
+  var blocks = verses.map(function(v){
+    if(v.kind === 'chordpair'){
+      return { lyricLines: v.items.map(function(u){return u.lyric;}),
+                chordLines: v.items.map(function(u){return u.chords;}), inferred:false };
+    } else {
+      var lyricLines = v.items.map(function(u){return u.text;});
+      if(patternChords && lyricLines.length === patternLen){
+        return { lyricLines:lyricLines, chordLines:patternChords.slice(), inferred:true };
+      }
+      return { lyricLines:lyricLines, chordLines:lyricLines.map(function(){return null;}), inferred:false };
+    }
+  });
+
+  return {capos:capos, header:header, blocks:blocks};
+}
+
+// Construit le texte d'affichage final (accords positionnés au-dessus des paroles)
+// — c'est ce format texte qui est stocké dans song.lyrics et ré-affiché/édité.
+function lycBuildDisplayText(parsed){
+  var out = [];
+  if(parsed.header) out.push(parsed.header), out.push('');
+  parsed.blocks.forEach(function(b, bi){
+    b.lyricLines.forEach(function(lyricLine, li){
+      var chords = b.chordLines[li];
+      if(chords && chords.length){
+        var row = '';
+        chords.forEach(function(c){
+          while(row.length < c.col) row += ' ';
+          row += c.chord;
+        });
+        out.push(row);
+      }
+      out.push(lyricLine);
+    });
+    if(bi < parsed.blocks.length-1) out.push('');
+  });
+  return out.join('\n');
+}
+
+function lycStatus(msg, color){
+  var el = document.getElementById('lyc-status');
+  if(el){ el.textContent = msg; el.style.color = color || 'var(--tx2)'; }
+}
+
+function lycReset(){
+  lycRawText=''; lycFileName=''; lycParsed=null;
+  document.getElementById('lyc-result').style.display = 'none';
+  document.getElementById('lyc-status').textContent    = '';
+  document.getElementById('lyc-input').value           = '';
+  document.getElementById('lyc-paste').value           = '';
+  document.getElementById('lyc-text').value            = '';
+}
+
+function lycProcessRaw(raw, name){
+  lycRawText = raw;
+  lycFileName = name || lycFileName || 'Morceau importé';
+  var parsed = lycParseSongText(raw);
+  lycParsed = parsed;
+  var displayText = lycBuildDisplayText(parsed);
+
+  document.getElementById('lyc-text').value = displayText;
+  document.getElementById('lyc-name').value  = lycFileName;
+  document.getElementById('lyc-result').style.display = 'flex';
+  document.getElementById('lyc-result').style.flexDirection = 'column';
+
+  // Gestion capo multiple détecté
+  var capoSel = document.getElementById('lyc-capo');
+  if(parsed.capos && parsed.capos.length){
+    capoSel.value = String(parsed.capos[0]);
+    lycStatus('✓ '+parsed.blocks.length+' couplet(s) détecté(s) — Capo(s) trouvé(s): '+parsed.capos.join(', ')+' — choisis celui à utiliser', 'var(--G)');
+  } else {
+    lycStatus('✓ '+parsed.blocks.length+' couplet(s) détecté(s) — vérifie le résultat ci-dessous', 'var(--G)');
+  }
+}
+
+async function lycLoadFile(file){
+  if(!file) return;
+  var baseName = file.name.replace(/\.[^.]+$/,'').trim();
+  document.getElementById('lyc-input').value = '';
+  lycStatus('⏳ Lecture du fichier…');
+  try{
+    if(file.name.match(/\.docx$/i)){
+      var mammoth = await _ensureMammoth();
+      var buf = await file.arrayBuffer();
+      var res = await mammoth.extractRawText({arrayBuffer: buf});
+      lycProcessRaw(res.value, baseName);
+    } else if(file.name.match(/\.pdf$/i)){
+      var lib = await _ensurePdfjs();
+      var buf2 = await file.arrayBuffer();
+      var doc = await lib.getDocument({data: new Uint8Array(buf2)}).promise;
+      var fullText = '';
+      for(var p=1; p<=doc.numPages; p++){
+        var page = await doc.getPage(p);
+        var content = await page.getTextContent();
+        var lastY = null, lineStr = '';
+        content.items.forEach(function(item){
+          var y = Math.round(item.transform[5]);
+          if(lastY !== null && Math.abs(y-lastY) > 3){ fullText += lineStr + '\n'; lineStr = ''; }
+          lineStr += item.str;
+          lastY = y;
+        });
+        fullText += lineStr + '\n';
+      }
+      lycProcessRaw(fullText, baseName);
+    } else {
+      var txt = await file.text();
+      lycProcessRaw(txt, baseName);
+    }
+  }catch(err){ lycStatus('❌ '+err.message, 'var(--R)'); }
+}
+
+function lycLoadPaste(){
+  var txt = document.getElementById('lyc-paste').value;
+  if(!txt.trim()){ lycStatus('Colle d\'abord le texte de la grille.', 'var(--A)'); return; }
+  lycProcessRaw(txt, lycFileName || 'Morceau importé');
+}
+
+function lycDzOver(e){ e.preventDefault(); document.getElementById('lyc-drop-zone').classList.add('over'); }
+function lycDzLeave(){ document.getElementById('lyc-drop-zone').classList.remove('over'); }
+function lycDzDrop(e){
+  e.preventDefault(); lycDzLeave();
+  var f = e.dataTransfer.files[0]; if(f) lycLoadFile(f);
+}
+
+function lycCreate(){
+  var text = document.getElementById('lyc-text').value.trim();
+  var name = document.getElementById('lyc-name').value.trim() || lycFileName || 'Morceau importé';
+  if(!text){ if(!confirm('Le texte est vide, créer quand même ?')) return; }
+  var s = {
+    id: uid(), name: name, key:'', bpm:document.getElementById('lyc-bpm').value||'',
+    dur:'', tags:'paroles', capo: document.getElementById('lyc-capo').value||'0',
+    grid:'', lyrics: text, notes:'importé avec paroles', created: Date.now()
+  };
+  songs.push(s); dbSave(); lycReset();
+  go('songs'); renderSongs();
+  setTimeout(function(){ openSongModal(s.id); }, 150);
 }
 
 async function _extractChords(doc){
