@@ -797,7 +797,11 @@ function go(id){
   if(id === 'sets')  renderSets();
   if(id === 'scene') initScene();
   if(id === 'tools') renderHistory();
-  if(id === 'pdf' && !gedData.length) gedInit();
+  if(id === 'pdf'){
+    if(!gedData.length) gedInit();
+    pdfReset();
+    lycReset();
+  }
 }
 
 // ═══════════════════════════════════════════════════════
@@ -2094,6 +2098,9 @@ function lycReset(){
   document.getElementById('lyc-input').value           = '';
   document.getElementById('lyc-paste').value           = '';
   document.getElementById('lyc-text').value            = '';
+  document.getElementById('lyc-name').value            = '';
+  document.getElementById('lyc-bpm').value             = '';
+  document.getElementById('lyc-capo').value            = '0';
 }
 
 function lycProcessRaw(raw, name){
@@ -2105,15 +2112,18 @@ function lycProcessRaw(raw, name){
 
   document.getElementById('lyc-text').value = displayText;
   document.getElementById('lyc-name').value  = lycFileName;
+  document.getElementById('lyc-bpm').value   = ''; // pas de BPM détecté depuis le texte — on repart à vide à chaque import
   document.getElementById('lyc-result').style.display = 'flex';
   document.getElementById('lyc-result').style.flexDirection = 'column';
 
-  // Gestion capo multiple détecté
+  // Gestion capo multiple détecté (toujours réinitialisé, même si rien n'est détecté
+  // cette fois, pour ne pas garder le capo du morceau importé précédemment)
   var capoSel = document.getElementById('lyc-capo');
   if(parsed.capos && parsed.capos.length){
     capoSel.value = String(parsed.capos[0]);
     lycStatus('✓ '+parsed.blocks.length+' couplet(s) détecté(s) — Capo(s) trouvé(s): '+parsed.capos.join(', ')+' — choisis celui à utiliser', 'var(--G)');
   } else {
+    capoSel.value = '0';
     lycStatus('✓ '+parsed.blocks.length+' couplet(s) détecté(s) — vérifie le résultat ci-dessous', 'var(--G)');
   }
 }
@@ -2157,7 +2167,7 @@ async function lycLoadFile(file){
 function lycLoadPaste(){
   var txt = document.getElementById('lyc-paste').value;
   if(!txt.trim()){ lycStatus('Colle d\'abord le texte de la grille.', 'var(--A)'); return; }
-  lycProcessRaw(txt, lycFileName || 'Morceau importé');
+  lycProcessRaw(txt, 'Morceau importé'); // toujours un nom neutre : on ignore lycFileName d'un éventuel import précédent
 }
 
 function lycDzOver(e){ e.preventDefault(); document.getElementById('lyc-drop-zone').classList.add('over'); }
