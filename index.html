@@ -1517,7 +1517,6 @@ function renderSceneLyrics(song, nttn, fs){
 
     var lyricText = document.createElement('div');
     lyricText.className = 'lyr-text';
-    lyricText.style.fontSize = fs + 'px';
     lyricText.textContent = lyricLine;
     lyricWrap.appendChild(lyricText);
 
@@ -1530,6 +1529,22 @@ function renderSceneLyrics(song, nttn, fs){
       'Aucune parole détectée dans ce morceau</div>';
     return;
   }
+
+  // Auto-ajustement : si une ligne dépasse la largeur disponible (paroles longues),
+  // on réduit sa taille de police localement, sans toucher au curseur global de
+  // taille voulu par l'utilisateur, ni aux autres lignes plus courtes.
+  var stageW = document.getElementById('stage').clientWidth || 320;
+  var maxLineW = stageW * 0.9; // tient compte du padding latéral (5% de chaque côté)
+  runner.querySelectorAll('.lyr-wrap').forEach(function(wrap){
+    var curFs = fs;
+    var minFs = Math.max(14, fs * 0.45); // ne descend jamais sous 14px, ni sous 45% de la taille voulue
+    var guard = 0;
+    while(wrap.scrollWidth > maxLineW && curFs > minFs && guard < 30){
+      curFs -= 1;
+      wrap.style.fontSize = curFs + 'px';
+      guard++;
+    }
+  });
 
   curRowIdx = 0; curRowX = 0;
   applyTransform();
