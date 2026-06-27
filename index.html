@@ -97,6 +97,18 @@ body{font-family:var(--font-body);
      transition:background .15s,color .15s,border-color .15s}
 .tab.on{background:var(--A);color:#0B0D12;border-color:var(--A)}
 
+/* ─── BANNIÈRE MISE À JOUR ─── */
+#update-banner{position:fixed;top:0;left:0;right:0;z-index:2000;
+  display:flex;align-items:center;gap:10px;padding:8px 14px;
+  background:var(--A);color:#0B0D12;font-size:12px;font-weight:600;
+  box-shadow:0 2px 10px rgba(0,0,0,.3);
+  padding-top:calc(8px + env(safe-area-inset-top,0px))}
+#update-banner span{flex:1}
+#update-banner button{border:1px solid #0B0D12;background:#0B0D12;color:var(--A);
+  border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer}
+#update-banner-dismiss{background:transparent!important;border:none!important;
+  color:#0B0D12!important;font-size:14px;padding:2px 6px!important}
+
 /* ─── PAGES ─── */
 #pages{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column}
 .pg{display:none;flex:1;min-height:0;overflow-y:auto;flex-direction:column;gap:10px;padding:12px}
@@ -3027,13 +3039,60 @@ applyPrefs();
 
 renderSongs();
 
-// ── Enregistrement Service Worker (mode hors-ligne) ──
+// ── Enregistrement Service Worker + détection de mise à jour ──
 if('serviceWorker' in navigator){
   window.addEventListener('load', function(){
-    navigator.serviceWorker.register('service-worker.js').catch(function(err){
+    navigator.serviceWorker.register('service-worker.js').then(function(reg){
+
+      // Cas 1 : une nouvelle version est déjà en attente au moment du chargement
+      if(reg.waiting){ showUpdateBanner(reg.waiting); }
+
+      // Cas 2 : une nouvelle version arrive pendant que l'app est ouverte
+      reg.addEventListener('updatefound', function(){
+        var newWorker = reg.installing;
+        if(!newWorker) return;
+        newWorker.addEventListener('statechange', function(){
+          if(newWorker.state === 'installed' && navigator.serviceWorker.controller){
+            showUpdateBanner(newWorker);
+          }
+        });
+      });
+
+      // Vérifie activement s'il existe une mise à jour à chaque ouverture de l'app
+      reg.update().catch(function(){});
+
+    }).catch(function(err){
       console.warn('Service worker non enregistré :', err);
     });
+
+    // Une fois que le nouveau Service Worker prend le contrôle, on recharge
+    // la page pour que le nouveau index.html/JS soit bien utilisé.
+    var refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', function(){
+      if(refreshing) return;
+      refreshing = true;
+      window.location.reload();
+    });
   });
+}
+
+function showUpdateBanner(worker){
+  if(document.getElementById('update-banner')) return; // déjà affichée
+  var banner = document.createElement('div');
+  banner.id = 'update-banner';
+  banner.innerHTML =
+    '<span>🔄 Mise à jour disponible</span>'+
+    '<button id="update-banner-btn">Mettre à jour</button>'+
+    '<button id="update-banner-dismiss" aria-label="Fermer">✕</button>';
+  document.body.appendChild(banner);
+
+  document.getElementById('update-banner-btn').onclick = function(){
+    worker.postMessage('SKIP_WAITING');
+    banner.innerHTML = '<span>⏳ Mise à jour en cours…</span>';
+  };
+  document.getElementById('update-banner-dismiss').onclick = function(){
+    banner.remove();
+  };
 }
 </script>
 </body>

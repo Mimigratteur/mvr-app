@@ -1,7 +1,11 @@
 // Service worker — MVR Prompteur d'accords
 // Permet l'utilisation hors-ligne après le premier chargement (utile en répétition/concert sans wifi)
 
-const CACHE_NAME = 'mvr-cache-v1';
+// IMPORTANT : incrémenter ce numéro à chaque déploiement d'une nouvelle version.
+// C'est ce qui permet au navigateur de détecter qu'un nouveau Service Worker
+// existe (le fichier service-worker.js a changé) et de proposer la mise à jour.
+const APP_VERSION = '2';
+const CACHE_NAME = 'mvr-cache-v' + APP_VERSION;
 const ASSETS = [
   './index.html',
   './manifest.json',
@@ -15,7 +19,16 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
   );
-  self.skipWaiting();
+  // Pas de skipWaiting() automatique ici : on laisse le nouveau Service Worker
+  // "en attente" (waiting) jusqu'à ce que l'utilisateur confirme la mise à jour
+  // via la bannière dans la page (voir index.html). Ça évite qu'une nouvelle
+  // version s'active silencieusement pendant qu'un concert est en cours.
+});
+
+// Permet à la page de déclencher l'activation immédiate du nouveau worker
+// quand l'utilisateur clique sur "Mettre à jour" dans la bannière.
+self.addEventListener('message', (event) => {
+  if (event.data === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
