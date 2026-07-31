@@ -12,7 +12,7 @@ garanties exactes note à note.
 import sys
 import numpy as np
 from reference_grid import chord_sequence
-from chord_recognizer import recognize
+from chord_recognizer import recognize, recognize_viterbi
 
 AUDIO_PATH = '/mnt/user-data/uploads/EMMENEZ-MOI-MIMI.wav'
 
@@ -79,9 +79,9 @@ def dedupe(seq):
     return out
 
 
-def evaluate(verbose=False):
+def evaluate(verbose=False, use_viterbi=False):
     ref = chord_sequence()
-    segs, analysis = recognize(AUDIO_PATH)
+    segs, analysis = (recognize_viterbi(AUDIO_PATH) if use_viterbi else recognize(AUDIO_PATH))
     hyp = dedupe([s[0] for s in segs])
 
     pairs = align(ref, hyp)
@@ -104,4 +104,4 @@ def evaluate(verbose=False):
 
 
 if __name__ == "__main__":
-    evaluate(verbose='-v' in sys.argv)
+    evaluate(verbose='-v' in sys.argv, use_viterbi='--viterbi' in sys.argv)

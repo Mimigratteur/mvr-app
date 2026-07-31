@@ -181,6 +181,81 @@ def recognize(path, smooth_window=3, min_segment_s=0.25, bass_bonus=1.6,
     return merged, analysis
 
 
+def recognize_viterbi(path, bass_bonus=1.6, third_thresh=0.04, flat7_thresh=0.24,
+                       vote_bonus=8.0, stay_prob=0.99, silence_ratio=0.06):
+    """Variante avec lissage global par HMM/Viterbi plutôt que par vote
+    majoritaire à fenêtre fixe glissante.
+
+    Émission : on garde le classifieur par ratios d'énergie déjà calibré
+    (score_frame) — il donne, par frame, un "vote" fort pour l'état choisi.
+    Transition : forte probabilité de rester sur le même accord (les
+    accords tiennent plusieurs temps), le reste réparti uniformément.
+    Résultat mesuré (Emmenez-moi-mimi) : 85.2% exact / 99.3% fondamentale,
+    contre 83.7% / 99.3% pour `recognize()` — léger gain, mais PAS de
+    réduction de la sur-segmentation (349 segments contre 304)."""
+    import numpy as np
+
+    analysis = load_and_analyze(path)
+    chroma, bass_chroma, rms = analysis['chroma'], analysis['bass_chroma'], analysis['rms']
+    times = analysis['times']
+    n = chroma.shape[1]
+    silence_thresh = rms.max() * silence_ratio
+
+    states = [(r, q) for r in range(12) for q in ('maj', 'min', '7', '5')] + [('NC', None)]
+    n_states = len(states)
+    state_index = {s: i for i, s in enumerate(states)}
+
+    log_em = np.zeros((n_states, n))
+    for i in range(n):
+        if rms[i] < silence_thresh:
+            log_em[state_index[('NC', None)], i] = vote_bonus
+            continue
+        root, qual = score_frame(chroma[:, i], bass_chroma[:, i], bass_bonus=bass_bonus,
+                                  third_thresh=third_thresh, flat7_thresh=flat7_thresh)
+        if root is None:
+            log_em[state_index[('NC', None)], i] = vote_bonus
+        else:
+            log_em[state_index[(root, qual)], i] = vote_bonus
+
+    log_stay = np.log(stay_prob)
+    log_move = np.log((1 - stay_prob) / (n_states - 1))
+
+    dp = np.zeros((n_states, n))
+    bp = np.zeros((n_states, n), dtype=np.int32)
+    dp[:, 0] = log_em[:, 0]
+    for t in range(1, n):
+        prev = dp[:, t - 1]
+        best_idx = int(np.argmax(prev))
+        best_val = prev[best_idx]
+        prev_copy = prev.copy()
+        prev_copy[best_idx] = -np.inf
+        second_idx = int(np.argmax(prev_copy))
+        second_val = prev_copy[second_idx]
+        for j in range(n_states):
+            stay_score = prev[j] + log_stay
+            if j == best_idx:
+                alt, alt_idx = second_val + log_move, second_idx
+            else:
+                alt, alt_idx = best_val + log_move, best_idx
+            if stay_score >= alt:
+                dp[j, t], bp[j, t] = stay_score + log_em[j, t], j
+            else:
+                dp[j, t], bp[j, t] = alt + log_em[j, t], alt_idx
+
+    path_states = np.zeros(n, dtype=np.int32)
+    path_states[-1] = int(np.argmax(dp[:, -1]))
+    for t in range(n - 2, -1, -1):
+        path_states[t] = bp[path_states[t + 1], t + 1]
+
+    labels = []
+    for si in path_states:
+        root, qual = states[si]
+        labels.append('N.C.' if root == 'NC' else chord_name(root, qual))
+
+    segments = segments_from_labels(labels, times)
+    return segments, analysis
+
+
 if __name__ == "__main__":
     import sys
     path = sys.argv[1] if len(sys.argv) > 1 else '/mnt/user-data/uploads/EMMENEZ-MOI-MIMI.wav'
