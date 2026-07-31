@@ -140,6 +140,45 @@ REFERENCES = {
         'chords': ['E5', 'A', 'G', 'E5', 'A', 'G', 'B5'],
         'compare_first_n_hyp': 12,
     },
+    'led_zeppelin_rock_and_roll': {
+        'status': 'TEST',
+        'audio_path': '/mnt/user-data/uploads/Led-Zeppelin-Rock-And-Roll.mp3',
+        'source': 'Intro tres documentee et concordante (Ultimate Guitar, Chordify, e-chords)',
+        'chords': ['A', 'D', 'A', 'E', 'A'],
+        'compare_first_n_hyp': 10,
+    },
+    'led_zeppelin_immigrant_song': {
+        'status': 'TEST',
+        'audio_path': '/mnt/user-data/uploads/Led-Zeppelin-Immigrant-Song-v3.mp3',
+        'source': 'Riff et structure concordants entre sources (Ultimate Guitar, e-chords, '
+                  'chords-and-tabs.net) - riff principal joue en power chord (F#5)',
+        'chords': ['F#5', 'E', 'F#m', 'A', 'E', 'F#m', 'A5', 'B5', 'C5', 'F#5', 'E', 'F#m'],
+        'compare_first_n_hyp': 16,
+    },
+    'deep_purple_child_in_time': {
+        'status': 'TEST',
+        'audio_path': '/mnt/user-data/uploads/Deep_Purple_Child_in_Time_Playback_Personnalise___1_.mp3',
+        'source': 'Export Chordify (PDF fourni par utilisateur), vamp Am/G tres repetitif',
+        'chords': ['Am', 'G', 'Am', 'F', 'G', 'Am', 'G', 'Am', 'G', 'F', 'G', 'Am'],
+        'compare_first_n_hyp': 16,
+    },
+    'led_zeppelin_whole_lotta_love': {
+        'status': 'TEST',
+        'audio_path': '/mnt/user-data/uploads/Led-Zeppelin-Whole-Lotta-Love-with-vocals.mp3',
+        'source': 'Export Chordify (PDF fourni par utilisateur) - riff extreme, quasi uniquement '
+                  'D5/E5 en alternance, tres distordu',
+        'chords': ['E5', 'D5', 'E5', 'D5', 'E5', 'D5', 'E5', 'D5', 'E5', 'D5'],
+        'compare_first_n_hyp': 14,
+    },
+    'led_zeppelin_stairway_to_heaven_intro': {
+        'status': 'TEST',
+        'confidence': 'intro ACOUSTIQUE (avant la distorsion electrique plus tard dans le morceau) '
+                      '- test cible pour verifier si la distorsion est bien la cause du probleme',
+        'audio_path': '/mnt/user-data/uploads/Led_Zeppelin_Stairway_to_Heaven_Playback_Personnalise_.mp3',
+        'source': 'Export Chordify (PDF fourni par utilisateur), simplifie',
+        'chords': ['F', 'E', 'Am', 'D', 'Am', 'C', 'F', 'Am'],
+        'compare_first_n_hyp': 10,
+    },
     # 'nom_du_morceau': {
     #     'status': 'TEST',
     #     'audio_path': '/mnt/user-data/uploads/....mp3',

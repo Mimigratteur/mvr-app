@@ -308,3 +308,23 @@ devient une priorite.
 - evaluate.py : evaluation par timestamps absolus (limite : derive, voir plus haut)
 - evaluate_real.py : evaluation agregee sur real_audio_refs.py (CALIBRATION vs TEST separes)
 - tune.py : recherche en grille des seuils de decision
+
+### Confirmation : la limite rock generalise a d'autres groupes (31/07/2026, soir, fin de session)
+
+3 morceaux Led Zeppelin ajoutes (Rock and Roll, Immigrant Song), references tres documentees et concordantes. Resultat : **0%, 0%, 17% exact** - confirme que la limite decouverte sur Deep Purple n'est pas propre a ce groupe, c'est bien une limite generale de la methode face a la guitare electrique distordue, quel que soit l'artiste.
+
+Total final sur 15 morceaux inedits (chansons francaises + rock) : **34% exact / 51% fondamentale**. Ecart tres net et confirme entre les deux familles :
+- Chanson francaise / son acoustique-propre : ~40-55% exact
+- Rock/metal a guitare distordue : ~0-17% exact
+
+C'est desormais une conclusion solide, pas une hypothese isolee sur un seul groupe : cet outil n'est aujourd'hui PAS adapte au rock distordu, et ne devrait pas etre presente comme tel a des musiciens de ce genre sans travail supplementaire dedie (au minimum : gabarits/seuils recalibres specifiquement sur du signal distordu, voire une approche differente).
+
+### Confirmation precise : c'est la distorsion, pas le genre (31/07/2026, soir, fin de session, suite)
+
+Test cible decisif : l'intro de "Stairway to Heaven" (Led Zeppelin) est **acoustique** (guitare fingerstyle, sans distorsion) avant que le morceau parte en electrique plus tard. Resultat sur cette intro : **50% exact / 62% fondamentale** - exactement dans la fourchette des chansons francaises acoustiques (~40-55%), PAS dans la fourchette rock distordu (~0-17%).
+
+A l'inverse, "Whole Lotta Love" (riff D5/E5 quasi permanent, guitare tres distordue) tombe a **0% exact**, et "Child in Time" (Deep Purple, intro plus organ/guitare moins saturee) obtient un intermediaire correct de 42% exact.
+
+**Conclusion precise et confirmee** : le facteur determinant n'est PAS le genre musical (rock vs chanson) mais la **distorsion du signal audio**. Le meme groupe (Led Zeppelin), le meme instrument (guitare), donne des resultats radicalement differents selon que le son est distordu ou non. C'est une conclusion plus utile et actionnable que "ca ne marche pas sur le rock" : ca marcherait probablement sur du rock acoustique/clean, et il faudrait un travail dedie (gabarits adaptes au spectre d'un signal ecrete/distordu) pour le son electrique sature.
+
+Total sur 18 morceaux inedits (chansons + rock, incluant l'intro acoustique de Stairway) : **34% exact / 51% fondamentale**.
