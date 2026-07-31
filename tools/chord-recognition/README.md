@@ -244,6 +244,27 @@ morceau de test : ajouter une entree TEST dans real_audio_refs.py, ne
 jamais re-regler les seuils dessus sans le faire passer explicitement en
 CALIBRATION.
 
+### Extension a 11 morceaux (31/07/2026, soir, suite et fin de session)
+
+4 morceaux supplementaires ajoutes (Armstrong, Foule sentimentale, Restos
+du Coeur, Coup de Soleil), references extraites de PDF Chordify fournis
+par l'utilisateur - marquees confidence 'basse' dans real_audio_refs.py
+car extraction automatique d'un texte de mise en page complexe (grille
+de cases), pas de recoupement multi-source comme pour les 7 premiers.
+
+Resultat sur les 11 morceaux : **40% exact / 54% fondamentale**,
+coherent avec les 46%/59% sur les 7 premiers (pas d'effondrement).
+"restos_du_coeur" tombe seul a 11% - largement en dessous de tout le
+reste, plus probablement un signe que cette reference precise est mal
+ordonnee (PDF particulierement brouille a l'extraction) qu'un vrai echec
+localise de l'outil, mais non confirme sans re-verification a l'oreille.
+
+Etat final de la session du 31/07/2026 sur vrai enregistrement :
+0% (non mesure) -> 23% -> 45% -> 55% (calibration) -> **40-46% (test
+honnete sur inedit, 7 a 11 morceaux)**. Progres reel et valide par
+recoupement, plafond encore loin des ~90% d'outils matures - voir
+discussion plus haut sur pourquoi (modeles entraines vs regles a seuils).
+
 ## Fichiers
 
 - chord_recognizer.py : le moteur de reconnaissance (recognize(), recognize_viterbi() pour audio MIDI ; recognize_windowed(), recognize_key_viterbi() pour vrai enregistrement - cette derniere est la meilleure methode actuelle sur vrai enregistrement)

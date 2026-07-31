@@ -36,8 +36,9 @@ def evaluate_all(method='key_viterbi', verbose=False):
             tot_exact += n_exact
             tot_root += n_root
             maxtot += n_ref
+            conf = f"  (confiance: {ref['confidence']})" if 'confidence' in ref else ''
             print(f"  {name:35s} exact={n_exact}/{n_ref} ({100*n_exact/n_ref:.0f}%)  "
-                  f"root={n_root}/{n_ref} ({100*n_root/n_ref:.0f}%)  [{ref['source']}]")
+                  f"root={n_root}/{n_ref} ({100*n_root/n_ref:.0f}%)  [{ref['source']}]{conf}")
             if verbose:
                 for r, h in pairs:
                     mark = 'OK' if r == h else ('root' if r and h and root_of(r) == root_of(h) else 'X')
