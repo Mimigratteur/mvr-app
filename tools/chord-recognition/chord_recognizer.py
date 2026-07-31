@@ -21,6 +21,56 @@ import librosa
 
 NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
 
+# Profils de Krumhansl-Kessler (cognition de la tonalité), standard en MIR
+_MAJOR_PROFILE = np.array([6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88])
+_MINOR_PROFILE = np.array([6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17])
+
+
+def estimate_key(analysis, silence_ratio=0.06):
+    """Estime la tonalité (fondamentale, 'maj'/'min') du morceau entier par
+    corrélation avec les profils de Krumhansl-Kessler. Utilisé comme a
+    priori pour départager les accords ambigus (voir diatonic_bonus)."""
+    chroma, rms = analysis['chroma'], analysis['rms']
+    mask = rms > rms.max() * silence_ratio
+    if mask.sum() == 0:
+        return None, None
+    avg = chroma[:, mask].mean(axis=1)
+    avg = avg / (avg.sum() + 1e-9)
+    best_root, best_mode, best_corr = None, None, -2.0
+    for root in range(12):
+        maj = np.roll(_MAJOR_PROFILE, root)
+        minr = np.roll(_MINOR_PROFILE, root)
+        maj_corr = np.corrcoef(avg, maj / maj.sum())[0, 1]
+        min_corr = np.corrcoef(avg, minr / minr.sum())[0, 1]
+        if maj_corr > best_corr:
+            best_root, best_mode, best_corr = root, 'maj', maj_corr
+        if min_corr > best_corr:
+            best_root, best_mode, best_corr = root, 'min', min_corr
+    return best_root, best_mode
+
+
+# degres diatoniques -> (qualite preferee, bonus) relatifs a la tonique.
+# Pour la tonalite mineure on inclut V/V7 (mineure harmonique, tres
+# frequent en cadence : ex. E7 en La mineur) en plus du v naturel.
+_DIATONIC_MAJOR = {0: ['maj', '7'], 2: ['min'], 4: ['min'], 5: ['maj'],
+                    7: ['maj', '7'], 9: ['min']}
+_DIATONIC_MINOR = {0: ['min'], 3: ['maj'], 5: ['min'], 7: ['min', 'maj', '7'],
+                    8: ['maj'], 10: ['maj', '7']}
+
+
+def diatonic_bonus(root, qual, key_root, key_mode, weight=0.15):
+    """Bonus additif si (root, qual) est un accord diatonique plausible de
+    la tonalite estimee. Sert a departager les cas ambigus, pas a forcer
+    une decision contre une preuve audio claire (poids volontairement
+    modeste)."""
+    if key_root is None:
+        return 0.0
+    table = _DIATONIC_MAJOR if key_mode == 'maj' else _DIATONIC_MINOR
+    degree = (root - key_root) % 12
+    if degree in table and qual in table[degree]:
+        return weight
+    return 0.0
+
 def chord_name(root, qual):
     r = NOTES[root]
     if qual == 'maj':
@@ -59,7 +109,8 @@ def load_and_analyze(path, hop_length=2048, sr=22050):
     }
 
 
-def score_frame(chroma_vec, bass_vec, bass_bonus=1.6, third_thresh=0.04, flat7_thresh=0.24):
+def score_frame(chroma_vec, bass_vec, bass_bonus=1.6, third_thresh=0.04, flat7_thresh=0.24,
+                 key_root=None, key_mode=None, key_weight=0.6):
     """Retourne (root, qual) pour une frame de chroma donnée.
 
     Approche par ratios d'énergie plutôt que par compétition de gabarits :
@@ -70,7 +121,12 @@ def score_frame(chroma_vec, bass_vec, bass_bonus=1.6, third_thresh=0.04, flat7_t
     par énergie root+quinte, puis on décide de la tierce (maj/min/absente)
     et de la 7e par des seuils sur l'énergie réellement présente à ces
     degrés, relativement à la triade.
-    """
+
+    Si key_root/key_mode sont fournis (voir estimate_key), un léger bonus
+    (key_weight) favorise les accords diatoniques de la tonalité estimée
+    en cas d'ambiguïté — ça ne force jamais une décision contre une
+    preuve audio claire, le poids reste modeste par rapport aux termes
+    d'énergie réels."""
     total = chroma_vec.sum()
     if total < 1e-6:
         return None, None
@@ -78,7 +134,8 @@ def score_frame(chroma_vec, bass_vec, bass_bonus=1.6, third_thresh=0.04, flat7_t
     bass_root = int(np.argmax(bass_vec)) if bass_vec.sum() > 1e-6 else None
 
     # 1) choisir la fondamentale : énergie(root) + énergie(quinte), avec
-    #    bonus si la note de basse détectée correspond à cette fondamentale
+    #    bonus si la note de basse détectée correspond à cette fondamentale,
+    #    et léger bonus si la fondamentale est diatonique de la tonalité
     best_root, best_score = None, -1.0
     for root in range(12):
         e_root = chroma_vec[root]
@@ -86,6 +143,12 @@ def score_frame(chroma_vec, bass_vec, bass_bonus=1.6, third_thresh=0.04, flat7_t
         score = e_root + 0.7 * e_fifth
         if bass_root is not None and root == bass_root:
             score += bass_bonus * e_root
+        if key_root is not None:
+            # bonus générique si la fondamentale appartient à un degré
+            # diatonique quelconque de la tonalité (avant de savoir la qualité)
+            table = _DIATONIC_MAJOR if key_mode == 'maj' else _DIATONIC_MINOR
+            if (root - key_root) % 12 in table:
+                score += key_weight * e_root
         if score > best_score:
             best_root, best_score = root, score
 
@@ -97,14 +160,15 @@ def score_frame(chroma_vec, bass_vec, bass_bonus=1.6, third_thresh=0.04, flat7_t
     e_flat7 = chroma_vec[(root + 10) % 12]
 
     # 2) tierce : celle des deux (maj/min) la plus énergétique, seulement
-    #    si elle dépasse un seuil relatif à la fondamentale (sinon "5")
+    #    si elle dépasse un seuil relatif à la fondamentale (sinon "5"),
+    #    avec léger bonus diatonique pour départager les cas proches
     third_energy = max(e_maj3, e_min3)
     if third_energy < third_thresh * e_root:
         qual = '5'
-    elif e_maj3 >= e_min3:
-        qual = 'maj'
     else:
-        qual = 'min'
+        maj_score = e_maj3 + diatonic_bonus(root, 'maj', key_root, key_mode, key_weight) * e_root
+        min_score = e_min3 + diatonic_bonus(root, 'min', key_root, key_mode, key_weight) * e_root
+        qual = 'maj' if maj_score >= min_score else 'min'
 
     # 3) septième dominante : seulement pour un accord majeur avec 7e
     #    mineure clairement présente
@@ -258,7 +322,7 @@ def recognize_viterbi(path, bass_bonus=1.6, third_thresh=0.04, flat7_thresh=0.24
 
 def recognize_windowed(path, window_s=2.0, bass_bonus=1.6, third_thresh=0.04,
                         flat7_thresh=0.24, silence_ratio=0.06, merge_repeats=True,
-                        stability='min'):
+                        stability='min', use_key=True, key_weight=0.6):
     """Variante pour VRAIS ENREGISTREMENTS (pas de l'audio MIDI propre).
 
     Sur un vrai enregistrement (batterie, plusieurs instruments, cordes à
@@ -275,14 +339,18 @@ def recognize_windowed(path, window_s=2.0, bass_bonus=1.6, third_thresh=0.04,
     - 'median' : médiane des frames, plus simple mais moins robuste au
       bruit ponctuel sur vrai enregistrement.
 
+    `use_key` estime la tonalité du morceau entier (Krumhansl-Kessler) et
+    s'en sert comme léger a priori pour départager les accords ambigus
+    (voir estimate_key/diatonic_bonus) — n'écrase jamais une preuve audio
+    claire, poids modeste par défaut (key_weight=0.15).
+
     Réglages calibrés (31/07/2026) sur deux vrais enregistrements contre
     des références indépendantes (grille Chordify pour La Corrida,
     progression connue et publiée pour l'intro de Still Got the Blues) :
     window_s=2.0, stability='min' -> 53% (La Corrida) / 71% (Gary Moore)
     de fondamentale correcte, contre 47% / 43% avec la version initiale
-    (fenêtres de 1.5s, agrégation par médiane). Progrès réel mais encore
-    loin des ~90% d'outils matures comme Chordify - voir README pour le
-    détail et les pistes non résolues."""
+    (fenêtres de 1.5s, agrégation par médiane). Avec use_key=True en plus,
+    voir README pour le résultat mesuré le plus récent."""
     analysis = load_and_analyze(path)
     chroma, bass_chroma, rms, times = (analysis['chroma'], analysis['bass_chroma'],
                                         analysis['rms'], analysis['times'])
@@ -290,6 +358,8 @@ def recognize_windowed(path, window_s=2.0, bass_bonus=1.6, third_thresh=0.04,
     win = max(1, int(window_s / hop_s))
     silence_thresh = rms.max() * silence_ratio
     agg = np.min if stability == 'min' else np.median
+
+    key_root, key_mode = (estimate_key(analysis, silence_ratio) if use_key else (None, None))
 
     segments = []
     for i in range(0, chroma.shape[1], win):
@@ -303,7 +373,8 @@ def recognize_windowed(path, window_s=2.0, bass_bonus=1.6, third_thresh=0.04,
             c_agg = agg(chroma[:, lo:hi], axis=1)
             b_agg = agg(bass_chroma[:, lo:hi], axis=1)
             root, qual = score_frame(c_agg, b_agg, bass_bonus=bass_bonus,
-                                      third_thresh=third_thresh, flat7_thresh=flat7_thresh)
+                                      third_thresh=third_thresh, flat7_thresh=flat7_thresh,
+                                      key_root=key_root, key_mode=key_mode, key_weight=key_weight)
             label = chord_name(root, qual) if root is not None else 'N.C.'
         segments.append((label, t0, t1))
 

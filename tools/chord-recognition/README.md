@@ -130,6 +130,36 @@ demanderait vraisemblablement un changement d'approche plus profond
 entraine sur de vraies donnees plutot que des seuils fixes) plutot que
 du reglage fin supplementaire sur cette methode par ratios d'energie.
 
+### Modele de tonalite (Krumhansl-Kessler) - amelioration validee (31/07/2026, soir)
+
+Piste identifiee ci-dessus mise en oeuvre : estimation de la tonalite du
+morceau entier (fondamentale + majeur/mineur) par correlation avec les
+profils de Krumhansl-Kessler (standard en MIR), utilisee comme leger a
+priori pour departager les accords ambigus (fonction estimate_key +
+diatonic_bonus dans chord_recognizer.py).
+
+Detection de tonalite verifiee correcte sur les 3 fichiers connus :
+- La Corrida -> Re mineur (coherent avec la grille Chordify : Dm, Bb, Gm, F, C)
+- Still Got the Blues -> La mineur (coherent avec la tonalite connue et publiee, tres haute confiance)
+- Emmenez-moi-mimi -> La mineur (coherent avec reference_grid.py)
+
+Impact mesure sur les deux vrais enregistrements (meme protocole que
+plus haut, comparaison bornee au debut du morceau) :
+- Exact (fondamentale + qualite) : 23% -> **45%** (10/22, avant/apres)
+- Fondamentale seule : 59% (13/22, inchangee - le gain vient presque
+  entierement de la decision maj/min, pas du choix de fondamentale)
+
+`recognize_windowed()` utilise maintenant use_key=True et key_weight=0.6
+par defaut (poids choisi au milieu d'un plateau stable 0.4-0.7, pas au
+bord d'un pic isole, pour eviter le sur-ajustement sur seulement 2
+morceaux de test). Le prior de tonalite est un bonus modeste ajoute au
+score par energie, jamais une decision forcee contre une preuve audio
+claire.
+
+Important : `recognize()` et `recognize_viterbi()` (audio MIDI) ne sont
+PAS affectes par ce changement - ils n'utilisent pas key_root/key_mode,
+leurs resultats restent exactement 83.7%/85.2% comme avant.
+
 ### Pistes deja testees et ecartees (resultats negatifs, notes pour ne pas les refaire)
 
 - Detection d'onsets par nouveaute du chroma (pics de changement frame-a-frame) au lieu du lissage a fenetre fixe : a reglages equivalents, aucun gain (83.7% dans le meilleur cas, souvent bien moins avec des seuils plus stricts - perd de vraies frontieres d'accords plutot que juste du bruit).
