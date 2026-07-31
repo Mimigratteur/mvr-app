@@ -217,10 +217,39 @@ Les deux methodes detectent bien plus de segments que les 135 reels (304 et 349)
 
 evaluate.py (echantillonnage a des timestamps absolus calcules a partir d'un tempo constant suppose) derive au fil du morceau car les hypotheses de repartition des temps par mesure (2+2 par defaut) ne collent pas exactement a l'audio reel. evaluate_seq.py (alignement de sequence, Needleman-Wunsch) est la mesure fiable a utiliser - elle ne depend d'aucun calage temporel absolu.
 
+### Validation croisee sur 7 morceaux inedits (31/07/2026, soir, suite)
+
+Test honnete decisif : 7 nouveaux morceaux (chansons francaises connues),
+AUCUN utilise pour regler quoi que ce soit, avec references lues sur des
+tablatures en ligne (partoch, ultimate-guitar, Chordify, guitare-tabs -
+concordantes entre plusieurs sources a chaque fois), simplifiees aux
+qualites que l'outil sait produire (maj/min/7/5). Voir real_audio_refs.py
+(section TEST) et evaluate_real.py.
+
+Resultat : **46% exact / 59% fondamentale** sur l'ensemble des 7
+morceaux, contre 55%/68% sur les 2 morceaux de calibration. Baisse
+modeste et attendue, PAS un effondrement - ca confirme que les progres
+de la journee (23% -> 55% sur calibration) generalisent reellement a de
+l'inedit, ce n'est pas du sur-ajustement aux deux memes chansons.
+
+Forte variance par morceau : de 25% exact (Tu Verras, Nougaro -
+harmonies jazz tres reharmonisees, hors de portee de cette methode
+simple) a 64% exact / 86% fondamentale (Bravo Monsieur le Monde,
+Fugain - harmonie plus simple). Coherent : la methode marche mieux sur
+des progressions diatoniques simples que sur du jazz reharmonise.
+
+C'est la mesure la plus fiable disponible a ce jour sur l'etat reel de
+l'outil face a du vrai enregistrement varie. Pour ajouter un nouveau
+morceau de test : ajouter une entree TEST dans real_audio_refs.py, ne
+jamais re-regler les seuils dessus sans le faire passer explicitement en
+CALIBRATION.
+
 ## Fichiers
 
 - chord_recognizer.py : le moteur de reconnaissance (recognize(), recognize_viterbi() pour audio MIDI ; recognize_windowed(), recognize_key_viterbi() pour vrai enregistrement - cette derniere est la meilleure methode actuelle sur vrai enregistrement)
 - reference_grid.py : reference exacte "Emmenez-moi-mimi" (78 mesures, 135 accords, issue du MIDI via export PDF MVR)
+- real_audio_refs.py : references pour vrais enregistrements, separees CALIBRATION (ont servi a regler) / TEST (jamais utilisees pour regler - mesure honnete)
 - evaluate_seq.py : evaluation fiable (alignement de sequence), avec option --viterbi
 - evaluate.py : evaluation par timestamps absolus (limite : derive, voir plus haut)
+- evaluate_real.py : evaluation agregee sur real_audio_refs.py (CALIBRATION vs TEST separes)
 - tune.py : recherche en grille des seuils de decision
