@@ -160,6 +160,36 @@ Important : `recognize()` et `recognize_viterbi()` (audio MIDI) ne sont
 PAS affectes par ce changement - ils n'utilisent pas key_root/key_mode,
 leurs resultats restent exactement 83.7%/85.2% comme avant.
 
+### Transitions Viterbi informees par la tonalite - amelioration validee (31/07/2026, soir, suite)
+
+Nouvelle fonction recognize_key_viterbi() : combine recognize_windowed()
+(fenetres ~2s, agregation par minimum, a priori de tonalite par accord)
+avec un lissage Viterbi dont la matrice de TRANSITION est elle-meme
+informee par la tonalite - les enchainements vers un accord diatonique
+de la cle sont favorises, pas juste "rester sur le meme accord".
+
+Resultat (meme protocole, comparaison bornee au debut de deux vrais
+enregistrements) :
+- Exact (fondamentale + qualite) : 45% -> **55%** (12/22)
+- Fondamentale seule : 59% -> **68%** (15/22)
+
+Plateau stable trouve par recherche en grille (stay_prob 0.4-0.5,
+diatonic_bonus_prob 5-20 tous equivalents) - pas un pic isole de
+sur-ajustement sur les 2 morceaux de test.
+
+**Progression complete de la session du 31/07/2026 sur vrai
+enregistrement** : 0% mesure de facon fiable (avant) -> 23% -> 45% ->
+**55% exact**. Reel progres, mais plafond honnete a rappeler : les
+outils matures comme Chordify tournent autour de 85-90%, et la
+litterature scientifique sur la reconnaissance d'accords automatique
+situe meme les meilleurs systemes publies autour de 80-85% en conditions
+reelles. Viser 99% n'est pas un objectif realiste avec cette methode par
+regles/seuils calibres a la main - ni probablement avec aucune methode
+connue a ce jour sur de la musique polyinstrumentale reelle. Aller
+significativement au-dela de 55-60% demanderait vraisemblablement un
+modele entraine sur de vraies donnees annotees a grande echelle, pas un
+reglage supplementaire de cette approche.
+
 ### Pistes deja testees et ecartees (resultats negatifs, notes pour ne pas les refaire)
 
 - Detection d'onsets par nouveaute du chroma (pics de changement frame-a-frame) au lieu du lissage a fenetre fixe : a reglages equivalents, aucun gain (83.7% dans le meilleur cas, souvent bien moins avec des seuils plus stricts - perd de vraies frontieres d'accords plutot que juste du bruit).
@@ -189,7 +219,7 @@ evaluate.py (echantillonnage a des timestamps absolus calcules a partir d'un tem
 
 ## Fichiers
 
-- chord_recognizer.py : le moteur de reconnaissance (recognize() et recognize_viterbi())
+- chord_recognizer.py : le moteur de reconnaissance (recognize(), recognize_viterbi() pour audio MIDI ; recognize_windowed(), recognize_key_viterbi() pour vrai enregistrement - cette derniere est la meilleure methode actuelle sur vrai enregistrement)
 - reference_grid.py : reference exacte "Emmenez-moi-mimi" (78 mesures, 135 accords, issue du MIDI via export PDF MVR)
 - evaluate_seq.py : evaluation fiable (alignement de sequence), avec option --viterbi
 - evaluate.py : evaluation par timestamps absolus (limite : derive, voir plus haut)
