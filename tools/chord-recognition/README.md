@@ -265,6 +265,40 @@ honnete sur inedit, 7 a 11 morceaux)**. Progres reel et valide par
 recoupement, plafond encore loin des ~90% d'outils matures - voir
 discussion plus haut sur pourquoi (modeles entraines vs regles a seuils).
 
+### Limite de genre decouverte : ca s'effondre sur le rock distordu (31/07/2026, soir, fin de session)
+
+2 morceaux Deep Purple ajoutes (Smoke on the Water, Black Night),
+references tres fiables (riffs archi-documentes et concordants entre
+sources). Resultat : **0% exact sur les deux**, fondamentale correcte
+seulement 42% et 29%.
+
+Explication probable : la guitare electrique distordue genere une
+quantite massive d'harmoniques parasites sur (quasiment) toutes les
+frequences - c'est le principe meme de la distorsion (ecretage du
+signal, qui cree des harmoniques impaires/paires en plus du son de
+base). Ca brouille directement la methode par ratios d'energie
+(score_frame), calibree uniquement sur du son acoustique/propre
+(chanson francaise, guitare seche, orchestration legere) jusqu'ici.
+Le modele de tonalite (Krumhansl-Kessler) n'aide probablement pas non
+plus sur un riff pentatonique mineur repetitif, tres different d'une
+grille d'accords diatonique classique.
+
+**Conclusion honnete sur le perimetre reel de l'outil** : fonctionne
+(avec les limites deja documentees, ~40-55% exact) sur du son
+acoustique/propre a orchestration legere. Ne fonctionne PAS sur du rock/
+metal a guitare distordue - genre non teste avant ce soir, limite non
+anticipee. Total sur 13 morceaux inedits (7 chansons + 4 chansons basse
+confiance + 2 rock) : **36% exact / 52% fondamentale** - la baisse par
+rapport aux 46% sur les 7 premiers vient entierement des 2 morceaux rock,
+pas d'une degradation generale.
+
+Piste non testee pour le rock : la separation harmonique/percussive
+(HPSS) avait ete testee sur de vrais enregistrements chansons plus tot
+dans la session sans effet notable - mais un signal fortement distordu
+est un cas different (harmoniques du signal lui-meme, pas de percussion
+en tant que telle), pourrait valoir un nouveau test dedie si ce genre
+devient une priorite.
+
 ## Fichiers
 
 - chord_recognizer.py : le moteur de reconnaissance (recognize(), recognize_viterbi() pour audio MIDI ; recognize_windowed(), recognize_key_viterbi() pour vrai enregistrement - cette derniere est la meilleure methode actuelle sur vrai enregistrement)

@@ -125,6 +125,21 @@ REFERENCES = {
                    'D7', 'Gm', 'D7', 'A', 'F', 'C', 'F', 'Gm'],
         'compare_first_n_hyp': 22,
     },
+    'deep_purple_smoke_on_the_water': {
+        'status': 'TEST',
+        'audio_path': '/mnt/user-data/uploads/Deep-Purple-Smoke-On-The-Water-v7.mp3',
+        'source': 'Riff tres documente et concordant entre sources (Wikipedia, Ultimate Guitar, '
+                  'chords-and-tabs.net) : joue en power chords sur guitare distordue',
+        'chords': ['G5', 'Bb5', 'C5', 'G5', 'Bb5', 'Db5', 'C5', 'G5', 'Bb5', 'C5', 'Bb5', 'G5'],
+        'compare_first_n_hyp': 15,
+    },
+    'deep_purple_black_night': {
+        'status': 'TEST',
+        'audio_path': '/mnt/user-data/uploads/Deep-Purple-Black-Night-v2.mp3',
+        'source': 'Structure claire et concordante (themusicdept.com Rockschool + azchords.com)',
+        'chords': ['E5', 'A', 'G', 'E5', 'A', 'G', 'B5'],
+        'compare_first_n_hyp': 12,
+    },
     # 'nom_du_morceau': {
     #     'status': 'TEST',
     #     'audio_path': '/mnt/user-data/uploads/....mp3',
