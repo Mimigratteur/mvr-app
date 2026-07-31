@@ -256,34 +256,40 @@ def recognize_viterbi(path, bass_bonus=1.6, third_thresh=0.04, flat7_thresh=0.24
     return segments, analysis
 
 
-def recognize_windowed(path, window_s=1.5, bass_bonus=1.6, third_thresh=0.04,
-                        flat7_thresh=0.24, silence_ratio=0.06, merge_repeats=True):
+def recognize_windowed(path, window_s=2.0, bass_bonus=1.6, third_thresh=0.04,
+                        flat7_thresh=0.24, silence_ratio=0.06, merge_repeats=True,
+                        stability='min'):
     """Variante pour VRAIS ENREGISTREMENTS (pas de l'audio MIDI propre).
 
     Sur un vrai enregistrement (batterie, plusieurs instruments, cordes à
     vide qui résonnent), une décision par frame de ~93ms est bien trop
     fine : elle capte des artefacts (résonance, notes de passage) plutôt
-    que l'accord réellement joué. On agrège le chroma par MÉDIANE sur des
-    fenêtres d'environ 1 accord tenu (~1.5s par défaut) avant de décider
-    — ça lisse les artefacts sans avoir besoin de connaître le tempo.
+    que l'accord réellement joué. On agrège le chroma sur des fenêtres
+    d'environ 1 accord tenu (~1.5s par défaut) avant de décider — ça
+    lisse les artefacts sans avoir besoin de connaître le tempo.
 
-    Mesuré qualitativement (pas de référence chiffrée pour l'instant,
-    faute de vérité terrain sur de vrais enregistrements) : sur "Still Got
-    the Blues" (Gary Moore, en La mineur), Am domine très largement la
-    séquence détectée, cohérent avec la tonalité connue du morceau.
-    Sur "La Corrida" (Cabrel), les premières ~30s donnent une progression
-    stable et plausible ; des passages plus denses (plusieurs
-    instruments simultanés) restent bruités.
+    `stability` contrôle comment on agrège chaque fenêtre :
+    - 'min' (défaut) : minimum des frames — ne retient que ce qui est
+      présent en permanence sur toute la fenêtre, rejette les notes de
+      passage brèves même si elles sont fortes un instant.
+    - 'median' : médiane des frames, plus simple mais moins robuste au
+      bruit ponctuel sur vrai enregistrement.
 
-    C'est un point de départ à corriger à l'oreille, pas encore un
-    résultat validé chiffré comme `recognize()`/`recognize_viterbi()` sur
-    audio MIDI (83.7% / 85.2%)."""
+    Réglages calibrés (31/07/2026) sur deux vrais enregistrements contre
+    des références indépendantes (grille Chordify pour La Corrida,
+    progression connue et publiée pour l'intro de Still Got the Blues) :
+    window_s=2.0, stability='min' -> 53% (La Corrida) / 71% (Gary Moore)
+    de fondamentale correcte, contre 47% / 43% avec la version initiale
+    (fenêtres de 1.5s, agrégation par médiane). Progrès réel mais encore
+    loin des ~90% d'outils matures comme Chordify - voir README pour le
+    détail et les pistes non résolues."""
     analysis = load_and_analyze(path)
     chroma, bass_chroma, rms, times = (analysis['chroma'], analysis['bass_chroma'],
                                         analysis['rms'], analysis['times'])
     hop_s = times[1] - times[0]
     win = max(1, int(window_s / hop_s))
     silence_thresh = rms.max() * silence_ratio
+    agg = np.min if stability == 'min' else np.median
 
     segments = []
     for i in range(0, chroma.shape[1], win):
@@ -294,9 +300,9 @@ def recognize_windowed(path, window_s=1.5, bass_bonus=1.6, third_thresh=0.04,
         if rms[lo:hi].mean() < silence_thresh:
             label = 'N.C.'
         else:
-            c_med = np.median(chroma[:, lo:hi], axis=1)
-            b_med = np.median(bass_chroma[:, lo:hi], axis=1)
-            root, qual = score_frame(c_med, b_med, bass_bonus=bass_bonus,
+            c_agg = agg(chroma[:, lo:hi], axis=1)
+            b_agg = agg(bass_chroma[:, lo:hi], axis=1)
+            root, qual = score_frame(c_agg, b_agg, bass_bonus=bass_bonus,
                                       third_thresh=third_thresh, flat7_thresh=flat7_thresh)
             label = chord_name(root, qual) if root is not None else 'N.C.'
         segments.append((label, t0, t1))

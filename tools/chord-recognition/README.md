@@ -62,6 +62,74 @@ recognize_viterbi() fait mieux sur la precision mais pas sur la sur-segmentation
 
 Le chiffre de 96.9% mesure precedemment etait sur audio synthetique - non representatif d'un vrai enregistrement.
 
+### Mesures honnetes sur vrai enregistrement (31/07/2026, apres-midi, suite)
+
+Premiere vraie validation chiffree sur audio reel, contre deux references
+independantes (grille Chordify pour La Corrida, progression connue et
+publiee pour l'intro de Still Got the Blues) :
+
+- **La Corrida** : 47% de fondamentale correcte (7/15) sur le debut du
+  morceau
+- **Still Got the Blues** : 43% de fondamentale correcte (3/7) sur
+  l'intro
+
+Attention methodologique : une premiere comparaison par alignement
+global avait donne 67% pour La Corrida - artefact trompeur, l'alignement
+avait accroche une repetition tardive du motif plutot que le vrai debut
+du morceau (la reference Chordify n'est qu'une boucle courte). Toujours
+comparer en bornant sur la meme fenetre temporelle, pas par alignement
+libre sur tout le morceau.
+
+Constat important : l'observation precedente ("Am domine, coherent avec
+la tonalite du morceau") etait un FAUX bon signe. La vraie intro de
+Still Got the Blues est Dm7-G-Cmaj7-Fmaj7-Bm-E7-Am (7 accords distincts,
+resolution sur Am seulement a la fin) ; l'outil detecte "Am" presque
+partout des le debut - pas un vrai suivi des changements d'accords, plus
+probablement un biais vers la tonique/fondamentale la plus resonante.
+
+### Ecart avec Chordify et autres outils commerciaux
+
+Chordify et autres solutions matures annoncent des taux proches de 90%
+sur vrai enregistrement. L'ecart avec nos ~45% actuels vient
+probablement d'un ou plusieurs facteurs non encore corriges :
+- Selection de fondamentale sensible a une note isolee tres resonante
+  (corde a vide, note de basse de passage) plutot qu'a la stabilite
+  reelle sur la duree de l'accord
+- Pas de modele de tonalite/gamme pour departager les cas ambigus
+- Fenetre d'agregation fixe (1.5s) plutot qu'alignee sur les vrais
+  temps/mesures du morceau
+- Decalage de capo eventuel non pris en compte (a verifier : les
+  references lues affichent-elles les accords "position" ou "sonnants" ?)
+
+Prochaine piste a tester avant tout resultat chiffre supplementaire :
+verifier si un decalage constant de demi-tons ameliore l'alignement
+(capo, ou erreur de justesse systematique) avant de re-attaquer
+l'algorithme de selection de fondamentale.
+
+**Teste et confirme** : le decalage constant (capo/justesse) N'EST PAS
+la cause - aucun decalage de 1 a 11 demi-tons ne bat le decalage 0 sur
+les deux morceaux. Les erreurs sont dispersees, pas systematiques.
+
+**Amelioration reelle trouvee et integree** : la selection de
+fondamentale par MEDIANE sur la fenetre peut etre trompee par une note
+de passage forte mais breve. En prenant le MINIMUM sur la fenetre au
+lieu de la mediane (ne retient que ce qui est present en permanence,
+pas juste fort a un instant), avec une fenetre elargie a 2.0s :
+- La Corrida : 47% -> 53% de fondamentale correcte
+- Still Got the Blues : 43% -> 71% de fondamentale correcte
+
+Gain reel mais pas uniforme (net sur un morceau, marginal sur l'autre).
+`recognize_windowed()` utilise maintenant ces reglages par defaut
+(window_s=2.0, stability='min'). Sweep de bass_bonus/third_thresh
+au-dessus de cette config : aucun gain supplementaire trouve (plafond a
+59% cumule sur les deux morceaux, soit 13/22).
+
+Encore loin des ~90% d'outils matures comme Chordify. Passer ce cap
+demanderait vraisemblablement un changement d'approche plus profond
+(modele de tonalite/gamme pour departager les cas ambigus, ou modele
+entraine sur de vraies donnees plutot que des seuils fixes) plutot que
+du reglage fin supplementaire sur cette methode par ratios d'energie.
+
 ### Pistes deja testees et ecartees (resultats negatifs, notes pour ne pas les refaire)
 
 - Detection d'onsets par nouveaute du chroma (pics de changement frame-a-frame) au lieu du lissage a fenetre fixe : a reglages equivalents, aucun gain (83.7% dans le meilleur cas, souvent bien moins avec des seuils plus stricts - perd de vraies frontieres d'accords plutot que juste du bruit).
