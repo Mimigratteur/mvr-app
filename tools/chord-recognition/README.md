@@ -19,6 +19,38 @@ pip install librosa numpy scipy soundfile
 - Recalibrer les seuils de decision (recherche en grille) :
   python3 tune.py
 
+## Audio reel (pas MIDI) - premiers tests (31/07/2026, apres-midi)
+
+Teste pour la premiere fois sur de vrais enregistrements (batterie,
+plusieurs instruments, reverb) : La Corrida (Cabrel) et Still Got the
+Blues (Gary Moore). recognize() et recognize_viterbi() (calibres sur
+audio MIDI propre) echouent completement dessus : decisions par frame de
+93ms bien trop fines, elles captent des artefacts de vrai enregistrement
+(cordes a vide qui resonnent, notes de passage) plutot que l'accord
+reellement joue - jusqu'a 540 segments detectes pour un morceau qui n'en
+a raisonnablement pas plus d'une centaine.
+
+Piste testee avec succes partiel : recognize_windowed(), qui agrege le
+chroma par mediane sur des fenetres ~1.5s (environ la duree d'un accord
+tenu) avant de decider, au lieu de trancher quasi instantanement. Ca fait
+tomber La Corrida de 540 a 176 segments, avec une progression stable et
+plausible sur les passages simples (intro). Sur Still Got the Blues
+(morceau connu en La mineur), Am domine tres largement la sequence
+detectee, coherent avec la tonalite reelle. Les passages plus denses
+(plusieurs instruments simultanes) restent bruites.
+
+Important : separation harmonique/percussive (librosa HPSS) testee et
+n'a presque rien change - le probleme n'est pas le bruit de batterie
+mais la richesse d'un vrai mixage. Bibliotheque pre-entrainee autochord
+testee mais inutilisable dans cet environnement (modele Google Drive
+inaccessible), et n'annonce de toute facon que 67% sur 25 accords tres
+simples meme dans de bonnes conditions.
+
+recognize_windowed() n'a pas de chiffre de reussite mesure (pas de
+reference connue pour ces morceaux, contrairement a Emmenez-moi-mimi) -
+c'est un point de depart a corriger a l'oreille, pas encore un resultat
+valide comme les 83.7%/85.2% sur audio MIDI.
+
 ## Etat actuel (31/07/2026)
 
 Mesure sur un vrai fichier audio (EMMENEZ-MOI-MIMI.wav, rendu MIDI, reference exacte extraite du PDF MVR - voir reference_grid.py), pas sur du synthetique :
