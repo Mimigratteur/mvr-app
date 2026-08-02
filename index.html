@@ -729,7 +729,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.78.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.79.0</span></h1>
 </div>
 
 <div id="pages">
@@ -5341,7 +5341,19 @@ function gpStartAutoScroll(_0xaf6c82) {
   // le calcul pur (qui gere deja tres bien les points d'orgue) reste alors
   // la seule source de verite, coherente de bout en bout.
   var _0xhasFermatas = _0xaf6c82.fermatas && Object.keys(_0xaf6c82.fermatas).length > 0;
-  var _0xhasRefinedTempo = !_0xhasFermatas && _0xaf6c82.audioKey && _0xrefinedCache && _0xrefinedCache.songId === _0xaf6c82.id && _0xrefinedCache.reliable && gpPlayMeasureIdx === 0;
+  // DESACTIVE le 02/08/2026 : deux essais reels sur le meme morceau ont
+  // donne des resultats faux dans des directions OPPOSEES (retard puis
+  // avance), meme apres avoir elargi la fenetre de recherche. La
+  // correlation automatique sur un enregistrement reel polyphonique n'est
+  // pas assez fiable pour piloter la lecture en direct — confirme un
+  // constat deja documente dans ce fichier avant meme d'y toucher
+  // aujourd'hui (voir plus haut : "l'analyse automatique de la position
+  // s'est montree peu fiable dans nos tests"). Le calcul pur reste seul
+  // utilise ; pour les morceaux ayant besoin d'une precision fine, les
+  // reperes manuels (📍, deja disponibles) restent la seule methode
+  // fiable, confirmee a l'oreille par le musicien plutot que devinee par
+  // un algorithme.
+  var _0xhasRefinedTempo = false;
   var _0xrefinedMeasureMs = _0xhasRefinedTempo ? _0xrefinedCache.period * 1000 : null;
   var _0xrefinedOffsetMs = _0xhasRefinedTempo ? _0xrefinedCache.offset * 1000 : 0;
   // Levée / anacrouse : un nombre de TEMPS (pas de mesures) à laisser
@@ -11397,7 +11409,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.78.0 · 02/08/2026<span id="license-watermark"></span>
+  v2.79.0 · 02/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
