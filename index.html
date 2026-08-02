@@ -729,7 +729,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.79.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.80.0</span></h1>
 </div>
 
 <div id="pages">
@@ -8284,8 +8284,29 @@ function applyAnalyzedTempo(_0x288ec2) {
   var _0x56863c = _0x4bc6f9;
   document.getElementById("sm-bpm").value = _0x288ec2;
   var _0xd80135 = document.getElementById("sm-tempo-analysis-status");
+  // Applique et ENREGISTRE immediatement, plutot que de se contenter de
+  // remplir le champ en esperant que le musicien pense a cliquer sur
+  // "Enregistrer" ensuite — cette etape manuelle etait trop facile a
+  // oublier (constate le 02/08/2026 : le formulaire affichait bien le
+  // tempo detecte, mais l'ecran Scene continuait d'utiliser l'ancien BPM
+  // non enregistre, un ecart de plusieurs dizaines de BPM totalement
+  // silencieux).
+  if (editingSong) {
+    var _0xsongToUpdate = songs.find(function (_0xs) { return _0xs.id === editingSong; });
+    if (_0xsongToUpdate) {
+      _0xsongToUpdate.bpm = String(_0x288ec2);
+      dbSave();
+      // Si ce morceau est celui actuellement charge sur l'ecran Scene,
+      // applique aussi le tempo en direct tout de suite (pas besoin de
+      // rouvrir le morceau pour que ca prenne effet).
+      var _0xcurSongNow = curSet && curSet.songIds ? songs.find(function (_0xs) { return _0xs.id === curSet.songIds[curIdx]; }) : null;
+      if (_0xcurSongNow && _0xcurSongNow.id === editingSong && typeof setBPM === "function") {
+        setBPM(_0x288ec2);
+      }
+    }
+  }
   if (_0xd80135) {
-    _0xd80135.textContent = "✓ " + _0x288ec2 + " BPM appliqué — pense à Enregistrer.";
+    _0xd80135.textContent = "✓ " + _0x288ec2 + " BPM appliqué et enregistré.";
   }
 }
 function _aiChordPromptFor(_0x320dc0) {
@@ -11409,7 +11430,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.79.0 · 02/08/2026<span id="license-watermark"></span>
+  v2.80.0 · 02/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
