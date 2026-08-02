@@ -729,7 +729,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.77.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.78.0</span></h1>
 </div>
 
 <div id="pages">
@@ -5738,15 +5738,19 @@ async function _ensureMeasureTimeMapCached(_0x17adbc) {
 
       // Passe 1 (grossiere) : pas large sur le tempo ET sur le decalage —
       // trouve rapidement la bonne zone sans tester chaque micro-decalage.
-      await _0xrunPass(0.97, 1.03, 0.005, function (_0xp) { return Math.max(0.02, _0xp / 20); });
+      // Plage elargie a +/-8% (au lieu de +/-3% a l'origine) : un tempo
+      // declare peut reellement s'ecarter de plus de 3% du tempo reel (test
+      // du 02/08/2026 sur un cas concret : ecart de ~2.9%, tout pres de
+      // l'ancienne limite, laissant un residu de derive non corrige).
+      await _0xrunPass(0.92, 1.08, 0.006, function (_0xp) { return Math.max(0.02, _0xp / 20); });
       // Passe 2 (fine) : autour du meilleur candidat de la passe 1, avec la
       // precision d'origine — beaucoup moins de combinaisons a tester
       // puisque la zone est deja bien resserree.
       var _0xrefineScale = _0xbestPeriod / _0x21ad79;
-      var _0xscaleLo = Math.max(0.97, _0xrefineScale - 0.006);
-      var _0xscaleHi = Math.min(1.03, _0xrefineScale + 0.006);
+      var _0xscaleLo = Math.max(0.92, _0xrefineScale - 0.008);
+      var _0xscaleHi = Math.min(1.08, _0xrefineScale + 0.008);
       var _0xfineOffsetStep = Math.max(0.005, _0x28fb02 / 2);
-      await _0xrunPass(_0xscaleLo, _0xscaleHi, 0.001, function () { return _0xfineOffsetStep; });
+      await _0xrunPass(_0xscaleLo, _0xscaleHi, 0.0012, function () { return _0xfineOffsetStep; });
 
       return { score: _0xbestScore, offset: _0xbestOffset, period: _0xbestPeriod };
     }
@@ -11393,7 +11397,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.77.0 · 02/08/2026<span id="license-watermark"></span>
+  v2.78.0 · 02/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
