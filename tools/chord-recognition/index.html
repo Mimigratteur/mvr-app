@@ -434,6 +434,10 @@ input[type=range]{accent-color:var(--G);touch-action:pan-y}
   position:absolute;top:2px;left:5px;font-size:10px;font-weight:400;
   color:#aaa;pointer-events:none;user-select:none;
 }
+.gp-fermata-badge{
+  position:absolute;top:0px;right:4px;font-size:15px;font-weight:700;
+  color:#E8B86D;pointer-events:none;user-select:none;
+}
 /* Surbrillance de la mesure en cours pendant le défilement automatique
    (mode Play) — sert de repère visuel ("curseur"), comme l'ancien mode
    défilant. z-index pour rester visible malgré les bordures des cases voisines. */
@@ -547,6 +551,13 @@ input[type=range]{accent-color:var(--G);touch-action:pan-y}
 .gp-sheet-insert:active{background:#16A34A;color:#fff}
 .gp-sheet-delete{background:#FFEFEC;border:1.5px solid #FF3B30;color:#C4281B}
 .gp-sheet-delete:active{background:#FF3B30;color:#fff}
+.gp-fermata-choice{
+  min-width:52px;padding:9px 10px;border-radius:10px;cursor:pointer;
+  background:#F5F5F5;border:1.5px solid #DDD;color:#555;font-size:13px;font-weight:600;
+}
+.gp-fermata-choice-active{
+  background:#FFF3D6;border-color:#E8B86D;color:#8A5A00;
+}
 .gp-sheet-cancel{
   display:block;width:100%;box-sizing:border-box;text-align:center;background:none;border:none;
   color:#777;font-size:14px;padding:10px 0 2px;cursor:pointer;margin:0;
@@ -718,7 +729,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.70.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.72.0</span></h1>
 </div>
 
 <div id="pages">
@@ -935,6 +946,12 @@ body.fullscreen #topbar{display:none}
     <button type="button" class="gp-sheet-sq gp-sheet-delete" onclick="gpSheetDelete()">
       <div class="gp-sheet-icon">🗑</div><div class="gp-sheet-label">Supprimer</div>
     </button>
+  </div>
+  <div class="gp-sheet-row" style="flex-direction:column;align-items:stretch;gap:6px;padding:4px 2px 10px">
+    <span style="font-size:13px;color:var(--tx2)">𝄐 Point d'orgue (temps supplémentaires sur cette mesure)</span>
+    <div id="gp-sheet-fermata-btns" style="display:flex;flex-wrap:wrap;gap:6px">
+      <!-- rempli par gpRenderFermataButtons() -->
+    </div>
   </div>
   <button type="button" class="gp-sheet-cancel" onclick="gpCloseMeasureActions()">Annuler</button>
 </div>
@@ -3292,7 +3309,14 @@ function _pbCurrentTime() {
   if (!_pbIsPlaying || !_pbAudioCtx) {
     return _pbStartOffset;
   }
-  return _pbStartOffset + (_pbAudioCtx.currentTime - _pbStartCtxTime);
+  // Compense la latence de sortie audio (haut-parleur/casque Bluetooth
+  // notamment, où elle peut atteindre 100-300ms) : l'horloge interne du
+  // Web Audio API avance dès l'appel à start(), mais le son n'est
+  // physiquement audible qu'après ce délai. Sans cette correction, la
+  // grille (pilotée par cette horloge) avance légèrement EN AVANCE de ce
+  // qui est réellement entendu — exactement le décalage rapporté.
+  var _pbLatency = _pbAudioCtx.outputLatency || _pbAudioCtx.baseLatency || 0;
+  return _pbStartOffset + (_pbAudioCtx.currentTime - _pbStartCtxTime - _pbLatency);
 }
 async function ensurePlaybackAudioEl(_0xf42b72) {
   var _0x2c87fe = _0x552966;
@@ -4643,6 +4667,9 @@ function renderGridPaper(_0x574c49, _0x13f2b6, _0x1ec8d8) {
         var _0x2a6082Read = Math.max(150, _0x564ba8 * _0xwidestCellPxRead + (_0x564ba8 - 1) * 3 + 6);
         _0xbf55e2 += "<div class=\"gp-measure-box\" data-flatidx=\"" + _0x5b9d89 + "\" style=\"width:" + _0x2a6082Read + "px\"" + _0x34240a + ">";
         _0xbf55e2 += "<span class=\"gp-measure-num\">" + (_0x5b9d89 + 1) + "</span>";
+        if (_0x574c49.fermatas && _0x574c49.fermatas[_0x5b9d89]) {
+          _0xbf55e2 += "<span class=\"gp-fermata-badge\" title=\"Point d'orgue : +" + _0x574c49.fermatas[_0x5b9d89] + " temps\">𝄐</span>";
+        }
         _0xbf55e2 += "<div class=\"gp-beatcells\" data-gmrow=\"" + _0x4b382c + "\" data-gmmeasure=\"" + _0x39aa1a + "\" style=\"width:" + _0x2a6082Read + "px\">";
         _0x52f5da.forEach(function (_0x1317cd, _0xd0e4e4) {
           var _0x3d6e94 = gpMode === "play" ? " onclick=\"event.stopPropagation();gpJumpToMeasure(" + _0x5b9d89 + "," + _0xd0e4e4 + ")\"" : "";
@@ -4735,6 +4762,13 @@ function gpInsertMeasureBefore(_0x419e67, _0x539302) {
   }
 }
 var gpSheetTarget = null;
+function gpFlatIndexOf(_0xri, _0xmi) {
+  var _0xflat = 0;
+  for (var _0xr = 0; _0xr < _0xri; _0xr++) {
+    _0xflat += (gridPaperModel[_0xr] && gridPaperModel[_0xr].measures || []).length;
+  }
+  return _0xflat + _0xmi;
+}
 function gpOpenMeasureActions(_0x58bb4f, _0xdfd451) {
   var _0x2523da = _0x552966;
   var _0x37056a = _0x4bc6f9;
@@ -4750,6 +4784,62 @@ function gpOpenMeasureActions(_0x58bb4f, _0xdfd451) {
   document.getElementById("gp-measure-sheet-title").textContent = "Mesure " + (_0xdfd451 + 1) + (_0x3e586e ? " — " + _0x3e586e : " (vide)");
   document.getElementById("gp-sheet-overlay").style.display = "block";
   document.getElementById("gp-measure-sheet").style.display = "block";
+  var _0xflatIdx = gpFlatIndexOf(_0x58bb4f, _0xdfd451);
+  var _0xcurSongForFermata = songs.find(function (_0xs) {
+    return curSet && _0xs.id === curSet.songIds[curIdx];
+  });
+  var _0xexistingFermata = _0xcurSongForFermata && _0xcurSongForFermata.fermatas ? _0xcurSongForFermata.fermatas[_0xflatIdx] || 0 : 0;
+  gpRenderFermataButtons(_0xexistingFermata);
+}
+// Boutons rapides (par demi-temps, 0 a 4 temps supplementaires) plutot
+// qu'un champ numerique a taper — plus adapte a un usage tactile sur
+// scene/en repet. 4 temps = une mesure entiere de plus dans la plupart
+// des morceaux (4/4), largement suffisant pour un point d'orgue reel ;
+// une valeur plus grande reste possible en tapant directement dans
+// song.fermatas si jamais un cas extreme se presentait.
+function gpRenderFermataButtons(_0xcurVal) {
+  var _0xcontainer = document.getElementById("gp-sheet-fermata-btns");
+  if (!_0xcontainer) {
+    return;
+  }
+  var _0xvalues = [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4];
+  var _0xhtml = "";
+  _0xvalues.forEach(function (_0xv) {
+    var _0xactive = Math.abs(_0xv - _0xcurVal) < 0.01;
+    var _0xlabel = _0xv === 0 ? "Aucun" : "+" + _0xv;
+    _0xhtml += "<button type=\"button\" class=\"gp-fermata-choice" + (_0xactive ? " gp-fermata-choice-active" : "") + "\" onclick=\"gpSheetSetFermata(" + _0xv + ")\">" + _0xlabel + "</button>";
+  });
+  _0xcontainer.innerHTML = _0xhtml;
+}
+// Point d'orgue : temps SUPPLEMENTAIRES tenus sur une mesure precise,
+// rare mais reel (ex: 1 temps et demi de plus avant d'enchainer). Stocke
+// par indice de mesure "a plat" (toutes lignes confondues) sur le
+// morceau — n'existe que pour les mesures qui en ont besoin, la plupart
+// des morceaux n'ont pas cette cle du tout.
+function gpSheetSetFermata(_0xextraBeats) {
+  if (!gpSheetTarget) {
+    return;
+  }
+  var _0xflatIdx = gpFlatIndexOf(gpSheetTarget.row, gpSheetTarget.measure);
+  var _0xsong = songs.find(function (_0xs) {
+    return curSet && _0xs.id === curSet.songIds[curIdx];
+  });
+  if (!_0xsong) {
+    return;
+  }
+  if (!_0xsong.fermatas) {
+    _0xsong.fermatas = {};
+  }
+  if (_0xextraBeats && _0xextraBeats > 0) {
+    _0xsong.fermatas[_0xflatIdx] = _0xextraBeats;
+  } else {
+    delete _0xsong.fermatas[_0xflatIdx];
+  }
+  dbSave();
+  gpRenderFermataButtons(_0xextraBeats);
+  if (gpMode !== "play") {
+    renderGridPaper(_0xsong, document.getElementById("notation").value);
+  }
 }
 function gpCloseMeasureActions() {
   var _0x4ac9b6 = _0x552966;
@@ -5316,11 +5406,33 @@ function gpStartAutoScroll(_0xaf6c82) {
       _0xanchorMeasureIdx = gpPlayMeasureIdx;
       _0xelapsedSinceAnchor = 0;
     }
-    var _0x2045b2 = gpMeasureDurationMs(bpm, _0xaf6c82.beatsPerBox || _0xaf6c82.timesig);
+    var _0xbeatMsFerm = 60000 / bpm;
+    var _0xbaseMeasureMs = gpMeasureDurationMs(bpm, _0xaf6c82.beatsPerBox || _0xaf6c82.timesig);
     var _0xtotalElapsed = _0xelapsedSinceAnchor;
-    var _0xmeasuresAdvanced = Math.floor(_0xtotalElapsed / _0x2045b2);
-    var _0xnewMeasureIdx = _0xanchorMeasureIdx + _0xmeasuresAdvanced;
-    var _0xwithinMeasureMs = _0xtotalElapsed - _0xmeasuresAdvanced * _0x2045b2;
+    // Point d'orgue (rare) : une ou plusieurs mesures precises peuvent durer
+    // plus longtemps que les autres (song.fermatas, temps SUPPLEMENTAIRES par
+    // indice de mesure a plat). On ne peut donc plus calculer la mesure
+    // courante par simple division par une duree constante — on avance
+    // mesure par mesure en cumulant la duree REELLE de chacune (le cas normal,
+    // sans aucun point d'orgue, redonne exactement le meme resultat qu'avant).
+    var _0xcursorIdx = _0xanchorMeasureIdx;
+    var _0xremainingMs = _0xtotalElapsed;
+    function _0xmeasureMsAt(_0xi) {
+      var _0xextra = _0xaf6c82.fermatas ? _0xaf6c82.fermatas[_0xi] : 0;
+      return _0xbaseMeasureMs + (_0xextra ? _0xextra * _0xbeatMsFerm : 0);
+    }
+    var _0xcurMeasureMs = _0xmeasureMsAt(_0xcursorIdx);
+    while (_0xremainingMs >= _0xcurMeasureMs && _0xcursorIdx < gpAllMeasureEls.length) {
+      _0xremainingMs -= _0xcurMeasureMs;
+      _0xcursorIdx++;
+      if (_0xcursorIdx >= gpAllMeasureEls.length) {
+        break;
+      }
+      _0xcurMeasureMs = _0xmeasureMsAt(_0xcursorIdx);
+    }
+    var _0xnewMeasureIdx = _0xcursorIdx;
+    var _0xwithinMeasureMs = _0xremainingMs;
+    var _0x2045b2 = _0xcurMeasureMs;
     var _0xdbgEl = document.getElementById("gp-debug-measure");
     if (_0xdbgEl && _0xdbgEl.style.display !== "none") {
       _0xdbgEl.textContent = "calc: mesure " + (_0xnewMeasureIdx + 1) + " (" + (_0xwithinMeasureMs / 1000).toFixed(2) + "s/" + (_0x2045b2 / 1000).toFixed(2) + "s)";
@@ -6572,6 +6684,8 @@ var _rafAnchorTs = null;
 var _rafAnchorIdx = 0;
 var _rafAnchorOffsetSec = 0;
 var _rafAnchorBpmUsed = bpm;
+var _rafAnchorAudioTime = null;
+var _rafLeadInSec = 0;
 function rafLoop(_0x13bf9d) {
   var _0xdbab54 = _0x552966;
   var _0x59f20f = _0x4bc6f9;
@@ -6593,18 +6707,49 @@ function rafLoop(_0x13bf9d) {
   // chaque image à partir du temps total écoulu depuis ce repère — jamais
   // par accumulation image par image, qui laissait dériver le défilement
   // des paroles au fil du morceau.
+  //
+  // CORRECTIF DÉSYNC AUDIO/GRILLE : quand un audio de lecture existe pour le
+  // morceau en cours, le repère de temps est pris sur l'horloge RÉELLE du
+  // Web Audio API (_pbCurrentTime) plutôt que sur l'horloge de l'écran
+  // (timestamp requestAnimationFrame). Les deux horloges sont indépendantes
+  // et rien ne garantissait qu'elles démarrent au même instant — c'est
+  // exactement ce qui causait un décalage variable (parfois avant, parfois
+  // après) selon le délai, imprévisible, entre le vrai début du son et le
+  // premier passage de la boucle d'affichage. Ancrer sur l'horloge audio
+  // élimine ce décalage au démarrage ET toute dérive ultérieure, puisqu'on
+  // relit la position réelle à chaque image plutôt que de l'estimer.
+  var _0xcurSongForAudio = curSet && curSet.songIds ? songs.find(function (_0xs) {
+    return _0xs.id === curSet.songIds[curIdx];
+  }) : null;
+  var _0xhasLiveAudio = !!(_0xcurSongForAudio && _0xcurSongForAudio.audioKey && _pbIsPlaying && _pbBufferSongId === _0xcurSongForAudio.id);
+
   if (_rafAnchorTs === null || _rafAnchorBpmUsed !== bpm) {
     _rafAnchorTs = _0x13bf9d;
+    _rafAnchorAudioTime = _0xhasLiveAudio ? _pbCurrentTime() : null;
     _rafAnchorIdx = litIdx;
     _rafAnchorOffsetSec = 0;
     _rafAnchorBpmUsed = bpm;
     curAccordDur = calcAccordDur();
+    // Levée / anacrouse (réglage par morceau, voir setLeadInBeats) :
+    // le mode "grille avancée" l'appliquait déjà, mais pas ce lecteur
+    // Scène — un morceau dont l'audio a une intro avant le premier
+    // accord semblait alors "décalé" au démarrage, alors que ce n'était
+    // pas un bug de synchro mais une levée non prise en compte ici.
+    // Ne s'applique qu'à un VRAI démarrage (indice 0), jamais en reprise
+    // en cours de route.
+    _rafLeadInSec = _rafAnchorIdx === 0 && gpLeadInBeats ? gpLeadInBeats * (60 / bpm) : 0;
   }
   var _0xdurSec = curAccordDur;
-  var _0xtotalElapsedSec = (_0x13bf9d - _rafAnchorTs) / 1000 + _rafAnchorOffsetSec;
-  var _0xadvanced = Math.floor(_0xtotalElapsedSec / _0xdurSec);
+  var _0xtotalElapsedSec;
+  if (_0xhasLiveAudio && _rafAnchorAudioTime !== null) {
+    _0xtotalElapsedSec = (_pbCurrentTime() - _rafAnchorAudioTime) + _rafAnchorOffsetSec;
+  } else {
+    _0xtotalElapsedSec = (_0x13bf9d - _rafAnchorTs) / 1000 + _rafAnchorOffsetSec;
+  }
+  var _0xeffectiveElapsedSec = Math.max(0, _0xtotalElapsedSec - (_rafLeadInSec || 0));
+  var _0xadvanced = Math.floor(_0xeffectiveElapsedSec / _0xdurSec);
   var _0xnewIdx = _rafAnchorIdx + _0xadvanced;
-  curChordTime = _0xtotalElapsedSec - _0xadvanced * _0xdurSec;
+  curChordTime = _0xeffectiveElapsedSec - _0xadvanced * _0xdurSec;
   if (_0xnewIdx !== litIdx) {
     if (_0xnewIdx >= allChords.length) {
       stopPlay();
@@ -11138,7 +11283,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.70.0 · 01/08/2026<span id="license-watermark"></span>
+  v2.72.0 · 02/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
