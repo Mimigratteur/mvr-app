@@ -446,7 +446,7 @@ input[type=range]{accent-color:var(--G);touch-action:pan-y}
   box-shadow:0 0 0 2px #E8B86D;
 }
 .gp-chord-cell{
-  font-weight:700;color:#000;font-family:inherit;font-size:22px;
+  font-weight:700;color:#000;font-family:inherit;font-size:var(--gp-font-size,22px);
   background:transparent;border:none;text-align:center;outline:none;padding:0 10px;
 }
 /* Mesure à un seul accord : affichage épuré, un gros accord bien lisible,
@@ -457,7 +457,7 @@ input[type=range]{accent-color:var(--G);touch-action:pan-y}
   height:100%;gap:4px;
 }
 .gp-simple-chord-name{
-  font-weight:700;font-family:inherit;font-size:22px;color:#000;
+  font-weight:700;font-family:inherit;font-size:var(--gp-font-size,22px);color:#000;
 }
 .gp-beat-ticks{
   display:flex;gap:4px;
@@ -481,7 +481,7 @@ input[type=range]{accent-color:var(--G);touch-action:pan-y}
   transition:background .15s,border-color .15s,color .15s;
 }
 .gp-beatcell sup{font-size:.68em;top:-.5em}
-.gp-beatcell-labeled{font-size:17px;background:#fff;border-color:#ddd}
+.gp-beatcell-labeled{font-size:var(--gp-font-size,17px);background:#fff;border-color:#ddd}
 .gp-beatcell-active{
   background:#111!important;border-color:#111!important;border-width:1.5px;
   color:#fff!important;box-shadow:none;
@@ -729,7 +729,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.84.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.85.0</span></h1>
 </div>
 
 <div id="pages">
@@ -787,7 +787,7 @@ body.fullscreen #topbar{display:none}
       <!-- Métronome -->
       <div id="metro">
         <div style="display:flex;flex-direction:column;align-items:center">
-          <span id="bpm-num">120</span><span id="bpm-lbl">BPM</span>
+          <span id="bpm-num" onclick="editBpmViaPrompt()" style="cursor:pointer" title="Toucher pour saisir le tempo au clavier">120</span><span id="bpm-lbl">BPM</span>
           <button id="bpm-save-btn" style="display:none;font-size:10px;padding:2px 6px;margin-top:2px" onclick="saveBpmToSong()" title="Enregistrer ce tempo dans la fiche du morceau">💾 Garder</button>
         </div>
         <div id="metro-main">
@@ -7079,7 +7079,12 @@ function nextSong() {
 function onFontChange() {
   var _0xa2a7e4 = _0x552966;
   var _0x2930a4 = _0x4bc6f9;
-  document.getElementById("font-sz-v").textContent = document.getElementById("font-sz").value;
+  var _0xszVal = document.getElementById("font-sz").value;
+  document.getElementById("font-sz-v").textContent = _0xszVal;
+  // Applique aussi au mode grille (gp-chord-cell / gp-simple-chord-name),
+  // qui ne consultait jusqu'ici que le mode "paroles + accords" — le
+  // curseur n'avait donc aucun effet visible pour un morceau en grille.
+  document.documentElement.style.setProperty("--gp-font-size", _0xszVal + "px");
   curRowIdx = 0;
   curRowX = 0;
   renderScene();
@@ -7267,6 +7272,17 @@ function buildDots() {
   }
 }
 buildDots();
+// Toucher le tempo affiché sur Scène pour le saisir directement au
+// clavier (numérique sur mobile) — plus rapide et plus précis que de
+// faire glisser le curseur pour tomber pile sur une valeur exacte.
+function editBpmViaPrompt() {
+  showTextPrompt("Régler le tempo (BPM)", bpm, function (_0xval) {
+    var _0xparsed = parseFloat(_0xval);
+    if (!isNaN(_0xparsed)) {
+      setBPM(_0xparsed);
+    }
+  }, "number");
+}
 function setBPM(_0x18313a) {
   var _0x553df6 = _0x552966;
   var _0x40cec7 = _0x4bc6f9;
@@ -7282,7 +7298,7 @@ function setBPM(_0x18313a) {
     stopMetro();
     startMetro();
   }
-  var _0x45baf0 = curSet && curSet.songIds ? songs.find(function (_0xbd646b) {
+var _0x45baf0 = curSet && curSet.songIds ? songs.find(function (_0xbd646b) {
     var _0x733f76 = _0x40cec7;
     return _0xbd646b.id === curSet.songIds[curIdx];
   }) : null;
@@ -7595,6 +7611,15 @@ function pdfStatus(_0x357e32, _0x1ebd15) {
   var _0x499be0 = document.getElementById("pdf-status");
   _0x499be0.textContent = _0x357e32;
   _0x499be0.style.color = _0x1ebd15 || "var(--tx2)";
+  // Pendant une phase d'attente (sablier ⏳), le message devient plus
+  // visible — plus grand et centré, au lieu du petit texte discret aligné
+  // à gauche — vu que ces phases (décodage, analyse audio) peuvent durer
+  // plusieurs secondes et méritaient d'être plus lisibles/rassurantes.
+  var _0xisLoading = _0x357e32 && _0x357e32.indexOf("⏳") !== -1;
+  _0x499be0.style.textAlign = _0xisLoading ? "center" : "left";
+  _0x499be0.style.fontSize = _0xisLoading ? "17px" : "13px";
+  _0x499be0.style.fontWeight = _0xisLoading ? "600" : "400";
+  _0x499be0.style.padding = _0xisLoading ? "20px 10px" : "4px 0";
 }
 var _FIFTHS_KEY = {
   "-7": "Cb",
@@ -11429,7 +11454,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.84.0 · 02/08/2026<span id="license-watermark"></span>
+  v2.85.0 · 02/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
