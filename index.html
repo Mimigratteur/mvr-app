@@ -729,7 +729,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.73.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.74.0</span></h1>
 </div>
 
 <div id="pages">
@@ -4166,15 +4166,6 @@ function renderScene() {
     // plus loin que prévu (par exemple sur la 2e mesure au lieu de la 1re).
     _pbStopSource();
     _pbStartOffset = 0;
-    // Lance l'analyse de tempo/phase (voir _ensureMeasureTimeMapCached) DES
-    // L'OUVERTURE du morceau plutôt que d'attendre l'appui sur Play — elle
-    // prend plusieurs secondes (décodage + analyse de tout le fichier), et
-    // sans cette avance, la toute première lecture d'une session ne pouvait
-    // jamais en profiter (le calcul restait figé sur la version non
-    // corrigée pour cette lecture-là).
-    if (_0x7b139e.audioKey) {
-      _ensureMeasureTimeMapCached(_0x7b139e);
-    }
   }
   _lastRenderedSongId = _0x7b139e.id;
   var _0x1c5fc7 = document.getElementById("timesig");
@@ -5327,27 +5318,12 @@ function gpStartAutoScroll(_0xaf6c82) {
   var _0xanchorMeasureIdx = gpPlayMeasureIdx;
   var _0xanchorOffsetMs = 0;
   var _0xanchorBpmUsed = bpm;
-  // Correction automatique de tempo/phase (voir _ensureMeasureTimeMapCached) :
-  // meme un tempo declare tres proche du vrai tempo de l'audio (a 0.1-0.2 BPM
-  // pres, invisible a l'oreille au reglage) finit par decaler visiblement le
-  // curseur apres 15-30 mesures, le calcul pur n'ayant aucun moyen de le
-  // savoir. Cette analyse (deja calculee au demarrage de la lecture, voir
-  // syncAudioPlayback) mesure le VRAI tempo par correlation avec les
-  // changements reels detectes dans l'audio. On ne l'utilise que si elle est
-  // jugee fiable (_0xreliable, voir plus haut) — sinon on garde le calcul
-  // pur habituel plutot que de faire confiance a une estimation douteuse.
-  var _0xrefinedCache = window._measureTimeMapCache;
-  var _0xhasRefinedTempo = _0xaf6c82.audioKey && _0xrefinedCache && _0xrefinedCache.songId === _0xaf6c82.id && _0xrefinedCache.reliable && gpPlayMeasureIdx === 0;
-  var _0xrefinedMeasureMs = _0xhasRefinedTempo ? _0xrefinedCache.period * 1000 : null;
-  var _0xrefinedOffsetMs = _0xhasRefinedTempo ? _0xrefinedCache.offset * 1000 : 0;
   // Levée / anacrouse : un nombre de TEMPS (pas de mesures) à laisser
   // s'écouler avant que la mesure 1 ne commence vraiment — pour les
   // morceaux qui ne démarrent pas pile sur le premier temps de la
   // première mesure. Ne s'applique qu'au tout début du morceau (mesure 0),
-  // jamais si on reprend en cours de route. Le decalage auto-detecte
-  // (ci-dessus) s'ajoute a la levee manuelle plutot que de la remplacer,
-  // au cas ou l'utilisateur en aurait deliberement regle une en plus.
-  var _0xleadInMs = gpPlayMeasureIdx === 0 ? (gpLeadInBeats || 0) * (60000 / bpm) + _0xrefinedOffsetMs : 0;
+  // jamais si on reprend en cours de route.
+  var _0xleadInMs = gpPlayMeasureIdx === 0 ? (gpLeadInBeats || 0) * (60000 / bpm) : 0;
   var _0xleadInDone = _0xleadInMs <= 0;
   function _0x355343(_0x1f62b3) {
     if (!gpIsPlaying || gpPlayPaused) {
@@ -5408,13 +5384,6 @@ function gpStartAutoScroll(_0xaf6c82) {
     // calcul "temps total écoulé" resterait basé sur l'ancien tempo pour
     // tout ce qui a déjà défilé, ce qui fausserait tout à partir de là).
     if (_0xanchorTs === null || _0xanchorBpmUsed !== bpm) {
-      // Si ce n'est pas le tout premier ancrage, c'est que l'utilisateur a
-      // change le tempo A LA MAIN en cours de lecture — ce reglage manuel
-      // doit toujours l'emporter sur la correction automatique, jamais
-      // etre silencieusement ignore.
-      if (_0xanchorTs !== null) {
-        _0xrefinedMeasureMs = null;
-      }
       _0xanchorTs = _0x1f62b3;
       _0xanchorMeasureIdx = gpPlayMeasureIdx;
       _0xanchorOffsetMs = 0;
@@ -5438,7 +5407,7 @@ function gpStartAutoScroll(_0xaf6c82) {
       _0xelapsedSinceAnchor = 0;
     }
     var _0xbeatMsFerm = 60000 / bpm;
-    var _0xbaseMeasureMs = _0xrefinedMeasureMs || gpMeasureDurationMs(bpm, _0xaf6c82.beatsPerBox || _0xaf6c82.timesig);
+    var _0xbaseMeasureMs = gpMeasureDurationMs(bpm, _0xaf6c82.beatsPerBox || _0xaf6c82.timesig);
     var _0xtotalElapsed = _0xelapsedSinceAnchor;
     // Point d'orgue (rare) : une ou plusieurs mesures precises peuvent durer
     // plus longtemps que les autres (song.fermatas, temps SUPPLEMENTAIRES par
@@ -11324,7 +11293,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.73.0 · 02/08/2026<span id="license-watermark"></span>
+  v2.74.0 · 02/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
