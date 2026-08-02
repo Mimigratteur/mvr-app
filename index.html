@@ -729,7 +729,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.75.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.76.0</span></h1>
 </div>
 
 <div id="pages">
@@ -5330,7 +5330,17 @@ function gpStartAutoScroll(_0xaf6c82) {
   // decaler visiblement le curseur apres 15-30 mesures. On ne s'en sert que
   // si elle est jugee fiable (_0xreliable) — sinon calcul pur habituel.
   var _0xrefinedCache = window._measureTimeMapCache;
-  var _0xhasRefinedTempo = _0xaf6c82.audioKey && _0xrefinedCache && _0xrefinedCache.songId === _0xaf6c82.id && _0xrefinedCache.reliable && gpPlayMeasureIdx === 0;
+  // La correction automatique suppose une periode CONSTANTE sur tout le
+  // morceau — hypothese incompatible avec un vrai point d'orgue (mesure
+  // deliberement irreguliere). Avec les deux actifs en meme temps, l'analyse
+  // "moyenne" l'irregularite reelle en un compromis legerement faux PARTOUT
+  // (constant, pas croissant — exactement le symptome observe le 02/08 sur
+  // un morceau avec point d'orgue en mesure 8). On desactive donc la
+  // correction automatique des qu'un point d'orgue existe sur le morceau —
+  // le calcul pur (qui gere deja tres bien les points d'orgue) reste alors
+  // la seule source de verite, coherente de bout en bout.
+  var _0xhasFermatas = _0xaf6c82.fermatas && Object.keys(_0xaf6c82.fermatas).length > 0;
+  var _0xhasRefinedTempo = !_0xhasFermatas && _0xaf6c82.audioKey && _0xrefinedCache && _0xrefinedCache.songId === _0xaf6c82.id && _0xrefinedCache.reliable && gpPlayMeasureIdx === 0;
   var _0xrefinedMeasureMs = _0xhasRefinedTempo ? _0xrefinedCache.period * 1000 : null;
   var _0xrefinedOffsetMs = _0xhasRefinedTempo ? _0xrefinedCache.offset * 1000 : 0;
   // Levée / anacrouse : un nombre de TEMPS (pas de mesures) à laisser
@@ -5428,8 +5438,14 @@ function gpStartAutoScroll(_0xaf6c82) {
       _0xanchorMeasureIdx = gpPlayMeasureIdx;
       _0xelapsedSinceAnchor = 0;
     }
-    var _0xbeatMsFerm = 60000 / bpm;
     var _0xbaseMeasureMs = _0xrefinedMeasureMs || gpMeasureDurationMs(bpm, _0xaf6c82.beatsPerBox || _0xaf6c82.timesig);
+    // Duree d'un seul temps DERIVEE de la duree de mesure reellement utilisee
+    // ci-dessus (pas recalculee separement depuis le bpm declare) — pour que
+    // le point d'orgue ajoute toujours le bon nombre de temps quelle que soit
+    // la source (calcul pur ou tempo corrige), jamais desynchronise de la
+    // base sur laquelle il s'applique.
+    var _0xbeatsPerMeasureFerm = _0xaf6c82.beatsPerBox || _0xaf6c82.timesig || 4;
+    var _0xbeatMsFerm = _0xbaseMeasureMs / _0xbeatsPerMeasureFerm;
     var _0xtotalElapsed = _0xelapsedSinceAnchor;
     // Point d'orgue (rare) : une ou plusieurs mesures precises peuvent durer
     // plus longtemps que les autres (song.fermatas, temps SUPPLEMENTAIRES par
@@ -11351,7 +11367,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.75.0 · 02/08/2026<span id="license-watermark"></span>
+  v2.76.0 · 02/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
