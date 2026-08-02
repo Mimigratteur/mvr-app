@@ -729,7 +729,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.74.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.75.0</span></h1>
 </div>
 
 <div id="pages">
@@ -4166,6 +4166,12 @@ function renderScene() {
     // plus loin que prévu (par exemple sur la 2e mesure au lieu de la 1re).
     _pbStopSource();
     _pbStartOffset = 0;
+    // Lance l'analyse de tempo/phase DES L'OUVERTURE du morceau (pas juste
+    // au Play) pour lui laisser le temps de finir avant la premiere lecture.
+    // Sure maintenant que c'est non-bloquant (voir _ensureMeasureTimeMapCached).
+    if (_0x7b139e.audioKey) {
+      _ensureMeasureTimeMapCached(_0x7b139e);
+    }
   }
   _lastRenderedSongId = _0x7b139e.id;
   var _0x1c5fc7 = document.getElementById("timesig");
@@ -5318,12 +5324,22 @@ function gpStartAutoScroll(_0xaf6c82) {
   var _0xanchorMeasureIdx = gpPlayMeasureIdx;
   var _0xanchorOffsetMs = 0;
   var _0xanchorBpmUsed = bpm;
+  // Correction automatique de tempo/phase (voir _ensureMeasureTimeMapCached,
+  // reecrite le 02/08/2026 en version non-bloquante par petits morceaux) :
+  // meme un tempo declare tres proche du vrai tempo de l'audio finit par
+  // decaler visiblement le curseur apres 15-30 mesures. On ne s'en sert que
+  // si elle est jugee fiable (_0xreliable) — sinon calcul pur habituel.
+  var _0xrefinedCache = window._measureTimeMapCache;
+  var _0xhasRefinedTempo = _0xaf6c82.audioKey && _0xrefinedCache && _0xrefinedCache.songId === _0xaf6c82.id && _0xrefinedCache.reliable && gpPlayMeasureIdx === 0;
+  var _0xrefinedMeasureMs = _0xhasRefinedTempo ? _0xrefinedCache.period * 1000 : null;
+  var _0xrefinedOffsetMs = _0xhasRefinedTempo ? _0xrefinedCache.offset * 1000 : 0;
   // Levée / anacrouse : un nombre de TEMPS (pas de mesures) à laisser
   // s'écouler avant que la mesure 1 ne commence vraiment — pour les
   // morceaux qui ne démarrent pas pile sur le premier temps de la
   // première mesure. Ne s'applique qu'au tout début du morceau (mesure 0),
-  // jamais si on reprend en cours de route.
-  var _0xleadInMs = gpPlayMeasureIdx === 0 ? (gpLeadInBeats || 0) * (60000 / bpm) : 0;
+  // jamais si on reprend en cours de route. Le decalage auto-detecte
+  // s'ajoute a la levee manuelle plutot que de la remplacer.
+  var _0xleadInMs = gpPlayMeasureIdx === 0 ? (gpLeadInBeats || 0) * (60000 / bpm) + _0xrefinedOffsetMs : 0;
   var _0xleadInDone = _0xleadInMs <= 0;
   function _0x355343(_0x1f62b3) {
     if (!gpIsPlaying || gpPlayPaused) {
@@ -5384,6 +5400,12 @@ function gpStartAutoScroll(_0xaf6c82) {
     // calcul "temps total écoulé" resterait basé sur l'ancien tempo pour
     // tout ce qui a déjà défilé, ce qui fausserait tout à partir de là).
     if (_0xanchorTs === null || _0xanchorBpmUsed !== bpm) {
+      // Si ce n'est pas le tout premier ancrage, c'est que l'utilisateur a
+      // change le tempo A LA MAIN en cours de lecture — ce reglage manuel
+      // doit toujours l'emporter sur la correction automatique.
+      if (_0xanchorTs !== null) {
+        _0xrefinedMeasureMs = null;
+      }
       _0xanchorTs = _0x1f62b3;
       _0xanchorMeasureIdx = gpPlayMeasureIdx;
       _0xanchorOffsetMs = 0;
@@ -5407,7 +5429,7 @@ function gpStartAutoScroll(_0xaf6c82) {
       _0xelapsedSinceAnchor = 0;
     }
     var _0xbeatMsFerm = 60000 / bpm;
-    var _0xbaseMeasureMs = gpMeasureDurationMs(bpm, _0xaf6c82.beatsPerBox || _0xaf6c82.timesig);
+    var _0xbaseMeasureMs = _0xrefinedMeasureMs || gpMeasureDurationMs(bpm, _0xaf6c82.beatsPerBox || _0xaf6c82.timesig);
     var _0xtotalElapsed = _0xelapsedSinceAnchor;
     // Point d'orgue (rare) : une ou plusieurs mesures precises peuvent durer
     // plus longtemps que les autres (song.fermatas, temps SUPPLEMENTAIRES par
@@ -5618,9 +5640,6 @@ async function _ensureMeasureTimeMapCached(_0x17adbc) {
       }
       return _0x2d26f6[_0x4d111e];
     }
-    var _0xc7047c = -Infinity;
-    var _0x18dc00 = 0;
-    var _0x55105e = Math.max(0.005, _0x28fb02 / 2);
     var _0x4f8e70 = 60;
     // Recherche du MEILLEUR TEMPO RÉEL, pas seulement d'un décalage de phase.
     // L'ancienne version verrouillait la période de mesure strictement sur
@@ -5638,22 +5657,61 @@ async function _ensureMeasureTimeMapCached(_0x17adbc) {
     // varie en cours de route), un seul couple (tempo, décalage) ne peut
     // pas suivre parfaitement partout — seule une vraie détection de
     // battements mesure par mesure le pourrait, hors de portée ici.
-    var _0x21ad79Best = _0x21ad79;
-    var _0xscaleMin = 0.97, _0xscaleMax = 1.03, _0xscaleStep = 0.002;
-    for (var _0xscale = _0xscaleMin; _0xscale <= _0xscaleMax; _0xscale += _0xscaleStep) {
-      var _0xperiodTry = _0x21ad79 * _0xscale;
-      for (var _0x2bdeed = 0; _0x2bdeed < _0xperiodTry; _0x2bdeed += _0x55105e) {
-        var _0xfd2111 = 0;
-        for (var _0x5e2a18 = _0x2bdeed; _0x5e2a18 < _0x37b173; _0x5e2a18 += _0xperiodTry) {
-          _0xfd2111 += _0x2f0d97(_0x5e2a18) * Math.exp(-_0x5e2a18 / _0x4f8e70);
-        }
-        if (_0xfd2111 > _0xc7047c) {
-          _0xc7047c = _0xfd2111;
-          _0x18dc00 = _0x2bdeed;
-          _0x21ad79Best = _0xperiodTry;
+    //
+    // PERFORMANCE : cette recherche testait a l'origine ~540 000 combinaisons
+    // d'un coup, de facon synchrone — bloquait l'affichage plusieurs secondes
+    // (essaye une premiere fois le 02/08/2026, retire aussitot car le blocage
+    // etait pire que le probleme qu'il resolvait). Reecrite en DEUX PASSES
+    // (grossiere puis fine autour du meilleur candidat, ~15x moins de travail
+    // au total) ET en petits morceaux qui rendent la main au navigateur entre
+    // chaque tranche de calcul (await + setTimeout) — jamais plus de
+    // quelques millisecondes de blocage d'affilee, quelle que soit la duree
+    // du morceau.
+    async function _0xsearchBestTempoAsync() {
+      var _0xbestScore = -Infinity, _0xbestOffset = 0, _0xbestPeriod = _0x21ad79;
+      var _0xyieldEvery = 3; // rendre la main tous les 3 pas de la boucle externe (tempo)
+
+      async function _0xrunPass(_0xscaleMin2, _0xscaleMax2, _0xscaleStep2, _0xoffsetStepFn) {
+        var _0xcount = 0;
+        for (var _0xscale = _0xscaleMin2; _0xscale <= _0xscaleMax2; _0xscale += _0xscaleStep2) {
+          var _0xperiodTry = _0x21ad79 * _0xscale;
+          var _0xoffsetStep = _0xoffsetStepFn(_0xperiodTry);
+          for (var _0xoff = 0; _0xoff < _0xperiodTry; _0xoff += _0xoffsetStep) {
+            var _0xscoreSum = 0;
+            for (var _0xt = _0xoff; _0xt < _0x37b173; _0xt += _0xperiodTry) {
+              _0xscoreSum += _0x2f0d97(_0xt) * Math.exp(-_0xt / _0x4f8e70);
+            }
+            if (_0xscoreSum > _0xbestScore) {
+              _0xbestScore = _0xscoreSum;
+              _0xbestOffset = _0xoff;
+              _0xbestPeriod = _0xperiodTry;
+            }
+          }
+          _0xcount++;
+          if (_0xcount % _0xyieldEvery === 0) {
+            await new Promise(function (_0xr) { setTimeout(_0xr, 0); });
+          }
         }
       }
+
+      // Passe 1 (grossiere) : pas large sur le tempo ET sur le decalage —
+      // trouve rapidement la bonne zone sans tester chaque micro-decalage.
+      await _0xrunPass(0.97, 1.03, 0.005, function (_0xp) { return Math.max(0.02, _0xp / 20); });
+      // Passe 2 (fine) : autour du meilleur candidat de la passe 1, avec la
+      // precision d'origine — beaucoup moins de combinaisons a tester
+      // puisque la zone est deja bien resserree.
+      var _0xrefineScale = _0xbestPeriod / _0x21ad79;
+      var _0xscaleLo = Math.max(0.97, _0xrefineScale - 0.006);
+      var _0xscaleHi = Math.min(1.03, _0xrefineScale + 0.006);
+      var _0xfineOffsetStep = Math.max(0.005, _0x28fb02 / 2);
+      await _0xrunPass(_0xscaleLo, _0xscaleHi, 0.001, function () { return _0xfineOffsetStep; });
+
+      return { score: _0xbestScore, offset: _0xbestOffset, period: _0xbestPeriod };
     }
+    var _0xsearchResult = await _0xsearchBestTempoAsync();
+    var _0xc7047c = _0xsearchResult.score;
+    var _0x18dc00 = _0xsearchResult.offset;
+    var _0x21ad79Best = _0xsearchResult.period;
     _0x21ad79 = _0x21ad79Best;
     var _0x4e2b4f = Math.min(2000, Math.ceil(_0x37b173 / _0x21ad79) + 4);
     var _0xfe472d = [];
@@ -11293,7 +11351,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.74.0 · 02/08/2026<span id="license-watermark"></span>
+  v2.75.0 · 02/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
