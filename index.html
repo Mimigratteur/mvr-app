@@ -729,7 +729,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.76.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.77.0</span></h1>
 </div>
 
 <div id="pages">
@@ -5321,6 +5321,7 @@ function gpStartAutoScroll(_0xaf6c82) {
   // écoulé depuis ce repère : chaque frame recalcule la position exacte
   // indépendamment des précédentes, donc aucune erreur ne peut s'accumuler.
   var _0xanchorTs = null;
+  var _0xanchorAudioTimeGp = null;
   var _0xanchorMeasureIdx = gpPlayMeasureIdx;
   var _0xanchorOffsetMs = 0;
   var _0xanchorBpmUsed = bpm;
@@ -5409,7 +5410,13 @@ function gpStartAutoScroll(_0xaf6c82) {
     // Repose l'ancrage si le tempo a changé en cours de lecture (sinon le
     // calcul "temps total écoulé" resterait basé sur l'ancien tempo pour
     // tout ce qui a déjà défilé, ce qui fausserait tout à partir de là).
-    if (_0xanchorTs === null || _0xanchorBpmUsed !== bpm) {
+    var _0xhasLiveAudioGp = _pbIsPlaying && _0xaf6c82.audioKey;
+    // Se recale aussi si l'audio vient tout juste de devenir disponible
+    // (le decodage peut prendre un instant apres l'appui sur Play) — sans
+    // ca, l'ancrage restait sur l'horloge d'affichage pour toute la
+    // lecture si l'audio n'etait pas encore pret a la toute premiere image.
+    var _0xaudioJustBecameAvailable = _0xhasLiveAudioGp && _0xanchorAudioTimeGp === null && _0xanchorTs !== null;
+    if (_0xanchorTs === null || _0xanchorBpmUsed !== bpm || _0xaudioJustBecameAvailable) {
       // Si ce n'est pas le tout premier ancrage, c'est que l'utilisateur a
       // change le tempo A LA MAIN en cours de lecture — ce reglage manuel
       // doit toujours l'emporter sur la correction automatique.
@@ -5417,11 +5424,21 @@ function gpStartAutoScroll(_0xaf6c82) {
         _0xrefinedMeasureMs = null;
       }
       _0xanchorTs = _0x1f62b3;
+      // Ancrage sur l'horloge REELLE de lecture audio (celle qui tient deja
+      // compte de la latence de sortie, voir _pbCurrentTime) plutot que sur
+      // l'horloge d'affichage du navigateur — sans ca, tout petit ecart de
+      // demarrage entre les deux (meme sur un PC de studio, une interface
+      // audio a toujours un minimum de latence de sortie) restait fige pour
+      // toute la lecture, jamais corrige. C'est exactement ce que fait deja
+      // le lecteur Scene simple pour les morceaux "paroles + accords".
+      _0xanchorAudioTimeGp = _0xhasLiveAudioGp ? _pbCurrentTime() : null;
       _0xanchorMeasureIdx = gpPlayMeasureIdx;
       _0xanchorOffsetMs = 0;
       _0xanchorBpmUsed = bpm;
     }
-    var _0xelapsedSinceAnchor = _0x1f62b3 - _0xanchorTs + _0xanchorOffsetMs;
+    var _0xelapsedSinceAnchor = _0xhasLiveAudioGp && _0xanchorAudioTimeGp !== null
+      ? (_pbCurrentTime() - _0xanchorAudioTimeGp) * 1000 + _0xanchorOffsetMs
+      : _0x1f62b3 - _0xanchorTs + _0xanchorOffsetMs;
     if (!_0xleadInDone) {
       if (_0xelapsedSinceAnchor < _0xleadInMs) {
         // Toujours dans la levée : la mesure 1 reste affichée, figée sur
@@ -5434,6 +5451,7 @@ function gpStartAutoScroll(_0xaf6c82) {
       // propre pour le calcul normal des mesures à partir de maintenant.
       _0xleadInDone = true;
       _0xanchorTs = _0x1f62b3;
+      _0xanchorAudioTimeGp = _0xhasLiveAudioGp ? _pbCurrentTime() : null;
       _0xanchorOffsetMs = 0;
       _0xanchorMeasureIdx = gpPlayMeasureIdx;
       _0xelapsedSinceAnchor = 0;
@@ -5599,6 +5617,14 @@ function invalidateAudioSyncOnBpmChange(_0xsong, _0xnewBpm) {
 }
 async function _ensureMeasureTimeMapCached(_0x17adbc) {
   if (!_0x17adbc.audioKey) {
+    return;
+  }
+  // Inutile de lancer ce calcul (couteux, meme optimise) si le morceau a des
+  // points d'orgue : son resultat ne sera de toute facon jamais utilise
+  // (voir _0xhasFermatas plus bas) puisque l'hypothese "periode constante"
+  // est incompatible avec un point d'orgue. Autant ne pas consommer de CPU
+  // pour rien pendant que la lecture demarre.
+  if (_0x17adbc.fermatas && Object.keys(_0x17adbc.fermatas).length > 0) {
     return;
   }
   if (window._measureTimeMapCache && window._measureTimeMapCache.songId === _0x17adbc.id) {
@@ -11367,7 +11393,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.76.0 · 02/08/2026<span id="license-watermark"></span>
+  v2.77.0 · 02/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
