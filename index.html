@@ -729,7 +729,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.87.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.88.0</span></h1>
 </div>
 
 <div id="pages">
@@ -5530,8 +5530,16 @@ function gpHighlightMeasure(_0x1c2e7b) {
     return;
   }
   _0x5d3c31.classList.add("gp-measure-current");
+  // Défilement INSTANTANÉ (pas "smooth") — un défilement animé se
+  // redéclenchait à chaque changement de mesure (toutes les 1-3s en
+  // général), avant que l'animation précédente ait forcément fini ; sur un
+  // morceau long, ce chevauchement pouvait s'accumuler et perturber le
+  // rythme d'affichage de façon croissante au fil du morceau — exactement
+  // le profil "correct au début, de pire en pire ensuite" rapporté le
+  // 03/08/2026. Un saut net est moins joli qu'un glissement, mais ne peut
+  // introduire aucune accumulation de ce genre.
   _0x5d3c31.scrollIntoView({
-    behavior: "smooth",
+    behavior: "auto",
     block: "center"
   });
   liveBroadcastPosition("grid", _0x1c2e7b);
@@ -11492,7 +11500,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.87.0 · 03/08/2026<span id="license-watermark"></span>
+  v2.88.0 · 03/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
