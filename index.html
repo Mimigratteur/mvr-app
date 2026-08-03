@@ -223,6 +223,15 @@ select{cursor:pointer}
    donc plus lisible au centre plutôt qu'en bas, hors du champ de vision. */
 #confirm-modal{align-items:center}
 #confirm-modal .modal{border-radius:14px;max-width:420px}
+/* Dialogues de CHOIX IMPORTANT (pas juste une confirmation) : centres eux
+   aussi, plutot que la feuille du bas par defaut — un choix qui determine
+   la precision de toute la grille (ex: accords detectes vs lecture IA vs
+   image) merite d'etre bien visible au centre, pas en bas de l'ecran ou
+   il est plus facile de cliquer trop vite sans bien lire (constate le
+   03/08/2026 : un clic sur la mauvaise option a produit une grille avec
+   4x trop de mesures). */
+#notext-pdf-modal,#group-choice-modal{align-items:center}
+#notext-pdf-modal .modal{border-radius:14px;max-width:440px}
 .modal{background:var(--bg);border-radius:14px 14px 0 0;width:100%;max-width:640px;
        max-height:90vh;overflow-y:auto;padding:16px 16px calc(16px + var(--safe));
        position:relative;z-index:1001}
@@ -729,7 +738,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.88.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.89.0</span></h1>
 </div>
 
 <div id="pages">
@@ -1514,8 +1523,8 @@ J&#39;ai voulu planter un oranger">    </textarea>
   <h2 id="notext-pdf-title">Ce PDF ne contient pas de texte</h2>
   <p id="notext-pdf-msg" style="font-size:13px;color:var(--tx2);line-height:1.5;margin-top:-4px">« <span id="notext-pdf-name"></span> » est probablement une capture d'écran (comme une grille Chordify "par temps"). Comment veux-tu continuer ?</p>
   <div class="row" style="margin-top:16px;flex-direction:column;gap:8px;align-items:stretch">
-    <button class="btn-g" id="notext-pdf-usegrid-btn" style="display:none" onclick="pdfUseDetectedGrid()">✓ Créer la grille (accords détectés)<br><span style="font-size:11px;font-weight:400;opacity:.85">Corrections possibles ensuite dans l'écran Scène</span></button>
-    <button onclick="notextPdfOnline()">🤖 Lire avec l'IA maintenant<br><span style="font-size:11px;font-weight:400;opacity:.85">Plus précis — connexion internet requise à cette étape</span></button>
+    <button class="btn-g" id="notext-pdf-usegrid-btn" style="display:none" onclick="pdfUseDetectedGrid()">✓ Créer la grille (recommandé)<br><span style="font-size:11px;font-weight:400;opacity:.85">Accords et mesures repérés directement dans le PDF — la plus fiable</span></button>
+    <button onclick="notextPdfOnline()">🤖 Lire avec l'IA <span id="notext-pdf-ai-caveat" style="display:none">(en secours seulement)</span><br><span style="font-size:11px;font-weight:400;opacity:.85">À utiliser seulement si la grille ci-dessus semble fausse une fois créée — connexion internet requise</span></button>
     <button onclick="notextPdfOffline()">📷 Garder en partition-photo<br><span style="font-size:11px;font-weight:400;opacity:.85">Fonctionne 100% hors connexion, pas de grille interactive</span></button>
   </div>
 </div></div>
@@ -9199,12 +9208,15 @@ function showNoTextPdfChoice(_0x360d28) {
   var _0x1title = document.getElementById("notext-pdf-title");
   var _0x1msg = document.getElementById("notext-pdf-msg");
   var _0x1gridbtn = document.getElementById("notext-pdf-usegrid-btn");
+  var _0x1aiCaveat = document.getElementById("notext-pdf-ai-caveat");
   var _0x1name = _0x360d28 || "";
   if (_pendingTextGridFound) {
-    if (_0x1title) _0x1title.textContent = "Des accords ont été détectés";
-    if (_0x1msg) _0x1msg.innerHTML = "Du texte exploitable a été trouvé dans « <b>" + _0x1name + "</b> ». Comment veux-tu continuer ?";
+    if (_0x1title) _0x1title.textContent = "Grille détectée avec précision";
+    if (_0x1msg) _0x1msg.innerHTML = "Les accords ET les mesures de « <b>" + _0x1name + "</b> » ont été repérés directement dans le PDF (méthode la plus fiable). <b>C'est l'option recommandée</b> — les deux autres ne servent que si le résultat obtenu semble faux une fois créé.";
     if (_0x1gridbtn) _0x1gridbtn.style.display = "";
+    if (_0x1aiCaveat) _0x1aiCaveat.style.display = "";
   } else {
+    if (_0x1aiCaveat) _0x1aiCaveat.style.display = "none";
     if (_0x1title) _0x1title.textContent = "Ce PDF ne contient pas de texte";
     if (_0x1msg) _0x1msg.innerHTML = "« <b>" + _0x1name + "</b> » est probablement une capture d'écran (comme une grille Chordify « par temps »). Comment veux-tu continuer ?";
     if (_0x1gridbtn) _0x1gridbtn.style.display = "none";
@@ -11500,7 +11512,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.88.0 · 03/08/2026<span id="license-watermark"></span>
+  v2.89.0 · 03/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
