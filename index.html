@@ -765,7 +765,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.104.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.105.0</span></h1>
 </div>
 
 <div id="pages">
@@ -6840,6 +6840,12 @@ async function renderSceneOsmd(_0xsong) {
       followCursor: true
     });
     await osmdApi.load(_0xxmlText);
+    // S'assure explicitement que le curseur suit les reprises nativement
+    // (comportement par defaut d'OSMD depuis plusieurs versions, mais
+    // rendu explicite ici par securite plutot que de compter sur le defaut).
+    try {
+      osmdApi.EngravingRules.CursorIgnoreRepetitions = false;
+    } catch (_0xru) {}
     osmdApi.render();
     osmdApi.cursor.show();
     var _0xcurId2 = curSet && curSet.songIds ? curSet.songIds[curIdx] : null;
@@ -6914,18 +6920,16 @@ function osmdStartAutoScroll() {
   if (!osmdApi) return;
   osmdPlaying = true;
   osmdStartTs = null;
-  osmdFiredRepeats = {};
   try {
     osmdStartWholeNotes = osmdApi.cursor.iterator.currentTimeStamp.RealValue;
   } catch (_0xe) {
     osmdStartWholeNotes = 0;
   }
   osmdSetPlayBtnState("playing");
-  var _0xsongForRepeats = _osmdCurrentSong();
-  var _0xrepeatRules = (_0xsongForRepeats && _0xsongForRepeats.osmdRepeats) || [];
-  // Repere visuel de diagnostic TEMPORAIRE — affiche en direct la mesure
-  // detectee par le code, pour verifier concretement (pas a l'aveugle)
-  // pourquoi les reprises ne se declenchent pas.
+  // Repere de diagnostic TEMPORAIRE — confirme que la position avance
+  // correctement (OSMD gere nativement les reprises via son reglage
+  // interne CursorIgnoreRepetitions, desactive par defaut — pas besoin
+  // de code de saut personnalise, qui perturbait plutot ce mecanisme).
   var _0xdebugEl = document.getElementById("osmd-debug-measure");
   if (!_0xdebugEl) {
     _0xdebugEl = document.createElement("div");
@@ -6949,38 +6953,8 @@ function osmdStartAutoScroll() {
              _0xguardCount < 2000) {
         osmdApi.cursor.next();
         _0xguardCount++;
-        // Verifie si on vient d'entrer dans une mesure de reprise non
-        // encore declenchee — saute alors instantanement, comme pour les
-        // reperes du mode partition-photo hier.
-        var _0xcurM = _osmdGetCurrentMeasureIdx();
-        _0xdebugEl.textContent = "mesure detectee: " + _0xcurM + " | regles: " + JSON.stringify(_0xrepeatRules) + " | declenchees: " + JSON.stringify(osmdFiredRepeats);
-        if (_0xcurM !== null) {
-          for (var _0xri = 0; _0xri < _0xrepeatRules.length; _0xri++) {
-            var _0xrule = _0xrepeatRules[_0xri];
-            if (_0xcurM === _0xrule.fromMeasure && !osmdFiredRepeats[_0xri]) {
-              osmdFiredRepeats[_0xri] = true;
-              osmdApi.cursor.reset();
-              var _0xff = 0;
-              while (_osmdGetCurrentMeasureIdx() !== _0xrule.toMeasure && !osmdApi.cursor.iterator.endReached && _0xff < 5000) {
-                osmdApi.cursor.next();
-                _0xff++;
-              }
-              // Force le rafraichissement visuel du curseur — le
-              // deplacement interne (iterator) fonctionne mais l'affichage
-              // a l'ecran ne se mettait pas a jour tout seul apres une
-              // manipulation manuelle (reset + plusieurs next() d'affilee).
-              try { osmdApi.cursor.update(); } catch (_0xu1) {}
-              try { osmdApi.cursor.hide(); osmdApi.cursor.show(); } catch (_0xu2) {}
-              _0xdebugEl.textContent += " | APRES SAUT mesure=" + _osmdGetCurrentMeasureIdx() + " (cible=" + _0xrule.toMeasure + ")";
-              // Recale l'horloge sur cette nouvelle position (sinon le
-              // "temps ecoule" resterait calcule depuis l'ancien depart).
-              osmdStartWholeNotes = osmdApi.cursor.iterator.currentTimeStamp.RealValue;
-              osmdStartTs = _0xts;
-              break;
-            }
-          }
-        }
       }
+      _0xdebugEl.textContent = "mesure: " + _osmdGetCurrentMeasureIdx() + " | temps: " + osmdApi.cursor.iterator.currentTimeStamp.RealValue.toFixed(3);
       if (osmdApi.cursor.iterator.endReached) {
         osmdStopAutoScroll();
         return;
@@ -12433,7 +12407,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.104.0 · 05/08/2026<span id="license-watermark"></span>
+  v2.105.0 · 05/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
