@@ -765,7 +765,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.99.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.100.0</span></h1>
 </div>
 
 <div id="pages">
@@ -3289,6 +3289,7 @@ function saveSong() {
   }
   if (_0x275a66 && _0x275a66.osmdKey) {
     _0x4b4d7b.osmdKey = _0x275a66.osmdKey;
+    _0x4b4d7b.osmdRepeats = _0x275a66.osmdRepeats || [];
   }
   if (_0x275a66 && _0x275a66.audioKey) {
     _0x4b4d7b.audioKey = _0x275a66.audioKey;
@@ -6872,6 +6873,7 @@ function osmdTogglePlay() {
 function osmdRestart() {
   if (!osmdApi) return;
   osmdStopAutoScroll();
+  osmdFiredRepeats = {};
   try { osmdApi.cursor.reset(); osmdApi.cursor.show(); } catch (_0xe) {}
 }
 function osmdStopAutoScroll() {
@@ -6884,26 +6886,49 @@ function osmdStopAutoScroll() {
 // gestion automatique des reprises pour l'instant (limite connue de cette
 // premiere integration, a ameliorer si besoin) : le curseur suit le fil du
 // morceau tel qu'ecrit, sans sauter aux reprises.
+var osmdFiredRepeats = {};
+function _osmdGetCurrentMeasureIdx() {
+  try {
+    if (typeof osmdApi.cursor.iterator.currentMeasureIndex === "number") {
+      return osmdApi.cursor.iterator.currentMeasureIndex;
+    }
+  } catch (_0xe) {}
+  try {
+    if (osmdApi.cursor.iterator.currentMeasure && typeof osmdApi.cursor.iterator.currentMeasure.measureListIndex === "number") {
+      return osmdApi.cursor.iterator.currentMeasure.measureListIndex;
+    }
+  } catch (_0xe2) {}
+  try {
+    if (osmdApi.cursor.iterator.currentMeasure && typeof osmdApi.cursor.iterator.currentMeasure.MeasureNumber === "number") {
+      return osmdApi.cursor.iterator.currentMeasure.MeasureNumber - 1;
+    }
+  } catch (_0xe3) {}
+  return null;
+}
+function _osmdCurrentSong() {
+  return curSet && curSet.songIds ? songs.find(function (_0xs) {
+    return _0xs.id === curSet.songIds[curIdx];
+  }) : null;
+}
 function osmdStartAutoScroll() {
   if (!osmdApi) return;
   osmdPlaying = true;
   osmdStartTs = null;
+  osmdFiredRepeats = {};
   try {
     osmdStartWholeNotes = osmdApi.cursor.iterator.currentTimeStamp.RealValue;
   } catch (_0xe) {
     osmdStartWholeNotes = 0;
   }
   osmdSetPlayBtnState("playing");
+  var _0xsongForRepeats = _osmdCurrentSong();
+  var _0xrepeatRules = (_0xsongForRepeats && _0xsongForRepeats.osmdRepeats) || [];
   function _0xtick(_0xts) {
     if (!osmdPlaying) return;
     if (osmdStartTs === null) {
       osmdStartTs = _0xts;
     }
     var _0xelapsedSec = (_0xts - osmdStartTs) / 1000;
-    var _0xbeatsPerMeasureOsmd = 4;
-    try {
-      var _0xrtd = osmdApi.Sheet && osmdApi.Sheet.SheetPlaybackSetting;
-    } catch (_0xe2) {}
     var _0xwholeNotesPerSec = (bpm / 60) / 4;
     var _0xtargetWholeNotes = osmdStartWholeNotes + _0xelapsedSec * _0xwholeNotesPerSec;
     var _0xguardCount = 0;
@@ -6913,6 +6938,29 @@ function osmdStartAutoScroll() {
              _0xguardCount < 2000) {
         osmdApi.cursor.next();
         _0xguardCount++;
+        // Verifie si on vient d'entrer dans une mesure de reprise non
+        // encore declenchee — saute alors instantanement, comme pour les
+        // reperes du mode partition-photo hier.
+        var _0xcurM = _osmdGetCurrentMeasureIdx();
+        if (_0xcurM !== null) {
+          for (var _0xri = 0; _0xri < _0xrepeatRules.length; _0xri++) {
+            var _0xrule = _0xrepeatRules[_0xri];
+            if (_0xcurM === _0xrule.fromMeasure && !osmdFiredRepeats[_0xri]) {
+              osmdFiredRepeats[_0xri] = true;
+              osmdApi.cursor.reset();
+              var _0xff = 0;
+              while (_osmdGetCurrentMeasureIdx() !== _0xrule.toMeasure && !osmdApi.cursor.iterator.endReached && _0xff < 5000) {
+                osmdApi.cursor.next();
+                _0xff++;
+              }
+              // Recale l'horloge sur cette nouvelle position (sinon le
+              // "temps ecoule" resterait calcule depuis l'ancien depart).
+              osmdStartWholeNotes = osmdApi.cursor.iterator.currentTimeStamp.RealValue;
+              osmdStartTs = _0xts;
+              break;
+            }
+          }
+        }
       }
       if (osmdApi.cursor.iterator.endReached) {
         osmdStopAutoScroll();
@@ -9566,6 +9614,31 @@ async function osmdImportFile(_0xfile) {
     var _0xosmdBpm = _0xtempoEls.length ? Math.round(parseFloat(_0xtempoEls[0].getAttribute("tempo"))) : 120;
     var _0xbeatsEl = _0xdoc.getElementsByTagName("beats")[0];
     var _0xosmdTimesig = _0xbeatsEl ? parseInt(_0xbeatsEl.textContent, 10) : 4;
+    // Extrait la structure des reprises (comme pour mxlLoad hier) — sert
+    // au curseur OSMD pour sauter automatiquement aux bons endroits
+    // pendant la lecture, au lieu de suivre la partition en ligne droite.
+    var _0xfirstPart = _0xdoc.getElementsByTagName("part")[0];
+    var _0xosmdRepeats = [];
+    if (_0xfirstPart) {
+      var _0xosmdMeasures = _0xfirstPart.getElementsByTagName("measure");
+      var _0xlastFwdIdx = 0;
+      for (var _0xmi = 0; _0xmi < _0xosmdMeasures.length; _0xmi++) {
+        var _0xbarlines2 = _0xosmdMeasures[_0xmi].getElementsByTagName("barline");
+        var _0xisFwd = false, _0xisBwd = false, _0xhasEnding = false;
+        for (var _0xbi2 = 0; _0xbi2 < _0xbarlines2.length; _0xbi2++) {
+          var _0xrepEl2 = _0xbarlines2[_0xbi2].getElementsByTagName("repeat")[0];
+          if (_0xrepEl2) {
+            if (_0xrepEl2.getAttribute("direction") === "forward") _0xisFwd = true;
+            if (_0xrepEl2.getAttribute("direction") === "backward") _0xisBwd = true;
+          }
+          if (_0xbarlines2[_0xbi2].getElementsByTagName("ending")[0]) _0xhasEnding = true;
+        }
+        if (_0xisFwd) _0xlastFwdIdx = _0xmi;
+        if (_0xisBwd) {
+          _0xosmdRepeats.push({ fromMeasure: _0xmi, toMeasure: _0xlastFwdIdx, hasEnding: _0xhasEnding });
+        }
+      }
+    }
     var _0xid = uid();
     var _0xsongObj = {
       id: _0xid,
@@ -9578,6 +9651,7 @@ async function osmdImportFile(_0xfile) {
       grid: "",
       lyrics: "",
       timesig: _0xosmdTimesig,
+      osmdRepeats: _0xosmdRepeats,
       notes: "Partition MusicXML affichée en vraie notation (OSMD).",
       osmdKey: "osmd_" + _0xid,
       created: Date.now()
@@ -12338,7 +12412,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.99.0 · 05/08/2026<span id="license-watermark"></span>
+  v2.100.0 · 05/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
