@@ -738,7 +738,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.94.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.95.0</span></h1>
 </div>
 
 <div id="pages">
@@ -9385,15 +9385,71 @@ async function mxlLoad(_0x2ee187) {
     var _0x483c5b = _0x4d8407.length ? Math.round(parseFloat(_0x4d8407[0].getAttribute("tempo"))) : 120;
     var _0x2b58b8 = _0x3692c2("work-title")[0] || _0x3692c2("movement-title")[0];
     var _0x11720f = _0x2b58b8 ? _0x2b58b8.textContent.trim() : pdfFileName;
-    var _0x4b642a = _0x3692c2("measure");
+    // IMPORTANT : deux parties DIFFERENTES servent a deux choses differentes
+    // (bug corrige le 05/08/2026 — avant, toutes les parties etaient
+    // concatenees bout a bout, donnant un choeur a 4 voix de 36 mesures
+    // chacune comme "144 mesures" au lieu de 36) :
+    // - la partie avec le plus de notes SIMULTANEES sert a deduire les
+    //   accords (une ligne de chant seule, une note a la fois, ne donne
+    //   jamais un accord) — typiquement le piano.
+    // - la partie qui a des <lyric> sert aux paroles.
+    var _0xallParts = _0x5dfeb8.getElementsByTagName("part");
+    var _0xlyricsPart = null;
+    var _0xchordPart = _0xallParts[0];
+    var _0xbestChordScore = -1;
+    for (var _0xpi2 = 0; _0xpi2 < _0xallParts.length; _0xpi2++) {
+      var _0xpCandidate = _0xallParts[_0xpi2];
+      if (!_0xlyricsPart && _0xpCandidate.getElementsByTagName("lyric").length) {
+        _0xlyricsPart = _0xpCandidate;
+      }
+      // Score grossier : nombre total de notes (une partie avec plusieurs
+      // notes par temps — accords plaques au piano — en a naturellement
+      // beaucoup plus qu'une ligne melodique seule).
+      var _0xnoteCount = _0xpCandidate.getElementsByTagName("note").length;
+      if (_0xnoteCount > _0xbestChordScore) {
+        _0xbestChordScore = _0xnoteCount;
+        _0xchordPart = _0xpCandidate;
+      }
+    }
+    if (!_0xlyricsPart) {
+      _0xlyricsPart = _0xchordPart;
+    }
+    var _0x4b642a = _0xchordPart.getElementsByTagName("measure");
+    var _0xlyricMeasures = _0xlyricsPart.getElementsByTagName("measure");
     var _0x35cded = [];
     var _0x241768 = null;
+    // Paroles par mesure (meme indice que _0x35cded), pour construire un
+    // affichage "paroles + accords" en plus/a la place de la grille pure.
+    var _0xlyricsPerMeasure = [];
     // Reperes de reprise/fin, un par mesure (indice = meme indice que
     // _0x35cded) — permet de "derouler" la grille dans l'ordre REELLEMENT
     // joue juste apres, plutot que de gerer des sauts pendant la lecture.
     var _0xrepeatInfo = [];
     for (var _0xb977ad = 0; _0xb977ad < _0x4b642a.length; _0xb977ad++) {
       var _0x5870d9 = _0x4b642a[_0xb977ad];
+      // Extraction des paroles pour CETTE mesure, depuis la partie choisie
+      // pour les paroles (pas forcement celle des accords) — jointes en
+      // respectant les syllabes coupees (traits d'union).
+      var _0xlyricMeasureEl = _0xlyricMeasures[_0xb977ad];
+      var _0xlyricText = "";
+      if (_0xlyricMeasureEl) {
+        var _0xlyricNotes = _0xlyricMeasureEl.getElementsByTagName("note");
+        for (var _0xln = 0; _0xln < _0xlyricNotes.length; _0xln++) {
+          var _0xlyricEl = _0xlyricNotes[_0xln].getElementsByTagName("lyric")[0];
+          if (!_0xlyricEl) continue;
+          var _0xtextEl = _0xlyricEl.getElementsByTagName("text")[0];
+          if (!_0xtextEl || !_0xtextEl.textContent) continue;
+          var _0xsyllabicEl = _0xlyricEl.getElementsByTagName("syllabic")[0];
+          var _0xsyllabic = _0xsyllabicEl ? _0xsyllabicEl.textContent : "single";
+          _0xlyricText += _0xtextEl.textContent;
+          if (_0xsyllabic === "begin" || _0xsyllabic === "middle") {
+            _0xlyricText += "-";
+          } else {
+            _0xlyricText += " ";
+          }
+        }
+      }
+      _0xlyricsPerMeasure.push(_0xlyricText.trim());
       var _0x44ff8d = [];
       var _0x3ea5ee = [];
       var _0xmInfo = { forwardRepeat: false, backwardRepeat: false, endingStart: null, endingStop: null };
@@ -9478,6 +9534,43 @@ async function mxlLoad(_0x2ee187) {
     }
     var _0xhasAnyRepeat = _0xrepeatInfo.some(function (_0xr) { return _0xr.forwardRepeat || _0xr.backwardRepeat; });
     var _0x35cdedFinal = _0xhasAnyRepeat ? _0xunrollRepeats(_0x35cded, _0xrepeatInfo) : _0x35cded;
+    var _0xlyricsFinal = _0xhasAnyRepeat ? _0xunrollRepeats(_0xlyricsPerMeasure, _0xrepeatInfo) : _0xlyricsPerMeasure;
+    var _0xhasAnyLyrics = _0xlyricsFinal.some(function (_0xl) { return _0xl && _0xl.trim(); });
+    if (_0xhasAnyLyrics) {
+      // Format "accord au-dessus des paroles" — le MEME format que celui
+      // qu'un musicien taperait a la main depuis une feuille de chant, lu
+      // ensuite par le moteur "paroles + accords" deja fiable (aucune
+      // logique de saut necessaire, tout est deja deroule ci-dessus).
+      // Deux mesures par ligne pour rester lisible.
+      var _0xlyrLines = [];
+      for (var _0xlm = 0; _0xlm < _0x35cdedFinal.length; _0xlm += 2) {
+        var _0xchordLineParts = [];
+        var _0xlyricLineParts = [];
+        for (var _0xsub = 0; _0xsub < 2 && _0xlm + _0xsub < _0x35cdedFinal.length; _0xsub++) {
+          var _0xc = _0x35cdedFinal[_0xlm + _0xsub];
+          var _0xl = _0xlyricsFinal[_0xlm + _0xsub] || "(-)";
+          var _0xchordTok = _0xc && _0xc !== "-" ? _0xc : "";
+          var _0xpad = Math.max(_0xchordTok.length, _0xl.length) + 3;
+          _0xchordLineParts.push(_0xchordTok + " ".repeat(Math.max(1, _0xpad - _0xchordTok.length)));
+          _0xlyricLineParts.push(_0xl + " ".repeat(Math.max(1, _0xpad - _0xl.length)));
+        }
+        _0xlyrLines.push(_0xchordLineParts.join(""));
+        _0xlyrLines.push(_0xlyricLineParts.join(""));
+      }
+      var _0xlyrText = _0xlyrLines.join("\n");
+      lycRawText = _0xlyrText;
+      lycFileName = _0x11720f;
+      var _0xlycParsedResult = lycParseSongText(_0xlyrText);
+      lycParsed = _0xlycParsedResult;
+      document.getElementById("lyc-text").value = lycBuildDisplayText(_0xlycParsedResult);
+      document.getElementById("lyc-name").value = lycFileName;
+      document.getElementById("lyc-bpm").value = _0x483c5b;
+      document.getElementById("lyc-capo").value = (_0xlycParsedResult.capos && _0xlycParsedResult.capos.length) ? String(_0xlycParsedResult.capos[0]) : "0";
+      lycCreate();
+      pdfStatus("✓ Paroles + accords extraits (" + _0x4b642a.length + " mesures" + (_0xhasAnyRepeat ? ", reprises dépliées" : "") + ") — " + _0x102e67 + " — " + _0x42cf32 + " — " + _0x483c5b + " BPM", "var(--G)");
+      return;
+    }
+    var _0x37769b = [];
     for (var _0x5987ec = 0; _0x5987ec < _0x35cdedFinal.length; _0x5987ec += _0x1ff9cb) {
       var _0x659a80 = _0x35cdedFinal.slice(_0x5987ec, _0x5987ec + _0x1ff9cb);
       var _0x1e4ffc = [_0x659a80[0]];
@@ -9732,7 +9825,7 @@ function pdfReset() {
   document.getElementById("pdf-raw").value = "";
   document.getElementById("pdf-grid").value = "";
 }
-var _TAB_FORMAT_EXT = ["gp3", "gp4", "gp5", "gpx", "gp", "musicxml", "mxl", "xml", "cap", "capx"];
+var _TAB_FORMAT_EXT = ["gp3", "gp4", "gp5", "gpx", "gp", "cap", "capx", "musicxml", "mxl", "xml"];
 function unifiedDzOver(_0x3b6cef) {
   var _0x247615 = _0x552966;
   var _0x26cd99 = _0x4bc6f9;
@@ -10854,6 +10947,49 @@ function _unsupportedTabMessage(_0x19e355) {
 // rend l'element explicite pour CHAQUE partie qui ne l'a pas, sans
 // toucher au reste du fichier. Ne s'applique qu'aux fichiers XML —
 // jamais aux formats Guitar Pro (binaires, non concernes).
+// Reduit un fichier multi-parties (choeur + piano...) a UNE SEULE partie —
+// celle qui a le plus de notes (typiquement le piano, qui porte l'harmonie
+// complete). Sert a isoler si le blocage d'alphaTab vient specifiquement
+// de la complexite a plusieurs parties/voix, ou d'autre chose.
+function _extractSinglePartMusicXml(_0xxmlText) {
+  try {
+    var _0xdoc = new DOMParser().parseFromString(_0xxmlText, "text/xml");
+    if (_0xdoc.getElementsByTagName("parsererror").length) {
+      return _0xxmlText;
+    }
+    var _0xparts = _0xdoc.getElementsByTagName("part");
+    if (_0xparts.length <= 1) {
+      return _0xxmlText;
+    }
+    var _0xbestPart = _0xparts[0];
+    var _0xbestCount = -1;
+    for (var _0xi = 0; _0xi < _0xparts.length; _0xi++) {
+      var _0xcount = _0xparts[_0xi].getElementsByTagName("note").length;
+      if (_0xcount > _0xbestCount) {
+        _0xbestCount = _0xcount;
+        _0xbestPart = _0xparts[_0xi];
+      }
+    }
+    var _0xkeepId = _0xbestPart.getAttribute("id");
+    // Supprime toutes les AUTRES parties du document.
+    var _0xallParts = Array.prototype.slice.call(_0xdoc.getElementsByTagName("part"));
+    _0xallParts.forEach(function (_0xp) {
+      if (_0xp.getAttribute("id") !== _0xkeepId && _0xp.parentNode) {
+        _0xp.parentNode.removeChild(_0xp);
+      }
+    });
+    // Idem dans <part-list> : ne garder que le <score-part> correspondant.
+    var _0xscoreParts = Array.prototype.slice.call(_0xdoc.getElementsByTagName("score-part"));
+    _0xscoreParts.forEach(function (_0xsp) {
+      if (_0xsp.getAttribute("id") !== _0xkeepId && _0xsp.parentNode) {
+        _0xsp.parentNode.removeChild(_0xsp);
+      }
+    });
+    return new XMLSerializer().serializeToString(_0xdoc);
+  } catch (_0xerr) {
+    return _0xxmlText;
+  }
+}
 function _fixMusicXmlStaves(_0xxmlText) {
   try {
     var _0xdoc = new DOMParser().parseFromString(_0xxmlText, "text/xml");
@@ -10917,7 +11053,8 @@ async function _preprocessMusicXmlBytes(_0xfile, _0xrawBytes) {
     } else {
       _0xxmlText = new TextDecoder("utf-8").decode(_0xrawBytes);
     }
-    var _0xfixedText = _fixMusicXmlStaves(_0xxmlText);
+    var _0xsinglePartText = _extractSinglePartMusicXml(_0xxmlText);
+    var _0xfixedText = _fixMusicXmlStaves(_0xsinglePartText);
     return new TextEncoder().encode(_0xfixedText);
   } catch (_0xpreErr) {
     // Meme logique de prudence : en cas de pepin dans ce pretraitement,
@@ -11938,7 +12075,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.94.0 · 05/08/2026<span id="license-watermark"></span>
+  v2.95.0 · 05/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
