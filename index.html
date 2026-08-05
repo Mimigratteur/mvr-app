@@ -738,7 +738,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.89.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.90.0</span></h1>
 </div>
 
 <div id="pages">
@@ -830,8 +830,8 @@ body.fullscreen #topbar{display:none}
         </div>
         <div class="ctrl">
           <label>Vitesse</label>
-          <input type="range" min="0" max="20" value="0" id="scroll-spd" oninput="document.getElementById(&#39;scroll-spd-v&#39;).textContent=this.value">
-          <span id="scroll-spd-v">0</span>
+          <input type="range" min="0" max="20" value="6" id="scroll-spd" oninput="document.getElementById(&#39;scroll-spd-v&#39;).textContent=this.value">
+          <span id="scroll-spd-v">6</span>
         </div>
         <div class="ctrl" style="gap:3px">
           <label>♯/♭</label>
@@ -916,9 +916,14 @@ body.fullscreen #topbar{display:none}
         <button id="gp-restart-btn" onclick="gpRestart()">↺ Début</button>
       </div>
       <!-- Contrôles du mode "partition image" -->
-      <div class="img-mode-only" style="gap:5px;flex-wrap:nowrap">
+      <div class="img-mode-only" style="gap:5px;flex-wrap:nowrap;align-items:center">
         <button class="btn-g" id="img-play-btn" onclick="imgTogglePlay()">▶ Play</button>
         <button class="btn-r" onclick="imgRestart()">↺ Début</button>
+        <span style="font-size:11px;color:var(--tx2);white-space:nowrap;margin-left:4px">Mesures :</span>
+        <input type="number" id="img-total-measures" min="1" max="999" placeholder="ex: 34"
+               style="width:56px;font-size:13px;padding:3px 5px"
+               title="Nombre total de mesures de la partition — sert à calculer la vitesse de défilement à partir du tempo (BPM) du morceau"
+               onchange="imgSetTotalMeasures(+this.value)">
       </div>
       <!-- Contrôles du mode "tablature visuelle" -->
       <div class="tab-mode-only" style="gap:5px;flex-wrap:nowrap">
@@ -4194,6 +4199,10 @@ function renderScene() {
   allChords = [];
   litIdx = -1;
   if (_0x7b139e.imgPageCount) {
+    var _0xtotalMeasuresInput = document.getElementById("img-total-measures");
+    if (_0xtotalMeasuresInput) {
+      _0xtotalMeasuresInput.value = _0x7b139e.imgTotalMeasures || "";
+    }
     gpStopAutoScroll();
     tabStopAutoScroll();
     document.getElementById("grid-paper").style.display = "none";
@@ -6200,14 +6209,34 @@ function imgStartAutoScroll() {
   imgPlaying = true;
   imgLastTs = null;
   imgUpdatePlayBtn();
+  var _0xcurSongForSpeed = curSet && curSet.songIds ? songs.find(function (_0xs) {
+    return _0xs.id === curSet.songIds[curIdx];
+  }) : null;
+  var _0xbpmSpeed = imgComputeBpmSpeed(_0xcurSongForSpeed, _0x12bfcb);
+  if (_0xbpmSpeed !== null) {
+    showPlaybackToast("▶ Défilement calé sur " + bpm + " BPM · " + _0xcurSongForSpeed.imgTotalMeasures + " mesures");
+  } else {
+    // Avertit clairement si la vitesse manuelle est a 0 — sinon la lecture
+    // "marche" techniquement (le bouton passe bien sur Pause) mais rien ne
+    // bouge a l'ecran, ce qui donne l'impression que Play ne fait rien.
+    var _0xspeedCheck = parseInt(document.getElementById("scroll-spd").value, 10) || 0;
+    if (_0xspeedCheck === 0) {
+      showPlaybackToast("⚠️ Renseigne le nombre de mesures (calage BPM) ou augmente le curseur « Vitesse »");
+    }
+  }
   function _0x8f3d98(_0x4a032f) {
     if (!imgPlaying) {
       return;
     }
     if (imgLastTs !== null) {
       var _0x3c8905 = (_0x4a032f - imgLastTs) / 1000;
-      var _0x82c97a = parseInt(document.getElementById("scroll-spd").value, 10) || 0;
-      var _0x4dec51 = _0x82c97a * 18;
+      var _0x4dec51;
+      if (_0xbpmSpeed !== null) {
+        _0x4dec51 = _0xbpmSpeed;
+      } else {
+        var _0x82c97a = parseInt(document.getElementById("scroll-spd").value, 10) || 0;
+        _0x4dec51 = _0x82c97a * 18;
+      }
       _0x12bfcb.scrollTop += _0x4dec51 * _0x3c8905;
       if (_0x12bfcb.scrollTop + _0x12bfcb.clientHeight >= _0x12bfcb.scrollHeight - 2) {
         imgStopAutoScroll();
@@ -6320,6 +6349,45 @@ function imgTogglePlay() {
   } else {
     imgStartAutoScroll();
   }
+}
+// Nombre total de mesures de la partition-image — permet de calculer la
+// vitesse de defilement a partir du VRAI tempo (BPM) du morceau, plutot
+// que de regler une vitesse brute en pixels/seconde a l'oreille. Meme
+// principe que le mode grille : le BPM est la reference, tout le reste en
+// decoule.
+function imgSetTotalMeasures(_0xn) {
+  var _0xcurSong = curSet && curSet.songIds ? songs.find(function (_0xs) {
+    return _0xs.id === curSet.songIds[curIdx];
+  }) : null;
+  if (!_0xcurSong) {
+    return;
+  }
+  if (_0xn && _0xn > 0) {
+    _0xcurSong.imgTotalMeasures = _0xn;
+  } else {
+    delete _0xcurSong.imgTotalMeasures;
+  }
+  dbSave();
+}
+// Calcule la vitesse de defilement (px/s) necessaire pour que TOUTE la
+// hauteur scrollable de la partition soit parcourue exactement dans le
+// temps que prend le morceau au tempo declare — renvoie null si les
+// informations necessaires (mesures totales, BPM) manquent, auquel cas
+// on retombe sur le reglage manuel du curseur Vitesse.
+function imgComputeBpmSpeed(_0xsong, _0xstageEl) {
+  if (!_0xsong || !_0xsong.imgTotalMeasures || !bpm) {
+    return null;
+  }
+  var _0xbeatsPerMeasure = _0xsong.timesig || 4;
+  var _0xtotalSeconds = _0xsong.imgTotalMeasures * _0xbeatsPerMeasure * (60 / bpm);
+  if (_0xtotalSeconds <= 0) {
+    return null;
+  }
+  var _0xscrollable = _0xstageEl.scrollHeight - _0xstageEl.clientHeight;
+  if (_0xscrollable <= 0) {
+    return null;
+  }
+  return _0xscrollable / _0xtotalSeconds;
 }
 function imgRestart() {
   var _0x3f4f9b = _0x552966;
@@ -11512,7 +11580,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.89.0 · 03/08/2026<span id="license-watermark"></span>
+  v2.90.0 · 04/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
