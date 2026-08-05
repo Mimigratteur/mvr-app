@@ -738,7 +738,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.90.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.91.0</span></h1>
 </div>
 
 <div id="pages">
@@ -919,11 +919,7 @@ body.fullscreen #topbar{display:none}
       <div class="img-mode-only" style="gap:5px;flex-wrap:nowrap;align-items:center">
         <button class="btn-g" id="img-play-btn" onclick="imgTogglePlay()">▶ Play</button>
         <button class="btn-r" onclick="imgRestart()">↺ Début</button>
-        <span style="font-size:11px;color:var(--tx2);white-space:nowrap;margin-left:4px">Mesures :</span>
-        <input type="number" id="img-total-measures" min="1" max="999" placeholder="ex: 34"
-               style="width:56px;font-size:13px;padding:3px 5px"
-               title="Nombre total de mesures de la partition — sert à calculer la vitesse de défilement à partir du tempo (BPM) du morceau"
-               onchange="imgSetTotalMeasures(+this.value)">
+        <button class="btn-sm" onclick="imgOpenMarkersPanel()">📍 Repères &amp; reprises</button>
       </div>
       <!-- Contrôles du mode "tablature visuelle" -->
       <div class="tab-mode-only" style="gap:5px;flex-wrap:nowrap">
@@ -1531,6 +1527,44 @@ J&#39;ai voulu planter un oranger">    </textarea>
     <button class="btn-g" id="notext-pdf-usegrid-btn" style="display:none" onclick="pdfUseDetectedGrid()">✓ Créer la grille (recommandé)<br><span style="font-size:11px;font-weight:400;opacity:.85">Accords et mesures repérés directement dans le PDF — la plus fiable</span></button>
     <button onclick="notextPdfOnline()">🤖 Lire avec l'IA <span id="notext-pdf-ai-caveat" style="display:none">(en secours seulement)</span><br><span style="font-size:11px;font-weight:400;opacity:.85">À utiliser seulement si la grille ci-dessus semble fausse une fois créée — connexion internet requise</span></button>
     <button onclick="notextPdfOffline()">📷 Garder en partition-photo<br><span style="font-size:11px;font-weight:400;opacity:.85">Fonctionne 100% hors connexion, pas de grille interactive</span></button>
+  </div>
+</div></div>
+
+<!-- ══ MODAL REPÈRES & REPRISES (mode partition-photo) ══
+     Permet de marquer la position (hauteur de défilement) de quelques
+     mesures-clés sur la partition-image, et de définir des reprises
+     (mesure X -> renvoie à la mesure Y). Avec seulement quelques repères,
+     la lecture calcule la position de TOUTES les mesures par interpolation
+     entre les deux repères encadrants, et saute automatiquement aux bons
+     endroits pour suivre les reprises — sans jamais faire défiler la page
+     par la main du musicien. -->
+<div class="modal-bg" id="img-markers-modal">
+<div class="modal" style="max-width:480px">
+  <h2>📍 Repères &amp; reprises</h2>
+  <p style="font-size:13px;color:var(--tx2);line-height:1.5;margin-top:-4px">
+    Fais défiler la partition (en dessous, hors lecture) jusqu'à une mesure précise,
+    indique son numéro, puis « Marquer ici ». Avec quelques repères (début, fin,
+    et un de chaque côté d'une reprise), le défilement automatique calcule le reste
+    et saute tout seul aux bons endroits pendant la lecture.
+  </p>
+  <div class="row" style="gap:6px;align-items:center;margin-top:10px">
+    <input type="number" id="img-marker-measure-input" min="1" max="999" placeholder="N° mesure" style="width:90px">
+    <button class="btn-g" onclick="imgAddMarkerAtCurrentScroll()">📍 Marquer ici</button>
+  </div>
+  <div id="img-markers-list" style="margin-top:10px;font-size:13px;display:flex;flex-direction:column;gap:4px;max-height:160px;overflow-y:auto"></div>
+
+  <div style="margin-top:16px;font-weight:600;font-size:14px">Reprises</div>
+  <p style="font-size:12px;color:var(--tx2);line-height:1.4;margin-top:-2px">
+    Une par ligne, format « mesure de départ &gt; mesure d'arrivée ». Ex : la mesure 30
+    renvoie à la mesure 3 s'écrit <code>30&gt;3</code>. Chaque reprise ne se déclenche
+    qu'une seule fois par lecture (pas de boucle infinie).
+  </p>
+  <textarea id="img-repeats-input" rows="3" placeholder="30>3
+32>35" style="width:100%;font-family:monospace;font-size:13px;padding:8px;box-sizing:border-box"></textarea>
+
+  <div class="row" style="margin-top:14px;gap:8px">
+    <button class="btn-g" style="flex:1" onclick="imgSaveMarkersAndRepeats()">✓ Enregistrer</button>
+    <button style="flex:1" onclick="hideModal('img-markers-modal')">Fermer</button>
   </div>
 </div></div>
 
@@ -6212,6 +6246,56 @@ function imgStartAutoScroll() {
   var _0xcurSongForSpeed = curSet && curSet.songIds ? songs.find(function (_0xs) {
     return _0xs.id === curSet.songIds[curIdx];
   }) : null;
+  var _0xmarkers = (_0xcurSongForSpeed && _0xcurSongForSpeed.imgMarkers) || {};
+  var _0xmarkerKeys = Object.keys(_0xmarkers);
+  if (_0xcurSongForSpeed && _0xmarkerKeys.length >= 2 && bpm) {
+    // Mode repères + reprises : la position de defilement suit une
+    // "position virtuelle en mesures" qui avance avec le tempo et SAUTE
+    // instantanement aux points de reprise definis — comme un vrai
+    // lecteur de partition, sans jamais avoir besoin de faire defiler a
+    // la main.
+    var _0xbeatsPerMeasureImg = (_0xcurSongForSpeed.timesig || 4);
+    var _0xmeasuresPerSecond = bpm / 60 / _0xbeatsPerMeasureImg;
+    var _0xminMeasure = Math.min.apply(null, _0xmarkerKeys.map(Number));
+    var _0xmaxMeasure = Math.max.apply(null, _0xmarkerKeys.map(Number));
+    var _0xvirtualPos = _0xminMeasure;
+    var _0xrepeatsList = (_0xcurSongForSpeed.imgRepeats || []).map(function (_0xr) {
+      return { from: _0xr.from, to: _0xr.to, fired: false };
+    });
+    showPlaybackToast("▶ Lecture partition calée sur " + bpm + " BPM (" + _0xmarkerKeys.length + " repères, " + _0xrepeatsList.length + " reprise" + (_0xrepeatsList.length > 1 ? "s" : "") + ")");
+    (function () {
+      function _0xtickMarkers(_0xts) {
+        if (!imgPlaying) {
+          return;
+        }
+        if (imgLastTs !== null) {
+          var _0xdt = (_0xts - imgLastTs) / 1000;
+          _0xvirtualPos += _0xdt * _0xmeasuresPerSecond;
+          // Verifie si on vient de franchir le point de depart d'une
+          // reprise non encore declenchee — saute alors instantanement.
+          _0xrepeatsList.forEach(function (_0xrep) {
+            if (!_0xrep.fired && _0xvirtualPos >= _0xrep.from) {
+              _0xvirtualPos = _0xrep.to;
+              _0xrep.fired = true;
+              showPlaybackToast("↩ Reprise : mesure " + _0xrep.from + " → " + _0xrep.to);
+            }
+          });
+          var _0xy = imgYForMeasure(_0xmarkers, _0xvirtualPos);
+          if (_0xy !== null) {
+            _0x12bfcb.scrollTop = _0xy;
+          }
+          if (_0xvirtualPos >= _0xmaxMeasure) {
+            imgStopAutoScroll();
+            return;
+          }
+        }
+        imgLastTs = _0xts;
+        imgRafId = requestAnimationFrame(_0xtickMarkers);
+      }
+      imgRafId = requestAnimationFrame(_0xtickMarkers);
+    })();
+    return;
+  }
   var _0xbpmSpeed = imgComputeBpmSpeed(_0xcurSongForSpeed, _0x12bfcb);
   if (_0xbpmSpeed !== null) {
     showPlaybackToast("▶ Défilement calé sur " + bpm + " BPM · " + _0xcurSongForSpeed.imgTotalMeasures + " mesures");
@@ -6221,7 +6305,7 @@ function imgStartAutoScroll() {
     // bouge a l'ecran, ce qui donne l'impression que Play ne fait rien.
     var _0xspeedCheck = parseInt(document.getElementById("scroll-spd").value, 10) || 0;
     if (_0xspeedCheck === 0) {
-      showPlaybackToast("⚠️ Renseigne le nombre de mesures (calage BPM) ou augmente le curseur « Vitesse »");
+      showPlaybackToast("⚠️ Marque des repères (📍) pour un calage précis, ou augmente le curseur « Vitesse »");
     }
   }
   function _0x8f3d98(_0x4a032f) {
@@ -6342,6 +6426,114 @@ function imgStopAutoScroll() {
     gpScoreRafId = null;
   }
   imgUpdatePlayBtn();
+}
+// ── Repères & reprises (mode partition-photo) ──
+// Un repère associe un numero de mesure a une position de defilement
+// (scrollTop) sur la partition-image. Avec au moins 2 reperes, la
+// position de N'IMPORTE QUELLE mesure entre les deux se calcule par
+// interpolation lineaire — pas besoin de marquer TOUTES les mesures.
+function _imgCurSongForMarkers() {
+  return curSet && curSet.songIds ? songs.find(function (_0xs) {
+    return _0xs.id === curSet.songIds[curIdx];
+  }) : null;
+}
+function imgOpenMarkersPanel() {
+  var _0xsong = _imgCurSongForMarkers();
+  var _0xrepeatsEl = document.getElementById("img-repeats-input");
+  if (_0xsong && _0xrepeatsEl) {
+    var _0xreps = _0xsong.imgRepeats || [];
+    _0xrepeatsEl.value = _0xreps.map(function (_0xr) { return _0xr.from + ">" + _0xr.to; }).join("\n");
+  }
+  imgRenderMarkersList();
+  showModal("img-markers-modal");
+}
+function imgRenderMarkersList() {
+  var _0xsong = _imgCurSongForMarkers();
+  var _0xlistEl = document.getElementById("img-markers-list");
+  if (!_0xlistEl) {
+    return;
+  }
+  var _0xmarkers = (_0xsong && _0xsong.imgMarkers) || {};
+  var _0xkeys = Object.keys(_0xmarkers).map(Number).sort(function (_0xa, _0xb) { return _0xa - _0xb; });
+  if (!_0xkeys.length) {
+    _0xlistEl.innerHTML = "<div style=\"color:var(--tx2);font-style:italic\">Aucun repère pour l'instant.</div>";
+    return;
+  }
+  _0xlistEl.innerHTML = _0xkeys.map(function (_0xk) {
+    return "<div style=\"display:flex;justify-content:space-between;align-items:center;padding:4px 6px;background:var(--bd);border-radius:6px\">" +
+      "<span>Mesure " + _0xk + "</span>" +
+      "<button style=\"padding:2px 8px;font-size:12px\" onclick=\"imgDeleteMarker(" + _0xk + ")\">🗑</button></div>";
+  }).join("");
+}
+function imgAddMarkerAtCurrentScroll() {
+  var _0xmInput = document.getElementById("img-marker-measure-input");
+  var _0xm = parseInt(_0xmInput.value, 10);
+  if (!_0xm || _0xm < 1) {
+    showPlaybackToast("⚠️ Indique un numéro de mesure valide");
+    return;
+  }
+  var _0xsong = _imgCurSongForMarkers();
+  if (!_0xsong) {
+    return;
+  }
+  var _0xstage = document.getElementById("img-stage");
+  if (!_0xsong.imgMarkers) {
+    _0xsong.imgMarkers = {};
+  }
+  _0xsong.imgMarkers[_0xm] = _0xstage.scrollTop;
+  dbSave();
+  imgRenderMarkersList();
+  _0xmInput.value = "";
+  showPlaybackToast("📍 Mesure " + _0xm + " marquée à cette position");
+}
+function imgDeleteMarker(_0xm) {
+  var _0xsong = _imgCurSongForMarkers();
+  if (_0xsong && _0xsong.imgMarkers) {
+    delete _0xsong.imgMarkers[_0xm];
+    dbSave();
+  }
+  imgRenderMarkersList();
+}
+function imgSaveMarkersAndRepeats() {
+  var _0xsong = _imgCurSongForMarkers();
+  if (!_0xsong) {
+    return;
+  }
+  var _0xraw = document.getElementById("img-repeats-input").value || "";
+  var _0xreps = [];
+  _0xraw.split("\n").forEach(function (_0xline) {
+    var _0xm = _0xline.trim().match(/^(\d+)\s*>\s*(\d+)$/);
+    if (_0xm) {
+      _0xreps.push({ from: parseInt(_0xm[1], 10), to: parseInt(_0xm[2], 10) });
+    }
+  });
+  _0xsong.imgRepeats = _0xreps;
+  dbSave();
+  hideModal("img-markers-modal");
+  showPlaybackToast("✓ Repères et reprises enregistrés");
+}
+// Position de defilement (px) pour une mesure quelconque (valeur decimale
+// admise, ex 12.5 = a mi-chemin de la mesure 12), par interpolation entre
+// les deux reperes qui l'encadrent. Renvoie null si moins de 2 reperes.
+function imgYForMeasure(_0xmarkers, _0xm) {
+  var _0xkeys = Object.keys(_0xmarkers).map(Number).sort(function (_0xa, _0xb) { return _0xa - _0xb; });
+  if (_0xkeys.length < 2) {
+    return null;
+  }
+  if (_0xm <= _0xkeys[0]) {
+    return _0xmarkers[_0xkeys[0]];
+  }
+  if (_0xm >= _0xkeys[_0xkeys.length - 1]) {
+    return _0xmarkers[_0xkeys[_0xkeys.length - 1]];
+  }
+  for (var _0xi = 0; _0xi < _0xkeys.length - 1; _0xi++) {
+    var _0xlo = _0xkeys[_0xi], _0xhi = _0xkeys[_0xi + 1];
+    if (_0xm >= _0xlo && _0xm <= _0xhi) {
+      var _0xratio = (_0xm - _0xlo) / (_0xhi - _0xlo);
+      return _0xmarkers[_0xlo] + _0xratio * (_0xmarkers[_0xhi] - _0xmarkers[_0xlo]);
+    }
+  }
+  return null;
 }
 function imgTogglePlay() {
   if (imgPlaying) {
@@ -11580,7 +11772,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.90.0 · 04/08/2026<span id="license-watermark"></span>
+  v2.91.0 · 04/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
