@@ -738,7 +738,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.91.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.92.0</span></h1>
 </div>
 
 <div id="pages">
@@ -889,6 +889,12 @@ body.fullscreen #topbar{display:none}
            avec défilement automatique ou manuel (glissement doigt/molette).
            Aucune interprétation du contenu — juste l'image qui défile. -->
       <div id="img-stage" style="display:none" ontouchstart="imgOnUserScroll()" onwheel="imgOnUserScroll()">
+        <!-- Repere visuel FIXE (ne defile pas) indiquant ou se trouve la
+             mesure en cours de lecture — sans lui, rien n'indiquait
+             clairement au musicien ou regarder sur la page qui defile. -->
+        <div id="img-cursor-line" style="position:sticky;top:0;height:0;overflow:visible;z-index:5;pointer-events:none">
+          <div style="height:3px;background:#E8B86D;box-shadow:0 0 8px 2px rgba(232,184,109,.7)"></div>
+        </div>
         <div id="img-stage-inner"></div>
       </div>
       <!-- Mode "tablature visuelle" : vraie portée/tablature Guitar Pro
@@ -6501,16 +6507,38 @@ function imgSaveMarkersAndRepeats() {
   }
   var _0xraw = document.getElementById("img-repeats-input").value || "";
   var _0xreps = [];
+  var _0xignoredLines = [];
+  // Tolerant a plusieurs façons d'ecrire la fleche (>, ->, →, =>, -) et aux
+  // espaces variables — un simple souci de frappe sur ce caractere ne doit
+  // pas faire echouer silencieusement toute la reprise.
   _0xraw.split("\n").forEach(function (_0xline) {
-    var _0xm = _0xline.trim().match(/^(\d+)\s*>\s*(\d+)$/);
+    var _0xtrimmed = _0xline.trim();
+    if (!_0xtrimmed) {
+      return;
+    }
+    var _0xm = _0xtrimmed.match(/^(\d+)\s*(?:>|->|→|=>|-)\s*(\d+)$/);
     if (_0xm) {
       _0xreps.push({ from: parseInt(_0xm[1], 10), to: parseInt(_0xm[2], 10) });
+    } else {
+      _0xignoredLines.push(_0xtrimmed);
     }
   });
   _0xsong.imgRepeats = _0xreps;
   dbSave();
+  var _0xmarkerCount = Object.keys(_0xsong.imgMarkers || {}).length;
+  if (_0xignoredLines.length) {
+    // Ne ferme PAS la fenetre si une ligne n'a pas ete comprise — le
+    // musicien doit pouvoir la corriger tout de suite, pas decouvrir
+    // pendant la lecture que sa reprise a ete silencieusement ignoree.
+    showPlaybackToast("⚠️ Ligne(s) non comprise(s), corrige puis réenregistre : " + _0xignoredLines.join(" · "));
+    return;
+  }
+  if (_0xmarkerCount < 2) {
+    showPlaybackToast("⚠️ " + _0xreps.length + " reprise(s) enregistrée(s), mais il faut au moins 2 repères (📍) pour qu'elles s'appliquent — actuellement : " + _0xmarkerCount);
+    return;
+  }
   hideModal("img-markers-modal");
-  showPlaybackToast("✓ Repères et reprises enregistrés");
+  showPlaybackToast("✓ " + _0xreps.length + " reprise(s) et " + _0xmarkerCount + " repère(s) enregistrés");
 }
 // Position de defilement (px) pour une mesure quelconque (valeur decimale
 // admise, ex 12.5 = a mi-chemin de la mesure 12), par interpolation entre
@@ -11772,7 +11800,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.91.0 · 04/08/2026<span id="license-watermark"></span>
+  v2.92.0 · 05/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
