@@ -94,6 +94,23 @@ async function _ensureAlphaTab(){
   });
 }
 
+// ── OSMD loader (Open Sheet Music Display — rendu MusicXML) ──
+// Construite specifiquement pour le MusicXML (contrairement a alphaTab,
+// d'abord pensee pour la tablature guitare) — utilisee pour les vraies
+// partitions notees (choeur, piano...) la ou alphaTab a echoue.
+var _osmdLib = null;
+async function _ensureOSMD(){
+  if(_osmdLib) return _osmdLib;
+  return new Promise(function(resolve,reject){
+    var s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/npm/opensheetmusicdisplay@2.1.0/build/opensheetmusicdisplay.min.js';
+    s.onload=function(){ _osmdLib=window.opensheetmusicdisplay; resolve(_osmdLib); };
+    s.onerror=reject;
+    document.head.appendChild(s);
+  });
+}
+
+
 </script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -336,6 +353,16 @@ input[type=range]{accent-color:var(--G);touch-action:pan-y}
 .at-cursor-beat{background:#F4B740;width:3px}
 .at-highlight *{fill:#E8993A!important;stroke:#E8993A!important}
 #tab-play-btn:disabled{opacity:.5}
+#osmd-stage{
+  position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;
+  background:#fff;-webkit-overflow-scrolling:touch;
+}
+#osmd-stage-inner{max-width:960px;margin:0 auto;padding:14px 10px 100px}
+.osmd-mode-only{display:none}
+/* Curseur OSMD repeint aux couleurs de l'app (ambre), meme esprit que le
+   curseur alphaTab ci-dessus. */
+.cursorCanvas{opacity:.4}
+#osmd-play-btn:disabled{opacity:.5}
 
 /* Éditeur direct du mode paroles+accords — même esprit "fiche papier" que
    la grille : fond blanc, plein cadre, on tape le texte brut (accords sur
@@ -738,7 +765,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.97.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.98.0</span></h1>
 </div>
 
 <div id="pages">
@@ -903,6 +930,13 @@ body.fullscreen #topbar{display:none}
       <div id="tab-stage" style="display:none">
         <div id="tab-stage-inner"></div>
       </div>
+      <!-- Mode "partition MusicXML" : vraie notation (portees, choeur,
+           piano...) rendue par OSMD (Open Sheet Music Display), construite
+           specifiquement pour le MusicXML — utilisee la ou alphaTab
+           echoue sur des partitions complexes (plusieurs voix/instruments). -->
+      <div id="osmd-stage" style="display:none">
+        <div id="osmd-stage-inner"></div>
+      </div>
     </div>
 
     <div id="scene-hint" class="scroll-mode-only">Toucher = pause/play &nbsp;·&nbsp; Molette = défiler &nbsp;·&nbsp; ‹ › = morceaux</div>
@@ -931,6 +965,11 @@ body.fullscreen #topbar{display:none}
       <div class="tab-mode-only" style="gap:5px;flex-wrap:nowrap">
         <button class="btn-g" id="tab-play-btn" onclick="tabTogglePlay()">▶ Play</button>
         <button class="btn-r" onclick="tabRestart()">↺ Début</button>
+      </div>
+      <!-- Contrôles du mode "partition MusicXML" (OSMD) -->
+      <div class="osmd-mode-only" style="gap:5px;flex-wrap:nowrap">
+        <button class="btn-g" id="osmd-play-btn" onclick="osmdTogglePlay()">▶ Play</button>
+        <button class="btn-r" onclick="osmdRestart()">↺ Début</button>
       </div>
       <button onclick="prevSong()">‹ Préc</button>
       <button onclick="nextSong()">Suiv ›</button>
@@ -4345,6 +4384,28 @@ function renderScene() {
     _0x433d67.style.display = "none";
   });
   tabStopAutoScroll();
+  document.getElementById("osmd-stage").style.display = "none";
+  document.querySelectorAll(".osmd-mode-only").forEach(function (_0xosmdHide) {
+    _0xosmdHide.style.display = "none";
+  });
+  osmdStopAutoScroll();
+  if (_0x7b139e.osmdKey) {
+    gpStopAutoScroll();
+    document.getElementById("grid-paper").style.display = "none";
+    document.querySelectorAll(".grid-mode-only").forEach(function (_0xg1) { _0xg1.style.display = "none"; });
+    document.querySelectorAll(".grid-mode-only-flex").forEach(function (_0xg2) { _0xg2.style.display = "none"; });
+    document.getElementById("gp-undo-btn").style.display = "none";
+    document.querySelectorAll(".lyr-mode-only-flex").forEach(function (_0xl1) { _0xl1.style.display = "none"; });
+    document.querySelectorAll(".lyr-mode-only").forEach(function (_0xl2) { _0xl2.style.display = "none"; });
+    document.getElementById("stage").style.display = "none";
+    document.getElementById("lyr-editor").style.display = "none";
+    document.getElementById("scene-hint").style.display = "none";
+    document.querySelectorAll("#scene-btns .scroll-mode-only").forEach(function (_0xs1) { _0xs1.style.display = "none"; });
+    document.querySelectorAll(".osmd-mode-only").forEach(function (_0xosmdShow) { _0xosmdShow.style.display = "inline-flex"; });
+    document.getElementById("osmd-stage").style.display = "block";
+    renderSceneOsmd(_0x7b139e);
+    return;
+  }
   if (_0x7b139e.lyrics && _0x7b139e.lyrics.trim()) {
     gpStopAutoScroll();
     document.getElementById("grid-paper").style.display = "none";
@@ -6732,7 +6793,139 @@ function tabStopAutoScroll() {
   }
   tabSetPlayBtnState("ready");
 }
+// ── Mode "partition MusicXML" (OSMD) ──
+var osmdApi = null;
+var osmdPlaying = false;
+var osmdRafId = null;
+var osmdStartTs = null;
+var osmdStartWholeNotes = 0;
+var osmdCurSongId = null;
+
+async function renderSceneOsmd(_0xsong) {
+  osmdStopAutoScroll();
+  if (osmdApi) {
+    try { osmdApi.clear(); } catch (_0xe) {}
+    osmdApi = null;
+  }
+  osmdCurSongId = _0xsong.id;
+  var _0xinner = document.getElementById("osmd-stage-inner");
+  _0xinner.innerHTML = "<div class=\"img-loading\">⏳ Chargement de la partition…</div>";
+  document.getElementById("osmd-stage").scrollTop = 0;
+  osmdSetPlayBtnState("loading");
+  var _0xxmlText;
+  try {
+    _0xxmlText = await imgDbGet(_0xsong.osmdKey);
+  } catch (_0xerr) {
+    _0xxmlText = null;
+  }
+  var _0xcurId = curSet && curSet.songIds ? curSet.songIds[curIdx] : null;
+  if (_0xcurId !== _0xsong.id) {
+    return;
+  }
+  if (!_0xxmlText) {
+    _0xinner.innerHTML = "<div class=\"img-loading\" style=\"padding-top:80px;color:#888\"><div style=\"font-size:34px;margin-bottom:14px\">🎼</div><div style=\"color:#333;font-size:15px;margin-bottom:8px\">Partition non disponible sur cet appareil</div><div style=\"max-width:280px;margin:0 auto;line-height:1.5\">Comme pour les partitions-image, le fichier reste stocké uniquement sur l'appareil qui l'a importé.</div></div>";
+    return;
+  }
+  try {
+    var _0xosmdLib = await _ensureOSMD();
+    _0xinner.innerHTML = "";
+    osmdApi = new _0xosmdLib.OpenSheetMusicDisplay(_0xinner, {
+      autoResize: true,
+      backend: "svg",
+      drawTitle: true,
+      followCursor: true
+    });
+    await osmdApi.load(_0xxmlText);
+    osmdApi.render();
+    osmdApi.cursor.show();
+    var _0xcurId2 = curSet && curSet.songIds ? curSet.songIds[curIdx] : null;
+    if (_0xcurId2 !== _0xsong.id) {
+      return;
+    }
+    osmdSetPlayBtnState("ready");
+  } catch (_0xrenderErr) {
+    var _0xcurId3 = curSet && curSet.songIds ? curSet.songIds[curIdx] : null;
+    if (_0xcurId3 === _0xsong.id) {
+      var _0xmsg = (_0xrenderErr && (_0xrenderErr.message || String(_0xrenderErr))) || "erreur inconnue";
+      _0xinner.innerHTML = "<div class=\"img-loading\" style=\"padding-top:80px;color:#888\"><div style=\"font-size:34px;margin-bottom:14px\">⚠️</div><div style=\"color:#333;font-size:15px;margin-bottom:8px\">Impossible d'afficher cette partition</div><div style=\"max-width:320px;margin:0 auto;line-height:1.5;font-size:12px;color:#999\">" + _0xmsg + "</div></div>";
+    }
+  }
+}
+function osmdSetPlayBtnState(_0xstate) {
+  var _0xbtn = document.getElementById("osmd-play-btn");
+  if (!_0xbtn) return;
+  if (_0xstate === "loading") { _0xbtn.disabled = true; _0xbtn.textContent = "⏳"; }
+  else if (_0xstate === "playing") { _0xbtn.disabled = false; _0xbtn.textContent = "⏸ Pause"; }
+  else { _0xbtn.disabled = false; _0xbtn.textContent = "▶ Play"; }
+}
+function osmdTogglePlay() {
+  if (!osmdApi) return;
+  if (osmdPlaying) {
+    osmdStopAutoScroll();
+  } else {
+    osmdStartAutoScroll();
+  }
+}
+function osmdRestart() {
+  if (!osmdApi) return;
+  osmdStopAutoScroll();
+  try { osmdApi.cursor.reset(); osmdApi.cursor.show(); } catch (_0xe) {}
+}
+function osmdStopAutoScroll() {
+  osmdPlaying = false;
+  if (osmdRafId) { cancelAnimationFrame(osmdRafId); osmdRafId = null; }
+  osmdStartTs = null;
+  osmdSetPlayBtnState("ready");
+}
+// Avance le curseur OSMD au rythme du VRAI tempo (BPM) du morceau — pas de
+// gestion automatique des reprises pour l'instant (limite connue de cette
+// premiere integration, a ameliorer si besoin) : le curseur suit le fil du
+// morceau tel qu'ecrit, sans sauter aux reprises.
+function osmdStartAutoScroll() {
+  if (!osmdApi) return;
+  osmdPlaying = true;
+  osmdStartTs = null;
+  try {
+    osmdStartWholeNotes = osmdApi.cursor.iterator.currentTimeStamp.RealValue;
+  } catch (_0xe) {
+    osmdStartWholeNotes = 0;
+  }
+  osmdSetPlayBtnState("playing");
+  function _0xtick(_0xts) {
+    if (!osmdPlaying) return;
+    if (osmdStartTs === null) {
+      osmdStartTs = _0xts;
+    }
+    var _0xelapsedSec = (_0xts - osmdStartTs) / 1000;
+    var _0xbeatsPerMeasureOsmd = 4;
+    try {
+      var _0xrtd = osmdApi.Sheet && osmdApi.Sheet.SheetPlaybackSetting;
+    } catch (_0xe2) {}
+    var _0xwholeNotesPerSec = (bpm / 60) / 4;
+    var _0xtargetWholeNotes = osmdStartWholeNotes + _0xelapsedSec * _0xwholeNotesPerSec;
+    var _0xguardCount = 0;
+    try {
+      while (!osmdApi.cursor.iterator.endReached &&
+             osmdApi.cursor.iterator.currentTimeStamp.RealValue < _0xtargetWholeNotes &&
+             _0xguardCount < 2000) {
+        osmdApi.cursor.next();
+        _0xguardCount++;
+      }
+      if (osmdApi.cursor.iterator.endReached) {
+        osmdStopAutoScroll();
+        return;
+      }
+    } catch (_0xtickErr) {
+      osmdStopAutoScroll();
+      return;
+    }
+    osmdRafId = requestAnimationFrame(_0xtick);
+  }
+  osmdRafId = requestAnimationFrame(_0xtick);
+}
+
 function tabSetPlayBtnState(_0x84af73) {
+
   var _0x29d056 = _0x552966;
   var _0x175dc8 = _0x4bc6f9;
   var _0x44b8df = document.getElementById("tab-play-btn");
@@ -9334,6 +9527,71 @@ async function midiLoad(_0x34b226) {
     bpm: _0x1c5107
   };
 }
+// Import MusicXML pour affichage en VRAIE notation (OSMD) — alternative a
+// mxlLoad qui, lui, reduit la partition a une grille d'accords. Garde le
+// fichier XML brut, le sauvegarde pour l'ecran Scene (renderSceneOsmd).
+async function osmdImportFile(_0xfile) {
+  pdfStatus("⏳ Lecture MusicXML (partition)…");
+  try {
+    var _0xxmlText = "";
+    if (_0xfile.name.match(/\.mxl$/i)) {
+      if (!window.JSZip) {
+        await new Promise(function (_0xres, _0xrej) {
+          var _0xs = document.createElement("script");
+          _0xs.src = "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";
+          _0xs.onload = _0xres;
+          _0xs.onerror = _0xrej;
+          document.head.appendChild(_0xs);
+        });
+      }
+      var _0xbuf = await _0xfile.arrayBuffer();
+      var _0xzip = await new JSZip().loadAsync(_0xbuf);
+      var _0xxmlName = Object.keys(_0xzip.files).find(function (_0xn) {
+        return _0xn.match(/\.xml$/i) && !_0xn.match(/META-INF/i);
+      });
+      if (!_0xxmlName) {
+        throw new Error("Fichier XML introuvable dans le MXL");
+      }
+      _0xxmlText = await _0xzip.files[_0xxmlName].async("text");
+    } else {
+      _0xxmlText = await _0xfile.text();
+    }
+    var _0xdoc = new DOMParser().parseFromString(_0xxmlText, "text/xml");
+    var _0xtitleEl = _0xdoc.getElementsByTagName("work-title")[0] || _0xdoc.getElementsByTagName("movement-title")[0];
+    var _0xtitle = _0xtitleEl ? _0xtitleEl.textContent.trim() : _0xfile.name.replace(/\.[^.]+$/, "").trim();
+    var _0xtempoEls = _0xdoc.querySelectorAll("[tempo]");
+    var _0xosmdBpm = _0xtempoEls.length ? Math.round(parseFloat(_0xtempoEls[0].getAttribute("tempo"))) : 120;
+    var _0xbeatsEl = _0xdoc.getElementsByTagName("beats")[0];
+    var _0xosmdTimesig = _0xbeatsEl ? parseInt(_0xbeatsEl.textContent, 10) : 4;
+    var _0xid = uid();
+    var _0xsongObj = {
+      id: _0xid,
+      name: _0xtitle,
+      key: "",
+      bpm: String(_0xosmdBpm),
+      dur: "",
+      tags: "partition-musicxml",
+      capo: "0",
+      grid: "",
+      lyrics: "",
+      timesig: _0xosmdTimesig,
+      notes: "Partition MusicXML affichée en vraie notation (OSMD).",
+      osmdKey: "osmd_" + _0xid,
+      created: Date.now()
+    };
+    await imgDbPut(_0xsongObj.osmdKey, _0xxmlText);
+    songs.push(_0xsongObj);
+    dbSave();
+    pdfStatus("✓ Partition « " + _0xtitle + " » importée — " + _0xosmdBpm + " BPM", "var(--G)");
+    go("songs");
+    renderSongs();
+    setTimeout(function () {
+      openSongModal(_0xid);
+    }, 150);
+  } catch (_0xerr) {
+    pdfStatus("❌ " + _0xerr.message, "var(--R)");
+  }
+}
 async function mxlLoad(_0x2ee187) {
   var _0x47f509 = _0x552966;
   var _0x25ea00 = _0x4bc6f9;
@@ -9934,7 +10192,7 @@ async function unifiedLoadSingleFile(_0x366909) {
       }, 50);
     });
   } else if (_0x5d01b2 === "mxl" || _0x5d01b2 === "xml" || _0x5d01b2 === "musicxml") {
-    await mxlLoad(_0x366909);
+    await osmdImportFile(_0x366909);
   } else if (_TAB_FORMAT_EXT.indexOf(_0x5d01b2) >= 0) {
     await tabLoadFile(_0x366909);
   } else if (_0x5d01b2 === "tef" || _0x5d01b2 === "ptb" || _0x5d01b2 === "tab") {
@@ -12077,7 +12335,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.97.0 · 05/08/2026<span id="license-watermark"></span>
+  v2.98.0 · 05/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
