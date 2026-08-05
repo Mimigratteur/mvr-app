@@ -738,7 +738,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.93.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.94.0</span></h1>
 </div>
 
 <div id="pages">
@@ -10846,6 +10846,85 @@ function _unsupportedTabMessage(_0x19e355) {
   }
   return "❌ Le format ." + _0xaf124e + " (" + UNSUPPORTED_TAB_FORMATS[_0xaf124e] + ") n'est pas lisible par MVR — aucune app ne sait le faire dans un navigateur. Solution : ouvre ce fichier dans TablEdit, PowerTab Editor ou TuxGuitar (gratuits), puis \"Exporter vers\" Guitar Pro ou MusicXML, et importe ce nouveau fichier ici.";
 }
+// Contournement cible pour un bug apparent d'alphaTab 1.8.3 avec le
+// MusicXML : quand une partie NE DECLARE PAS explicitement <staves>
+// (parfaitement valide selon la norme — sous-entend "1 portee" par
+// defaut), alphaTab semble planter avec "cannot read properties of
+// undefined (reading 'staves')" plutot que d'appliquer ce defaut. On
+// rend l'element explicite pour CHAQUE partie qui ne l'a pas, sans
+// toucher au reste du fichier. Ne s'applique qu'aux fichiers XML —
+// jamais aux formats Guitar Pro (binaires, non concernes).
+function _fixMusicXmlStaves(_0xxmlText) {
+  try {
+    var _0xdoc = new DOMParser().parseFromString(_0xxmlText, "text/xml");
+    if (_0xdoc.getElementsByTagName("parsererror").length) {
+      return _0xxmlText;
+    }
+    var _0xparts = _0xdoc.getElementsByTagName("part");
+    for (var _0xpi = 0; _0xpi < _0xparts.length; _0xpi++) {
+      var _0xfirstMeasure = _0xparts[_0xpi].getElementsByTagName("measure")[0];
+      if (!_0xfirstMeasure) continue;
+      var _0xattrs = _0xfirstMeasure.getElementsByTagName("attributes")[0];
+      if (!_0xattrs) continue;
+      if (_0xattrs.getElementsByTagName("staves").length === 0) {
+        var _0xstavesEl = _0xdoc.createElement("staves");
+        _0xstavesEl.textContent = "1";
+        // Placee juste apres <time> si presente (ordre attendu par le
+        // schema MusicXML), sinon en tout debut du bloc <attributes>.
+        var _0xtimeEl = _0xattrs.getElementsByTagName("time")[0];
+        if (_0xtimeEl && _0xtimeEl.nextSibling) {
+          _0xattrs.insertBefore(_0xstavesEl, _0xtimeEl.nextSibling);
+        } else if (_0xtimeEl) {
+          _0xattrs.appendChild(_0xstavesEl);
+        } else {
+          _0xattrs.insertBefore(_0xstavesEl, _0xattrs.firstChild);
+        }
+      }
+    }
+    return new XMLSerializer().serializeToString(_0xdoc);
+  } catch (_0xfixErr) {
+    // En cas d'echec du correctif, on retourne le texte original tel
+    // quel — mieux vaut tenter le chargement normal (qui pourrait quand
+    // meme reussir) que de bloquer sur une erreur ICI.
+    return _0xxmlText;
+  }
+}
+async function _preprocessMusicXmlBytes(_0xfile, _0xrawBytes) {
+  var _0xisXmlFormat = /\.(mxl|xml|musicxml)$/i.test(_0xfile.name);
+  if (!_0xisXmlFormat) {
+    return _0xrawBytes;
+  }
+  try {
+    var _0xxmlText;
+    if (/\.mxl$/i.test(_0xfile.name)) {
+      if (!window.JSZip) {
+        await new Promise(function (_0xres, _0xrej) {
+          var _0xs = document.createElement("script");
+          _0xs.src = "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";
+          _0xs.onload = _0xres;
+          _0xs.onerror = _0xrej;
+          document.head.appendChild(_0xs);
+        });
+      }
+      var _0xzip = await new JSZip().loadAsync(_0xrawBytes);
+      var _0xxmlFileName = Object.keys(_0xzip.files).find(function (_0xn) {
+        return _0xn.match(/\.xml$/i) && !_0xn.match(/META-INF/i);
+      });
+      if (!_0xxmlFileName) {
+        return _0xrawBytes;
+      }
+      _0xxmlText = await _0xzip.files[_0xxmlFileName].async("text");
+    } else {
+      _0xxmlText = new TextDecoder("utf-8").decode(_0xrawBytes);
+    }
+    var _0xfixedText = _fixMusicXmlStaves(_0xxmlText);
+    return new TextEncoder().encode(_0xfixedText);
+  } catch (_0xpreErr) {
+    // Meme logique de prudence : en cas de pepin dans ce pretraitement,
+    // on retombe sur les octets originaux plutot que de bloquer l'import.
+    return _0xrawBytes;
+  }
+}
 async function tabLoadFile(_0x5dfb17) {
   var _0x1e5181 = _0x552966;
   var _0x7e09b8 = _0x4bc6f9;
@@ -10863,7 +10942,8 @@ async function tabLoadFile(_0x5dfb17) {
   try {
     var _0x1c0c8d = await _ensureAlphaTab();
     var _0x103b73 = await _0x5dfb17.arrayBuffer();
-    var _0x1e2421 = new Uint8Array(_0x103b73);
+    var _0x1e2421raw = new Uint8Array(_0x103b73);
+    var _0x1e2421 = await _preprocessMusicXmlBytes(_0x5dfb17, _0x1e2421raw);
     var _0x478d37 = new _0x1c0c8d.Settings();
     var _0x5acf71 = _0x1c0c8d.importer.ScoreLoader.loadScoreFromBytes(_0x1e2421, _0x478d37);
     tabPendingBytes = _0x1e2421;
@@ -11858,7 +11938,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.93.0 · 05/08/2026<span id="license-watermark"></span>
+  v2.94.0 · 05/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
