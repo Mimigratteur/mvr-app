@@ -738,7 +738,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.96.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.97.0</span></h1>
 </div>
 
 <div id="pages">
@@ -9825,7 +9825,7 @@ function pdfReset() {
   document.getElementById("pdf-raw").value = "";
   document.getElementById("pdf-grid").value = "";
 }
-var _TAB_FORMAT_EXT = ["gp3", "gp4", "gp5", "gpx", "gp", "cap", "capx", "musicxml", "mxl", "xml"];
+var _TAB_FORMAT_EXT = ["gp3", "gp4", "gp5", "gpx", "gp", "cap", "capx"];
 function unifiedDzOver(_0x3b6cef) {
   var _0x247615 = _0x552966;
   var _0x26cd99 = _0x4bc6f9;
@@ -9933,6 +9933,8 @@ async function unifiedLoadSingleFile(_0x366909) {
         document.getElementById("audio-bpm-input").focus();
       }, 50);
     });
+  } else if (_0x5d01b2 === "mxl" || _0x5d01b2 === "xml" || _0x5d01b2 === "musicxml") {
+    await mxlLoad(_0x366909);
   } else if (_TAB_FORMAT_EXT.indexOf(_0x5d01b2) >= 0) {
     await tabLoadFile(_0x366909);
   } else if (_0x5d01b2 === "tef" || _0x5d01b2 === "ptb" || _0x5d01b2 === "tab") {
@@ -12075,7 +12077,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.96.0 · 05/08/2026<span id="license-watermark"></span>
+  v2.97.0 · 05/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
