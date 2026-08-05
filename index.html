@@ -738,7 +738,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.92.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.93.0</span></h1>
 </div>
 
 <div id="pages">
@@ -6695,6 +6695,11 @@ async function renderSceneTab(_0x1905ab) {
       var _0x4d6306 = _0x1649a5;
       var _0x27b671 = _0x1574f3;
       console.warn("alphaTab error", _0x28b80c);
+      var _0x4bcurSongForErr = curSet && curSet.songIds ? curSet.songIds[curIdx] : null;
+      if (_0x4bcurSongForErr === _0x1905ab.id) {
+        var _0xerrMsg = (_0x28b80c && (_0x28b80c.message || _0x28b80c.toString())) || "erreur inconnue";
+        _0x186bb2.innerHTML = "<div class=\"img-loading\" style=\"padding-top:80px;color:#888\"><div style=\"font-size:34px;margin-bottom:14px\">⚠️</div><div style=\"color:#333;font-size:15px;margin-bottom:8px\">Impossible d'afficher cette partition</div><div style=\"max-width:320px;margin:0 auto;line-height:1.5;font-size:12px;color:#999\">" + _0xerrMsg + "</div></div>";
+      }
     });
     tabApi.load(_base64ToBytes(_0x52b2a7));
   } catch (_0x45da59) {
@@ -9383,10 +9388,31 @@ async function mxlLoad(_0x2ee187) {
     var _0x4b642a = _0x3692c2("measure");
     var _0x35cded = [];
     var _0x241768 = null;
+    // Reperes de reprise/fin, un par mesure (indice = meme indice que
+    // _0x35cded) — permet de "derouler" la grille dans l'ordre REELLEMENT
+    // joue juste apres, plutot que de gerer des sauts pendant la lecture.
+    var _0xrepeatInfo = [];
     for (var _0xb977ad = 0; _0xb977ad < _0x4b642a.length; _0xb977ad++) {
       var _0x5870d9 = _0x4b642a[_0xb977ad];
       var _0x44ff8d = [];
       var _0x3ea5ee = [];
+      var _0xmInfo = { forwardRepeat: false, backwardRepeat: false, endingStart: null, endingStop: null };
+      var _0xbarlines = _0x5870d9.getElementsByTagName("barline");
+      for (var _0xbi = 0; _0xbi < _0xbarlines.length; _0xbi++) {
+        var _0xbl = _0xbarlines[_0xbi];
+        var _0xrepEl = _0xbl.getElementsByTagName("repeat")[0];
+        if (_0xrepEl) {
+          if (_0xrepEl.getAttribute("direction") === "forward") _0xmInfo.forwardRepeat = true;
+          if (_0xrepEl.getAttribute("direction") === "backward") _0xmInfo.backwardRepeat = true;
+        }
+        var _0xendEl = _0xbl.getElementsByTagName("ending")[0];
+        if (_0xendEl) {
+          var _0xendNum = parseInt(_0xendEl.getAttribute("number"), 10) || 1;
+          if (_0xendEl.getAttribute("type") === "start") _0xmInfo.endingStart = _0xendNum;
+          if (_0xendEl.getAttribute("type") === "stop" || _0xendEl.getAttribute("type") === "discontinue") _0xmInfo.endingStop = _0xendNum;
+        }
+      }
+      _0xrepeatInfo.push(_0xmInfo);
       var _0x45e15d = _0x5870d9.getElementsByTagName("note");
       for (var _0x33696d = 0; _0x33696d < _0x45e15d.length; _0x33696d++) {
         var _0x42ce78 = _0x45e15d[_0x33696d];
@@ -9420,8 +9446,40 @@ async function mxlLoad(_0x2ee187) {
       }
     }
     var _0x37769b = [];
-    for (var _0x5987ec = 0; _0x5987ec < _0x35cded.length; _0x5987ec += _0x1ff9cb) {
-      var _0x659a80 = _0x35cded.slice(_0x5987ec, _0x5987ec + _0x1ff9cb);
+    // "Deroule" la grille dans l'ordre REELLEMENT joue (reprises dupliquees,
+    // mesures de 1ere fin sautees au 2e passage) — a partir de la, plus
+    // besoin d'aucune logique de saut pendant la lecture : c'est juste une
+    // sequence lineaire, lue par le moteur de calcul pur deja fiable.
+    function _0xunrollRepeats(_0xchords, _0xrepInfo) {
+      var _0xout = [];
+      var _0xi = 0;
+      var _0xlastFwd = 0;
+      var _0xfired = {};
+      var _0xguard = 0;
+      while (_0xi < _0xchords.length && _0xguard < _0xchords.length * 4) {
+        _0xguard++;
+        var _0xinfo = _0xrepInfo[_0xi] || {};
+        if (_0xinfo.forwardRepeat) {
+          _0xlastFwd = _0xi;
+        }
+        if (_0xinfo.endingStart !== null && _0xfired[_0xi]) {
+          _0xi++;
+          continue;
+        }
+        _0xout.push(_0xchords[_0xi]);
+        if (_0xinfo.backwardRepeat && !_0xfired[_0xi]) {
+          _0xfired[_0xi] = true;
+          _0xi = _0xlastFwd;
+          continue;
+        }
+        _0xi++;
+      }
+      return _0xout;
+    }
+    var _0xhasAnyRepeat = _0xrepeatInfo.some(function (_0xr) { return _0xr.forwardRepeat || _0xr.backwardRepeat; });
+    var _0x35cdedFinal = _0xhasAnyRepeat ? _0xunrollRepeats(_0x35cded, _0xrepeatInfo) : _0x35cded;
+    for (var _0x5987ec = 0; _0x5987ec < _0x35cdedFinal.length; _0x5987ec += _0x1ff9cb) {
+      var _0x659a80 = _0x35cdedFinal.slice(_0x5987ec, _0x5987ec + _0x1ff9cb);
       var _0x1e4ffc = [_0x659a80[0]];
       for (var _0x17265d = 1; _0x17265d < _0x659a80.length; _0x17265d++) {
         _0x1e4ffc.push(_0x659a80[_0x17265d] === _0x659a80[_0x17265d - 1] ? "-" : _0x659a80[_0x17265d]);
@@ -9439,7 +9497,7 @@ async function mxlLoad(_0x2ee187) {
     }
     document.getElementById("pdf-fname").textContent = "🎼 " + _0x11720f;
     pdfImportSource = "musicxml";
-    pdfStatus("✓ " + _0x4b642a.length + " mesures — " + _0x102e67 + " — " + _0x42cf32 + " — " + _0x483c5b + " BPM", "var(--G)");
+    pdfStatus("✓ " + _0x4b642a.length + " mesures" + (_0xhasAnyRepeat ? " (" + _0x35cdedFinal.length + " une fois les reprises dépliées)" : "") + " — " + _0x102e67 + " — " + _0x42cf32 + " — " + _0x483c5b + " BPM", "var(--G)");
     pdfCreate();
   } catch (_0x8aa6cc) {
     pdfStatus("❌ " + _0x8aa6cc.message, "var(--R)");
@@ -11800,7 +11858,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.92.0 · 05/08/2026<span id="license-watermark"></span>
+  v2.93.0 · 05/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
