@@ -765,7 +765,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.107.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.108.0</span></h1>
 </div>
 
 <div id="pages">
@@ -1593,6 +1593,7 @@ J&#39;ai voulu planter un oranger">    </textarea>
     <button class="btn-g" id="notext-pdf-usegrid-btn" style="display:none" onclick="pdfUseDetectedGrid()">✓ Créer la grille (recommandé)<br><span style="font-size:11px;font-weight:400;opacity:.85">Accords et mesures repérés directement dans le PDF — la plus fiable</span></button>
     <button onclick="notextPdfOnline()">🤖 Lire avec l'IA <span id="notext-pdf-ai-caveat" style="display:none">(en secours seulement)</span><br><span style="font-size:11px;font-weight:400;opacity:.85">À utiliser seulement si la grille ci-dessus semble fausse une fois créée — connexion internet requise</span></button>
     <button onclick="notextPdfOffline()">📷 Garder en partition-photo<br><span style="font-size:11px;font-weight:400;opacity:.85">Fonctionne 100% hors connexion, pas de grille interactive</span></button>
+    <button id="notext-pdf-audiveris-btn" style="display:none" onclick="notextPdfViaAudiveris()">🎼 Notation complète avec curseur (via Audiveris)<br><span style="font-size:11px;font-weight:400;opacity:.85">La vraie partition (notes, portée) suivie par le curseur pendant la lecture — pont local requis</span></button>
   </div>
 </div></div>
 
@@ -10147,6 +10148,11 @@ function showNoTextPdfChoice(_0x360d28) {
   var _0x1msg = document.getElementById("notext-pdf-msg");
   var _0x1gridbtn = document.getElementById("notext-pdf-usegrid-btn");
   var _0x1aiCaveat = document.getElementById("notext-pdf-ai-caveat");
+  var _0x1audiverisBtn = document.getElementById("notext-pdf-audiveris-btn");
+  if (_0x1audiverisBtn) {
+    var _0xbridgeCard = document.getElementById("audiveris-bridge-card");
+    _0x1audiverisBtn.style.display = (_0xbridgeCard && _0xbridgeCard.style.display !== "none") ? "" : "none";
+  }
   var _0x1name = _0x360d28 || "";
   if (_pendingTextGridFound) {
     if (_0x1title) _0x1title.textContent = "Grille détectée avec précision";
@@ -10166,6 +10172,14 @@ function pdfUseDetectedGrid() {
   _pendingImagePdfFile = null;
   _pendingTextGridFound = false;
   pdfCreate();
+}
+async function notextPdfViaAudiveris() {
+  var _0xfile = _pendingImagePdfFile;
+  hideModal("notext-pdf-modal");
+  _pendingImagePdfFile = null;
+  _pendingTextGridFound = false;
+  if (!_0xfile) return;
+  await osmdBridgeFileChosen([_0xfile]);
 }
 function notextPdfOffline() {
   hideModal("notext-pdf-modal");
@@ -12576,7 +12590,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.107.0 · 06/08/2026<span id="license-watermark"></span>
+  v2.108.0 · 06/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
