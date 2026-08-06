@@ -765,7 +765,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.109.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.110.0</span></h1>
 </div>
 
 <div id="pages">
@@ -6844,6 +6844,8 @@ var osmdRafId = null;
 var osmdStartTs = null;
 var osmdStartWholeNotes = 0;
 var osmdWholeNoteBudget = 0;
+var osmdVerseCount = 1; // nb de couplets detectes (lignes de paroles) dans la partition affichee
+var osmdVersePass = 1; // couplet en cours de lecture (1-indexe)
 var osmdCurSongId = null;
 
 async function renderSceneOsmd(_0xsong) {
@@ -6874,6 +6876,23 @@ async function renderSceneOsmd(_0xsong) {
   try {
     var _0xosmdLib = await _ensureOSMD();
     _0xinner.innerHTML = "";
+    // Detecte le nombre de couplets (ex: psaumes/cantiques a plusieurs
+    // strophes sur la meme melodie, sans aucun symbole de reprise imprime
+    // sur la partition -- juste plusieurs lignes de paroles empilees sous
+    // la portee). MusicXML numerote chaque ligne via <lyric number="N">.
+    // On en deduit qu'il faut jouer la melodie N fois de suite en lecture,
+    // meme si rien dans le graphisme de la partition ne le signale.
+    osmdVerseCount = 1;
+    try {
+      var _0xverseMatches = _0xxmlText.match(/<lyric\s[^>]*number="(\d+)"/g) || [];
+      var _0xmaxVerse = 1;
+      _0xverseMatches.forEach(function (_0xvm) {
+        var _0xn = parseInt(_0xvm.match(/number="(\d+)"/)[1], 10);
+        if (_0xn > _0xmaxVerse) _0xmaxVerse = _0xn;
+      });
+      osmdVerseCount = _0xmaxVerse;
+    } catch (_0xve) {}
+    osmdVersePass = 1;
     osmdApi = new _0xosmdLib.OpenSheetMusicDisplay(_0xinner, {
       autoResize: true,
       backend: "svg",
@@ -6922,6 +6941,7 @@ function osmdRestart() {
   osmdStopAutoScroll();
   osmdFiredRepeats = {};
   osmdWholeNoteBudget = 0;
+  osmdVersePass = 1;
   try { osmdApi.cursor.reset(); osmdApi.cursor.show(); } catch (_0xe) {}
 }
 function osmdStopAutoScroll() {
@@ -7014,8 +7034,22 @@ function osmdStartAutoScroll() {
         osmdApi.cursor.next();
         _0xguardCount++;
       }
-      _0xdebugEl.textContent = "mesure: " + _osmdGetCurrentMeasureIdx() + " | temps: " + osmdApi.cursor.iterator.currentTimeStamp.RealValue.toFixed(3);
+      _0xdebugEl.textContent = "mesure: " + _osmdGetCurrentMeasureIdx() + " | temps: " + osmdApi.cursor.iterator.currentTimeStamp.RealValue.toFixed(3) + (osmdVerseCount > 1 ? " | couplet " + osmdVersePass + "/" + osmdVerseCount : "");
       if (osmdApi.cursor.iterator.endReached) {
+        if (osmdVersePass < osmdVerseCount) {
+          // Plusieurs couplets sur la meme melodie (psaume, cantique...) --
+          // rien dans la partition ne le signale par un symbole, donc on
+          // relance nous-memes depuis le debut plutot que de s'arreter,
+          // jusqu'a avoir joue autant de fois qu'il y a de lignes de
+          // paroles detectees.
+          osmdVersePass++;
+          osmdWholeNoteBudget = 0;
+          try { osmdApi.cursor.reset(); osmdApi.cursor.show(); } catch (_0xrst) {}
+          showPlaybackToast("Couplet " + osmdVersePass + "/" + osmdVerseCount);
+          osmdRafId = requestAnimationFrame(_0xtick);
+          return;
+        }
+        osmdVersePass = 1;
         osmdStopAutoScroll();
         return;
       }
@@ -12607,7 +12641,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.109.0 · 06/08/2026<span id="license-watermark"></span>
+  v2.110.0 · 06/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
