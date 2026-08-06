@@ -765,7 +765,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.108.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.108.1</span></h1>
 </div>
 
 <div id="pages">
@@ -10149,10 +10149,7 @@ function showNoTextPdfChoice(_0x360d28) {
   var _0x1gridbtn = document.getElementById("notext-pdf-usegrid-btn");
   var _0x1aiCaveat = document.getElementById("notext-pdf-ai-caveat");
   var _0x1audiverisBtn = document.getElementById("notext-pdf-audiveris-btn");
-  if (_0x1audiverisBtn) {
-    var _0xbridgeCard = document.getElementById("audiveris-bridge-card");
-    _0x1audiverisBtn.style.display = (_0xbridgeCard && _0xbridgeCard.style.display !== "none") ? "" : "none";
-  }
+  if (_0x1audiverisBtn) _0x1audiverisBtn.style.display = "";
   var _0x1name = _0x360d28 || "";
   if (_pendingTextGridFound) {
     if (_0x1title) _0x1title.textContent = "Grille détectée avec précision";
@@ -12590,7 +12587,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.108.0 · 06/08/2026<span id="license-watermark"></span>
+  v2.108.1 · 06/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
