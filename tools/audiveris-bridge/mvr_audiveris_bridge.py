@@ -39,8 +39,11 @@ PORT = 8791
 # Chemins courants d'installation d'Audiveris sur Windows -- le script
 # essaie chacun dans l'ordre et garde le premier qui existe.
 CANDIDATE_PATHS = [
+    r"C:\Program Files\Audiveris\Audiveris.exe",
     r"C:\Program Files\Audiveris\bin\Audiveris.bat",
+    r"C:\Program Files (x86)\Audiveris\Audiveris.exe",
     r"C:\Program Files (x86)\Audiveris\bin\Audiveris.bat",
+    os.path.expanduser(r"~\AppData\Local\Audiveris\Audiveris.exe"),
     os.path.expanduser(r"~\AppData\Local\Audiveris\bin\Audiveris.bat"),
 ]
 
