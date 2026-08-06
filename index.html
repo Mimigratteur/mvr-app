@@ -765,7 +765,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.106.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.107.0</span></h1>
 </div>
 
 <div id="pages">
@@ -1036,6 +1036,27 @@ body.fullscreen #topbar{display:none}
                 document.getElementById(&#39;unified-input&#39;).click()">📂 Choisir</button>
       </div>
     </div>
+
+    <!-- ══ PONT AUDIVERIS (local) ══
+         Un navigateur ne peut jamais lancer un programme installé sur le
+         PC (Audiveris) — restriction de sécurité incontournable. Ce bloc
+         parle donc à un petit service local (127.0.0.1) que le musicien
+         lance une fois à côté, sur le même principe que Docker Desktop ou
+         une imprimante réseau. Masqué par défaut ; ne s'affiche que si le
+         pont répond à /ping (osmdBridgeDetect, appelé à l'ouverture de
+         l'onglet Import). -->
+    <div id="audiveris-bridge-card" class="import-card" style="display:none;margin-top:10px">
+      <input type="file" id="audiveris-bridge-input" accept=".pdf" style="display:none" onchange="osmdBridgeFileChosen(this.files)">
+      <div class="import-card-inner">
+        <div class="import-card-icon">🖨️</div>
+        <div>
+          <div class="import-card-text">Convertir un PDF de partition via Audiveris</div>
+          <div class="import-card-sub" id="audiveris-bridge-sub">🟢 Pont local détecté — transcription automatique (langue, paroles, accords) sans ouvrir Audiveris.</div>
+        </div>
+        <button class="btn-g btn-sm" onclick="document.getElementById(&#39;audiveris-bridge-input&#39;).click()">📂 Choisir un PDF</button>
+      </div>
+    </div>
+
 
     <!-- Masqué : plus rien d'affiché sous la zone de dépôt. Élément gardé
          (pas supprimé) car lycLoadPaste() lit toujours sa valeur — pourra
@@ -2933,6 +2954,7 @@ function go(_0x439267) {
   if (_0x439267 === "pdf") {
     pdfReset();
     lycReset();
+    osmdBridgeDetect();
   }
 }
 function showModal(_0x152d0b) {
@@ -9593,6 +9615,60 @@ async function midiLoad(_0x34b226) {
 // Import MusicXML pour affichage en VRAIE notation (OSMD) — alternative a
 // mxlLoad qui, lui, reduit la partition a une grille d'accords. Garde le
 // fichier XML brut, le sauvegarde pour l'ecran Scene (renderSceneOsmd).
+// ── Pont Audiveris (service local) ──
+// Un navigateur ne peut jamais lancer un programme installe sur le PC —
+// c'est pour ca que ce bloc parle a un petit service local (127.0.0.1)
+// plutot que d'essayer d'appeler Audiveris directement. Voir
+// tools/audiveris-bridge/ dans le depot pour le service lui-meme.
+var OSMD_BRIDGE_URL = "http://127.0.0.1:8791";
+async function osmdBridgeDetect() {
+  var _0xcard = document.getElementById("audiveris-bridge-card");
+  var _0xsub = document.getElementById("audiveris-bridge-sub");
+  if (!_0xcard) return;
+  try {
+    var _0xctrl = new AbortController();
+    var _0xtimer = setTimeout(function () { _0xctrl.abort(); }, 2500);
+    var _0xres = await fetch(OSMD_BRIDGE_URL + "/ping", { signal: _0xctrl.signal });
+    clearTimeout(_0xtimer);
+    if (!_0xres.ok) throw new Error("ping non OK");
+    var _0xdata = await _0xres.json();
+    if (_0xdata.audiverisFound) {
+      _0xsub.textContent = "🟢 Pont local détecté — transcription automatique (langue, paroles, accords) sans ouvrir Audiveris.";
+      _0xsub.style.color = "";
+    } else {
+      _0xsub.textContent = "🟠 Pont local détecté, mais Audiveris introuvable sur cet ordinateur — vérifie le chemin dans mvr_audiveris_bridge.py.";
+      _0xsub.style.color = "var(--R)";
+    }
+    _0xcard.style.display = "";
+  } catch (_0xerr) {
+    // Pont non lancé, ou navigateur bloquant l'accès réseau local — la carte
+    // reste masquée plutôt que d'afficher une erreur inutile à chaque fois.
+    _0xcard.style.display = "none";
+  }
+}
+async function osmdBridgeFileChosen(_0xfiles) {
+  if (!_0xfiles || !_0xfiles.length) return;
+  var _0xfile = _0xfiles[0];
+  pdfStatus("⏳ Transcription via Audiveris (peut prendre 1 à 2 minutes)…");
+  try {
+    var _0xres = await fetch(OSMD_BRIDGE_URL + "/transcribe", {
+      method: "POST",
+      headers: { "Content-Type": "application/pdf", "X-Filename": _0xfile.name },
+      body: _0xfile
+    });
+    if (!_0xres.ok) {
+      var _0xerrJson = await _0xres.json().catch(function () { return {}; });
+      throw new Error(_0xerrJson.message || ("Le pont a répondu " + _0xres.status));
+    }
+    var _0xbuf = await _0xres.arrayBuffer();
+    var _0xmxlName = _0xfile.name.replace(/\.pdf$/i, "") + ".mxl";
+    var _0xmxlFile = new File([_0xbuf], _0xmxlName, { type: "application/octet-stream" });
+    document.getElementById("audiveris-bridge-input").value = "";
+    await osmdImportFile(_0xmxlFile);
+  } catch (_0xerr) {
+    pdfStatus("❌ Transcription Audiveris échouée : " + _0xerr.message, "var(--R)");
+  }
+}
 var _osmdPendingImport = null; // { doc, file } en attente pendant que la modale de choix des parties est ouverte
 async function osmdImportFile(_0xfile) {
   pdfStatus("⏳ Lecture MusicXML (partition)…");
@@ -12500,7 +12576,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.106.0 · 06/08/2026<span id="license-watermark"></span>
+  v2.107.0 · 06/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
