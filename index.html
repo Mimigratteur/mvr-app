@@ -765,7 +765,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.105.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.106.0</span></h1>
 </div>
 
 <div id="pages">
@@ -1626,6 +1626,23 @@ J&#39;ai voulu planter un oranger">    </textarea>
   <div class="row" style="margin-top:12px">
     <button class="btn-g" onclick="_confirmAudioBpm()">✓ Analyser</button>
     <button onclick="_cancelAudioBpm()">Annuler</button>
+  </div>
+</div></div>
+
+<!-- ══ MODAL PARTIES MUSICXML (import partition) ══
+     Une partition MusicXML issue d'un scanner (Audiveris...) contient
+     souvent plusieurs portées (voix, chœur, piano...) dont certaines sont
+     inutiles pour un prompteur solo. On laisse le musicien cocher ce qu'il
+     veut garder AVANT l'affichage OSMD, plutôt que de le renvoyer nettoyer
+     le fichier à la main dans un autre logiciel à chaque import. -->
+<div class="modal-bg" id="osmd-parts-modal">
+<div class="modal">
+  <h2>Quelles portées garder ?</h2>
+  <p style="font-size:12.5px;color:var(--tx2);margin-top:-6px">Cette partition contient plusieurs parties. Décoche celles dont tu n'as pas besoin (chœur, doublons, portées vides…) — la partition affichée dans MVR ne montrera que ce qui est coché.</p>
+  <div id="osmd-parts-list" style="display:flex;flex-direction:column;gap:6px;margin-top:10px;max-height:320px;overflow-y:auto"></div>
+  <div class="row" style="margin-top:14px">
+    <button class="btn-g" onclick="_confirmOsmdPartsModal()">✓ Importer la sélection</button>
+    <button onclick="_cancelOsmdPartsModal()">Annuler</button>
   </div>
 </div></div>
 
@@ -9576,6 +9593,7 @@ async function midiLoad(_0x34b226) {
 // Import MusicXML pour affichage en VRAIE notation (OSMD) — alternative a
 // mxlLoad qui, lui, reduit la partition a une grille d'accords. Garde le
 // fichier XML brut, le sauvegarde pour l'ecran Scene (renderSceneOsmd).
+var _osmdPendingImport = null; // { doc, file } en attente pendant que la modale de choix des parties est ouverte
 async function osmdImportFile(_0xfile) {
   pdfStatus("⏳ Lecture MusicXML (partition)…");
   try {
@@ -9603,66 +9621,141 @@ async function osmdImportFile(_0xfile) {
       _0xxmlText = await _0xfile.text();
     }
     var _0xdoc = new DOMParser().parseFromString(_0xxmlText, "text/xml");
-    var _0xtitleEl = _0xdoc.getElementsByTagName("work-title")[0] || _0xdoc.getElementsByTagName("movement-title")[0];
-    var _0xtitle = _0xtitleEl ? _0xtitleEl.textContent.trim() : _0xfile.name.replace(/\.[^.]+$/, "").trim();
-    var _0xtempoEls = _0xdoc.querySelectorAll("[tempo]");
-    var _0xosmdBpm = _0xtempoEls.length ? Math.round(parseFloat(_0xtempoEls[0].getAttribute("tempo"))) : 120;
-    var _0xbeatsEl = _0xdoc.getElementsByTagName("beats")[0];
-    var _0xosmdTimesig = _0xbeatsEl ? parseInt(_0xbeatsEl.textContent, 10) : 4;
-    // Extrait la structure des reprises (comme pour mxlLoad hier) — sert
-    // au curseur OSMD pour sauter automatiquement aux bons endroits
-    // pendant la lecture, au lieu de suivre la partition en ligne droite.
-    var _0xfirstPart = _0xdoc.getElementsByTagName("part")[0];
-    var _0xosmdRepeats = [];
-    if (_0xfirstPart) {
-      var _0xosmdMeasures = _0xfirstPart.getElementsByTagName("measure");
-      var _0xlastFwdIdx = 0;
-      for (var _0xmi = 0; _0xmi < _0xosmdMeasures.length; _0xmi++) {
-        var _0xbarlines2 = _0xosmdMeasures[_0xmi].getElementsByTagName("barline");
-        var _0xisFwd = false, _0xisBwd = false, _0xhasEnding = false;
-        for (var _0xbi2 = 0; _0xbi2 < _0xbarlines2.length; _0xbi2++) {
-          var _0xrepEl2 = _0xbarlines2[_0xbi2].getElementsByTagName("repeat")[0];
-          if (_0xrepEl2) {
-            if (_0xrepEl2.getAttribute("direction") === "forward") _0xisFwd = true;
-            if (_0xrepEl2.getAttribute("direction") === "backward") _0xisBwd = true;
-          }
-          if (_0xbarlines2[_0xbi2].getElementsByTagName("ending")[0]) _0xhasEnding = true;
-        }
-        if (_0xisFwd) _0xlastFwdIdx = _0xmi;
-        if (_0xisBwd) {
-          _0xosmdRepeats.push({ fromMeasure: _0xmi, toMeasure: _0xlastFwdIdx, hasEnding: _0xhasEnding });
-        }
-      }
+    var _0xscoreParts = Array.prototype.slice.call(_0xdoc.querySelectorAll("part-list > score-part"));
+    if (_0xscoreParts.length > 1) {
+      // Plusieurs portées détectées (chœur, doublons, voix inutiles pour un
+      // prompteur solo...) — on laisse le musicien choisir avant d'afficher
+      // quoi que ce soit, plutôt que de le renvoyer nettoyer le fichier à la
+      // main dans un autre logiciel à chaque import.
+      _osmdPendingImport = { doc: _0xdoc, file: _0xfile };
+      _osmdBuildPartsModal(_0xdoc, _0xscoreParts);
+      pdfStatus("");
+      showModal("osmd-parts-modal");
+      return;
     }
-    var _0xid = uid();
-    var _0xsongObj = {
-      id: _0xid,
-      name: _0xtitle,
-      key: "",
-      bpm: String(_0xosmdBpm),
-      dur: "",
-      tags: "partition-musicxml",
-      capo: "0",
-      grid: "",
-      lyrics: "",
-      timesig: _0xosmdTimesig,
-      osmdRepeats: _0xosmdRepeats,
-      notes: "Partition MusicXML affichée en vraie notation (OSMD).",
-      osmdKey: "osmd_" + _0xid,
-      created: Date.now()
-    };
-    await imgDbPut(_0xsongObj.osmdKey, _0xxmlText);
-    songs.push(_0xsongObj);
-    dbSave();
-    pdfStatus("✓ Partition « " + _0xtitle + " » importée — " + _0xosmdBpm + " BPM", "var(--G)");
-    go("songs");
-    renderSongs();
-    setTimeout(function () {
-      openSongModal(_0xid);
-    }, 150);
+    await _osmdFinishImport(_0xdoc, _0xxmlText, _0xfile);
   } catch (_0xerr) {
     pdfStatus("❌ " + _0xerr.message, "var(--R)");
   }
+}
+function _osmdBuildPartsModal(_0xdoc, _0xscoreParts) {
+  var _0xallParts = _0xdoc.getElementsByTagName("part");
+  var _0xbyId = {};
+  for (var _0xi = 0; _0xi < _0xallParts.length; _0xi++) {
+    _0xbyId[_0xallParts[_0xi].getAttribute("id")] = _0xallParts[_0xi];
+  }
+  var _0xhtml = _0xscoreParts.map(function (_0xsp) {
+    var _0xpid = _0xsp.getAttribute("id");
+    var _0xnameEl = _0xsp.getElementsByTagName("part-name")[0];
+    var _0xname = _0xnameEl && _0xnameEl.textContent.trim() ? _0xnameEl.textContent.trim() : _0xpid;
+    var _0xpartEl = _0xbyId[_0xpid];
+    var _0xnNotes = _0xpartEl ? _0xpartEl.getElementsByTagName("note").length : 0;
+    var _0xnLyrics = _0xpartEl ? _0xpartEl.getElementsByTagName("lyric").length : 0;
+    var _0xinfo = _0xnNotes + " note" + (_0xnNotes !== 1 ? "s" : "") + (_0xnLyrics ? ", " + _0xnLyrics + " parole" + (_0xnLyrics !== 1 ? "s" : "") : "");
+    return '<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg2);border:.5px solid var(--bd);border-radius:7px;cursor:pointer">' +
+      '<input type="checkbox" class="osmd-part-chk" value="' + _0xpid + '" checked>' +
+      '<span style="flex:1;font-size:13.5px;font-weight:500">' + _0xname.replace(/</g, "&lt;") + '</span>' +
+      '<span style="font-size:11.5px;color:var(--tx3)">' + _0xinfo + '</span></label>';
+  }).join("");
+  document.getElementById("osmd-parts-list").innerHTML = _0xhtml;
+}
+function _cancelOsmdPartsModal() {
+  _osmdPendingImport = null;
+  hideModal("osmd-parts-modal");
+}
+async function _confirmOsmdPartsModal() {
+  if (!_osmdPendingImport) { hideModal("osmd-parts-modal"); return; }
+  var _0xchecked = Array.prototype.slice.call(document.querySelectorAll(".osmd-part-chk:checked")).map(function (_0xc) { return _0xc.value; });
+  if (!_0xchecked.length) {
+    alert("Coche au moins une portée à garder.");
+    return;
+  }
+  var _0xdoc = _osmdPendingImport.doc;
+  var _0xfile = _osmdPendingImport.file;
+  // Retire du part-list les score-part non cochées, et les balises <part>
+  // correspondantes — c'est tout ce dont OSMD a besoin pour ne plus les
+  // afficher, pas besoin de repasser par un logiciel externe.
+  var _0xscoreParts = Array.prototype.slice.call(_0xdoc.querySelectorAll("part-list > score-part"));
+  _0xscoreParts.forEach(function (_0xsp) {
+    var _0xpid = _0xsp.getAttribute("id");
+    if (_0xchecked.indexOf(_0xpid) === -1) {
+      _0xsp.parentNode.removeChild(_0xsp);
+    }
+  });
+  var _0xallParts = Array.prototype.slice.call(_0xdoc.getElementsByTagName("part"));
+  _0xallParts.forEach(function (_0xp) {
+    if (_0xchecked.indexOf(_0xp.getAttribute("id")) === -1) {
+      _0xp.parentNode.removeChild(_0xp);
+    }
+  });
+  var _0xxmlText = new XMLSerializer().serializeToString(_0xdoc);
+  hideModal("osmd-parts-modal");
+  _osmdPendingImport = null;
+  pdfStatus("⏳ Lecture MusicXML (partition)…");
+  try {
+    await _osmdFinishImport(_0xdoc, _0xxmlText, _0xfile);
+  } catch (_0xerr) {
+    pdfStatus("❌ " + _0xerr.message, "var(--R)");
+  }
+}
+async function _osmdFinishImport(_0xdoc, _0xxmlText, _0xfile) {
+  var _0xtitleEl = _0xdoc.getElementsByTagName("work-title")[0] || _0xdoc.getElementsByTagName("movement-title")[0];
+  var _0xtitle = _0xtitleEl ? _0xtitleEl.textContent.trim() : _0xfile.name.replace(/\.[^.]+$/, "").trim();
+  var _0xtempoEls = _0xdoc.querySelectorAll("[tempo]");
+  var _0xosmdBpm = _0xtempoEls.length ? Math.round(parseFloat(_0xtempoEls[0].getAttribute("tempo"))) : 120;
+  var _0xbeatsEl = _0xdoc.getElementsByTagName("beats")[0];
+  var _0xosmdTimesig = _0xbeatsEl ? parseInt(_0xbeatsEl.textContent, 10) : 4;
+  // Extrait la structure des reprises (comme pour mxlLoad hier) — sert
+  // au curseur OSMD pour sauter automatiquement aux bons endroits
+  // pendant la lecture, au lieu de suivre la partition en ligne droite.
+  var _0xfirstPart = _0xdoc.getElementsByTagName("part")[0];
+  var _0xosmdRepeats = [];
+  if (_0xfirstPart) {
+    var _0xosmdMeasures = _0xfirstPart.getElementsByTagName("measure");
+    var _0xlastFwdIdx = 0;
+    for (var _0xmi = 0; _0xmi < _0xosmdMeasures.length; _0xmi++) {
+      var _0xbarlines2 = _0xosmdMeasures[_0xmi].getElementsByTagName("barline");
+      var _0xisFwd = false, _0xisBwd = false, _0xhasEnding = false;
+      for (var _0xbi2 = 0; _0xbi2 < _0xbarlines2.length; _0xbi2++) {
+        var _0xrepEl2 = _0xbarlines2[_0xbi2].getElementsByTagName("repeat")[0];
+        if (_0xrepEl2) {
+          if (_0xrepEl2.getAttribute("direction") === "forward") _0xisFwd = true;
+          if (_0xrepEl2.getAttribute("direction") === "backward") _0xisBwd = true;
+        }
+        if (_0xbarlines2[_0xbi2].getElementsByTagName("ending")[0]) _0xhasEnding = true;
+      }
+      if (_0xisFwd) _0xlastFwdIdx = _0xmi;
+      if (_0xisBwd) {
+        _0xosmdRepeats.push({ fromMeasure: _0xmi, toMeasure: _0xlastFwdIdx, hasEnding: _0xhasEnding });
+      }
+    }
+  }
+  var _0xid = uid();
+  var _0xsongObj = {
+    id: _0xid,
+    name: _0xtitle,
+    key: "",
+    bpm: String(_0xosmdBpm),
+    dur: "",
+    tags: "partition-musicxml",
+    capo: "0",
+    grid: "",
+    lyrics: "",
+    timesig: _0xosmdTimesig,
+    osmdRepeats: _0xosmdRepeats,
+    notes: "Partition MusicXML affichée en vraie notation (OSMD).",
+    osmdKey: "osmd_" + _0xid,
+    created: Date.now()
+  };
+  await imgDbPut(_0xsongObj.osmdKey, _0xxmlText);
+  songs.push(_0xsongObj);
+  dbSave();
+  pdfStatus("✓ Partition « " + _0xtitle + " » importée — " + _0xosmdBpm + " BPM", "var(--G)");
+  go("songs");
+  renderSongs();
+  setTimeout(function () {
+    openSongModal(_0xid);
+  }, 150);
 }
 async function mxlLoad(_0x2ee187) {
   var _0x47f509 = _0x552966;
@@ -12407,7 +12500,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.105.0 · 05/08/2026<span id="license-watermark"></span>
+  v2.106.0 · 06/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
