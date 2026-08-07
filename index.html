@@ -765,7 +765,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.110.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.111.0</span></h1>
 </div>
 
 <div id="pages">
@@ -852,7 +852,7 @@ body.fullscreen #topbar{display:none}
       <div id="scene-ctrl">
         <div class="ctrl">
           <label>Taille</label>
-          <input type="range" min="16" max="72" value="30" id="font-sz" oninput="onFontChange()">
+          <input type="range" min="10" max="160" value="30" id="font-sz" oninput="onFontChange()">
           <span id="font-sz-v">30</span>
         </div>
         <div class="ctrl">
@@ -7738,6 +7738,16 @@ function onFontChange() {
   // qui ne consultait jusqu'ici que le mode "paroles + accords" — le
   // curseur n'avait donc aucun effet visible pour un morceau en grille.
   document.documentElement.style.setProperty("--gp-font-size", _0xszVal + "px");
+  // Applique egalement au mode partition (Audiveris/MusicXML, OSMD) --
+  // jusqu'ici ce curseur n'avait aucun effet sur une partition affichee,
+  // meme si visible a l'ecran. 30px = valeur de reference (zoom OSMD 1.0).
+  if (osmdApi) {
+    try {
+      osmdApi.zoom = _0xszVal / 30;
+      osmdApi.render();
+      osmdApi.cursor.show();
+    } catch (_0xoz) {}
+  }
   curRowIdx = 0;
   curRowX = 0;
   renderScene();
@@ -12641,7 +12651,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.110.0 · 06/08/2026<span id="license-watermark"></span>
+  v2.111.0 · 06/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
