@@ -765,7 +765,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.117.1</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.118.0</span></h1>
 </div>
 
 <div id="pages">
@@ -970,7 +970,6 @@ body.fullscreen #topbar{display:none}
       <div class="osmd-mode-only" style="gap:5px;flex-wrap:nowrap">
         <button class="btn-g" id="osmd-play-btn" onclick="osmdTogglePlay()">▶ Play</button>
         <button class="btn-r" onclick="osmdRestart()">↺ Début</button>
-        <button class="btn-sm" onclick="osmdOpenChordEditor()" title="Corriger les accords mal reconnus par Audiveris">✎ Accords</button>
       </div>
       <button onclick="prevSong()">‹ Préc</button>
       <button onclick="nextSong()">Suiv ›</button>
@@ -1421,6 +1420,14 @@ Am | F | C | G"></textarea>
         <div id="sm-tempo-analysis-status" style="font-size:11.5px;color:var(--tx3);margin-top:6px"></div>
       </div>
     </div>
+  </div>
+
+  <div id="sm-osmd-chords" style="display:none;margin:10px 0 14px;padding:10px 12px;border:1px solid var(--bd);border-radius:8px">
+    <label style="font-size:12px;color:var(--tx2)">🎼 Partition (Audiveris)</label>
+    <div style="font-size:11.5px;color:var(--tx3);margin:2px 0 8px">
+      Corrige les accords que la reconnaissance automatique a mal lus.
+    </div>
+    <button class="btn-sm" onclick="osmdOpenChordEditor()">✎ Corriger les accords</button>
   </div>
 
   <div style="margin:10px 0 14px;padding:10px 12px;border:1px solid var(--bd);border-radius:8px">
@@ -3290,6 +3297,10 @@ function openSongModal(_0x541ba6) {
   document.getElementById("sm-export-pdf").style.display = _0x541ba6 ? "" : "none";
   document.getElementById("sm-audio-none").style.display = _0x3639c3 && _0x3639c3.audioKey ? "none" : "block";
   document.getElementById("sm-audio-present").style.display = _0x3639c3 && _0x3639c3.audioKey ? "block" : "none";
+  var _0xsmOsmdEl = document.getElementById("sm-osmd-chords");
+  if (_0xsmOsmdEl) {
+    _0xsmOsmdEl.style.display = _0x3639c3 && _0x3639c3.osmdKey ? "block" : "none";
+  }
   var _0x58a4f2 = document.getElementById("sm-tempo-analysis-status");
   if (_0x58a4f2) {
     _0x58a4f2.innerHTML = "";
@@ -6985,7 +6996,7 @@ function osmdTogglePlay() {
   }
 }
 async function osmdOpenChordEditor() {
-  var _0xsong = _osmdCurrentSong();
+  var _0xsong = editingSong;
   if (!_0xsong || !_0xsong.osmdKey) return;
   var _0xxmlText;
   try {
@@ -7014,7 +7025,7 @@ async function osmdOpenChordEditor() {
 }
 
 async function osmdSaveChordEditor() {
-  var _0xsong = _osmdCurrentSong();
+  var _0xsong = editingSong;
   if (!_0xsong || !_0xsong.osmdKey) return;
   var _0xxmlText;
   try {
@@ -7049,7 +7060,9 @@ async function osmdSaveChordEditor() {
     await imgDbPut(_0xsong.osmdKey, _0xnewXml);
   }
   hideModal("chord-editor-modal");
-  await renderSceneOsmd(_0xsong);
+  if (_osmdCurrentSong() && _osmdCurrentSong().id === _0xsong.id) {
+    await renderSceneOsmd(_0xsong);
+  }
 }
 
 // Extrait chaque accord du MusicXML, dans l'ordre du document, avec le
@@ -12896,7 +12909,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.117.1 · 06/08/2026<span id="license-watermark"></span>
+  v2.118.0 · 06/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
