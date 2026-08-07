@@ -449,6 +449,30 @@ def _sanitize_mxl(mxl_bytes):
         fixed_text = re.sub(r"(<duration>)([^<]*)(</duration>)", _fix_duration, xml_text)
         fixed_text = re.sub(r"(<type[^>]*>)([^<]*)(</type>)", _fix_type, fixed_text)
 
+        # Caracteres parasites frequents dans les noms d'accords mal lus par
+        # Audiveris (ex: "|", "¦", "!") -- n'apparaissent jamais dans un vrai
+        # nom d'accord (do/re/mi... + m/maj/dim/sus...). On ne peut pas
+        # deviner le bon accord a la place, mais on evite au moins d'
+        # afficher un symbole illisible du genre "|V|l m".
+        _chord_noise_re = re.compile(r"[|¦!]+")
+
+        def _clean_chord_noise(mo):
+            cleaned = _chord_noise_re.sub("", mo.group(2))
+            if cleaned != mo.group(2):
+                _fix_count[0] += 1
+            return mo.group(1) + cleaned + mo.group(3)
+
+        fixed_text = re.sub(r"(<root-step>)([^<]*)(</root-step>)", _clean_chord_noise, fixed_text)
+        fixed_text = re.sub(r"(<bass-step>)([^<]*)(</bass-step>)", _clean_chord_noise, fixed_text)
+
+        def _clean_kind_tag(mo):
+            cleaned = _chord_noise_re.sub("", mo.group(2))
+            if cleaned != mo.group(2):
+                _fix_count[0] += 1
+            return mo.group(1) + cleaned + '"'
+
+        fixed_text = re.sub(r'(<kind[^>]*\btext=")([^"]*)"', _clean_kind_tag, fixed_text)
+
         # Diagnostic pour les prochains cas non couverts par les deux regles
         # ci-dessus : toute balise dont le contenu est un seul caractere non
         # numerique (le residu type "u" observe en pratique peut atterrir
