@@ -765,7 +765,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.116.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.116.1</span></h1>
 </div>
 
 <div id="pages">
@@ -7036,14 +7036,6 @@ async function osmdStartAutoScroll() {
   } catch (_0xaudioErr) {
     console.warn("osmd audio sync error", _0xaudioErr);
   }
-  var _0xdebugEl = document.getElementById("osmd-debug-measure");
-  if (!_0xdebugEl) {
-    _0xdebugEl = document.createElement("div");
-    _0xdebugEl.id = "osmd-debug-measure";
-    _0xdebugEl.style.cssText = "position:fixed;top:60px;left:8px;background:rgba(0,0,0,.85);color:#F2C14E;padding:6px 10px;border-radius:6px;font-size:12px;z-index:99999;font-family:monospace";
-    document.body.appendChild(_0xdebugEl);
-  }
-  _0xdebugEl.style.display = "block";
   // Longueur (en rondes) de la note/l'accord a la position actuelle du
   // curseur. Sert d'unite d'avancement locale plutot qu'une position
   // temporelle absolue -- une reprise fait revenir CurrentTimeStamp en
@@ -7086,7 +7078,8 @@ async function osmdStartAutoScroll() {
         osmdApi.cursor.next();
         _0xguardCount++;
       }
-      _0xdebugEl.textContent = "mesure: " + _osmdGetCurrentMeasureIdx() + " | temps: " + osmdApi.cursor.iterator.currentTimeStamp.RealValue.toFixed(3) + " | duree note: " + _0xstepLen().toFixed(3) + (osmdVerseCount > 1 ? " | couplet " + osmdVersePass + "/" + osmdVerseCount : "");
+      // (repere de diagnostic retire -- servait a corriger le bug de
+      // casse note.notes/note.Notes, plus utile en usage normal)
       if (osmdApi.cursor.iterator.endReached) {
         if (osmdVersePass < osmdVerseCount) {
           // Plusieurs couplets sur la meme melodie (psaume, cantique...) --
@@ -12713,7 +12706,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.116.0 · 06/08/2026<span id="license-watermark"></span>
+  v2.116.1 · 06/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
