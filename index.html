@@ -765,7 +765,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.117.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.117.1</span></h1>
 </div>
 
 <div id="pages">
@@ -7032,9 +7032,14 @@ async function osmdSaveChordEditor() {
     var _0xc = _0xchords[_0xi];
     var _0xnewVal = _0xinput.value.trim();
     if (!_0xc || _0xnewVal === _0xc.display) return; // pas touche par l'utilisateur
-    var _0xparsed = _osmdParseChordSymbol(_0xnewVal);
-    if (!_0xparsed) return;
-    var _0xnewBlock = _osmdBuildHarmonyXml(_0xparsed);
+    var _0xnewBlock;
+    if (_0xc.type === "words") {
+      _0xnewBlock = _osmdEncodeXmlEntities(_0xnewVal);
+    } else {
+      var _0xparsed = _osmdParseChordSymbol(_0xnewVal);
+      if (!_0xparsed) return;
+      _0xnewBlock = _osmdBuildHarmonyXml(_0xparsed);
+    }
     var _0xstart = _0xc.start + _0xoffsetShift;
     var _0xend = _0xc.end + _0xoffsetShift;
     _0xnewXml = _0xnewXml.slice(0, _0xstart) + _0xnewBlock + _0xnewXml.slice(_0xend);
@@ -7047,36 +7052,65 @@ async function osmdSaveChordEditor() {
   await renderSceneOsmd(_0xsong);
 }
 
-// Extrait chaque bloc <harmony>...</harmony> du MusicXML, dans l'ordre du
-// document, avec le numero de mesure englobant et une version lisible
-// (francaise) de l'accord pour l'afficher dans le champ de saisie.
+// Extrait chaque accord du MusicXML, dans l'ordre du document, avec le
+// numero de mesure englobant et une version lisible pour l'afficher dans
+// le champ de saisie. Deux formats possibles selon comment Audiveris a
+// code l'accord :
+//  - structure : <harmony><root>...<kind text="...">
+//  - texte libre : <direction><direction-type><words>Mi m</words>
+//    (observe en pratique -- Audiveris n'utilise pas toujours le format
+//    structure, meme avec la reconnaissance d'accords activee)
 function _osmdExtractChords(_0xxmlText) {
   var _0xresults = [];
   var _0xmeasureRe = /<measure\s+number="(\d+)"/g;
-  var _0xharmonyRe = /<harmony\b[\s\S]*?<\/harmony>/g;
   var _0xmeasureMarks = [];
   var _0xmm;
   while ((_0xmm = _0xmeasureRe.exec(_0xxmlText))) {
     _0xmeasureMarks.push({ pos: _0xmm.index, num: _0xmm[1] });
   }
+  function _0xmeasureAt(_0xpos) {
+    for (var _0xi = _0xmeasureMarks.length - 1; _0xi >= 0; _0xi--) {
+      if (_0xmeasureMarks[_0xi].pos <= _0xpos) return _0xmeasureMarks[_0xi].num;
+    }
+    return "?";
+  }
+
+  var _0xharmonyRe = /<harmony\b[\s\S]*?<\/harmony>/g;
   var _0xhm;
   while ((_0xhm = _0xharmonyRe.exec(_0xxmlText))) {
-    var _0xblock = _0xhm[0];
-    var _0xmeasure = "?";
-    for (var _0xi = _0xmeasureMarks.length - 1; _0xi >= 0; _0xi--) {
-      if (_0xmeasureMarks[_0xi].pos <= _0xhm.index) {
-        _0xmeasure = _0xmeasureMarks[_0xi].num;
-        break;
-      }
-    }
     _0xresults.push({
+      type: "harmony",
       start: _0xhm.index,
-      end: _0xhm.index + _0xblock.length,
-      measure: _0xmeasure,
-      display: _osmdChordDisplayFromHarmony(_0xblock),
+      end: _0xhm.index + _0xhm[0].length,
+      measure: _0xmeasureAt(_0xhm.index),
+      display: _osmdChordDisplayFromHarmony(_0xhm[0]),
     });
   }
+
+  var _0xwordsRe = /<direction\b[\s\S]*?<words\b[^>]*>([^<]*)<\/words>[\s\S]*?<\/direction>/g;
+  var _0xwm;
+  while ((_0xwm = _0xwordsRe.exec(_0xxmlText))) {
+    var _0xinnerStart = _0xwm.index + _0xwm[0].indexOf(">", _0xwm[0].indexOf("<words")) + 1;
+    var _0xinnerEnd = _0xinnerStart + _0xwm[1].length;
+    _0xresults.push({
+      type: "words",
+      start: _0xinnerStart,
+      end: _0xinnerEnd,
+      measure: _0xmeasureAt(_0xwm.index),
+      display: _osmdDecodeXmlEntities(_0xwm[1]),
+    });
+  }
+
+  _0xresults.sort(function (_0xa, _0xb) { return _0xa.start - _0xb.start; });
   return _0xresults;
+}
+
+function _osmdDecodeXmlEntities(_0xs) {
+  return _0xs.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, "\"").replace(/&apos;/g, "'");
+}
+
+function _osmdEncodeXmlEntities(_0xs) {
+  return _0xs.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 var _OSMD_STEP_TO_FR = { C: "Do", D: "Ré", E: "Mi", F: "Fa", G: "Sol", A: "La", B: "Si" };
@@ -12862,7 +12896,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.117.0 · 06/08/2026<span id="license-watermark"></span>
+  v2.117.1 · 06/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
