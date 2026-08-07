@@ -765,7 +765,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.114.1</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.115.0</span></h1>
 </div>
 
 <div id="pages">
@@ -6878,16 +6878,20 @@ async function renderSceneOsmd(_0xsong) {
   // la partition elle-meme indique (Audiveris l'encode en "noire par
   // minute" via <sound tempo="...">, quelle que soit la valeur de note
   // imprimee sur la partition d'origine -- pas besoin de convertir).
-  if (_0xxmlText && _bpmInitializedForSong !== _0xsong.id) {
-    if (_0xsong.bpm) {
-      setBPM(parseFloat(_0xsong.bpm));
-    } else {
-      var _0xtempoMatch = _0xxmlText.match(/<sound[^>]*\btempo="([\d.]+)"/);
-      if (_0xtempoMatch) {
-        setBPM(parseFloat(_0xtempoMatch[1]));
+  try {
+    if (_0xxmlText && _bpmInitializedForSong !== _0xsong.id) {
+      if (_0xsong.bpm) {
+        setBPM(parseFloat(_0xsong.bpm));
+      } else {
+        var _0xtempoMatch = _0xxmlText.match(/<sound[^>]*\btempo="([\d.]+)"/);
+        if (_0xtempoMatch) {
+          setBPM(parseFloat(_0xtempoMatch[1]));
+        }
       }
+      _bpmInitializedForSong = _0xsong.id;
     }
-    _bpmInitializedForSong = _0xsong.id;
+  } catch (_0xbpmErr) {
+    console.warn("osmd bpm sync error", _0xbpmErr);
   }
   if (!_0xxmlText) {
     _0xinner.innerHTML = "<div class=\"img-loading\" style=\"padding-top:80px;color:#888\"><div style=\"font-size:34px;margin-bottom:14px\">🎼</div><div style=\"color:#333;font-size:15px;margin-bottom:8px\">Partition non disponible sur cet appareil</div><div style=\"max-width:280px;margin:0 auto;line-height:1.5\">Comme pour les partitions-image, le fichier reste stocké uniquement sur l'appareil qui l'a importé.</div></div>";
@@ -6972,11 +6976,16 @@ function osmdRestart() {
   osmdWholeNoteBudget = 0;
   osmdVersePass = 1;
   try { osmdApi.cursor.reset(); osmdApi.cursor.show(); } catch (_0xe) {}
+  try {
+    var _0xleadInSec = (gpLeadInBeats || 0) * (60 / (bpm || 100));
+    _pbStartOffset = _0xleadInSec;
+  } catch (_0xaudioErr) {}
 }
 function osmdStopAutoScroll() {
   osmdPlaying = false;
   if (osmdRafId) { cancelAnimationFrame(osmdRafId); osmdRafId = null; }
   osmdStartTs = null;
+  try { syncAudioPlayback(false); } catch (_0xaudioErr) {}
   osmdSetPlayBtnState("ready");
 }
 // Avance le curseur OSMD au rythme du VRAI tempo (BPM) du morceau — pas de
@@ -7007,12 +7016,26 @@ function _osmdCurrentSong() {
     return _0xs.id === curSet.songIds[curIdx];
   }) : null;
 }
-function osmdStartAutoScroll() {
+async function osmdStartAutoScroll() {
   if (!osmdApi) return;
   osmdPlaying = true;
   osmdStartTs = null;
   osmdWholeNoteBudget = 0;
   osmdSetPlayBtnState("playing");
+  // Lecture audio synchronisee (fichier importe pour ce morceau) -- ce
+  // mecanisme existait deja pour le mode grille et le mode paroles+accords,
+  // mais n'etait jamais branche sur le mode partition (Audiveris/OSMD).
+  // Estimation simple par tempo constant (BPM courant), sans les reperes
+  // manuels disponibles en mode grille -- suffisant pour demarrer, mais
+  // moins precis qu'un calage a l'oreille si le tempo varie dans le morceau.
+  try {
+    var _0xwholeNotesNow = osmdApi.cursor.iterator.currentTimeStamp.RealValue;
+    var _0xleadInSec = (gpLeadInBeats || 0) * (60 / (bpm || 100));
+    _pbStartOffset = Math.max(0, _0xwholeNotesNow * 4 * (60 / (bpm || 100)) + _0xleadInSec);
+    await syncAudioPlayback(true);
+  } catch (_0xaudioErr) {
+    console.warn("osmd audio sync error", _0xaudioErr);
+  }
   var _0xdebugEl = document.getElementById("osmd-debug-measure");
   if (!_0xdebugEl) {
     _0xdebugEl = document.createElement("div");
@@ -7035,7 +7058,7 @@ function osmdStartAutoScroll() {
       var _0xmax = 0;
       if (_0xentries) {
         for (var _0xi = 0; _0xi < _0xentries.length; _0xi++) {
-          var _0xnotes = _0xentries[_0xi].Notes;
+          var _0xnotes = _0xentries[_0xi].notes || _0xentries[_0xi].Notes;
           if (!_0xnotes) continue;
           for (var _0xj = 0; _0xj < _0xnotes.length; _0xj++) {
             var _0xlen = _0xnotes[_0xj].Length && _0xnotes[_0xj].Length.RealValue;
@@ -7063,7 +7086,7 @@ function osmdStartAutoScroll() {
         osmdApi.cursor.next();
         _0xguardCount++;
       }
-      _0xdebugEl.textContent = "mesure: " + _osmdGetCurrentMeasureIdx() + " | temps: " + osmdApi.cursor.iterator.currentTimeStamp.RealValue.toFixed(3) + (osmdVerseCount > 1 ? " | couplet " + osmdVersePass + "/" + osmdVerseCount : "");
+      _0xdebugEl.textContent = "mesure: " + _osmdGetCurrentMeasureIdx() + " | temps: " + osmdApi.cursor.iterator.currentTimeStamp.RealValue.toFixed(3) + " | duree note: " + _0xstepLen().toFixed(3) + (osmdVerseCount > 1 ? " | couplet " + osmdVersePass + "/" + osmdVerseCount : "");
       if (osmdApi.cursor.iterator.endReached) {
         if (osmdVersePass < osmdVerseCount) {
           // Plusieurs couplets sur la meme melodie (psaume, cantique...) --
@@ -12680,7 +12703,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.114.1 · 06/08/2026<span id="license-watermark"></span>
+  v2.115.0 · 06/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
