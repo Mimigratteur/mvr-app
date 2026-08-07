@@ -404,16 +404,25 @@ def _inject_extra_verses(mxl_bytes, verses):
         return mxl_bytes
 
 
+_VALID_NOTE_TYPES = {
+    "1024th", "512th", "256th", "128th", "64th", "32nd", "16th",
+    "eighth", "quarter", "half", "whole", "breve", "long", "maxima",
+}
+
+
 def _sanitize_mxl(mxl_bytes):
-    """Corrige les valeurs de duree manifestement invalides (non numeriques)
-    qu'Audiveris peut produire sur des partitions difficiles pour son OMR
-    (ex: notation rythmique en croix/rythme frappe, comme une intro
-    instrumentale avant l'entree du chant). Sans ca, OSMD (l'affichage de
-    la partition dans MVR) plante completement -- ecran blanc avec l'erreur
-    technique "The provided duration is not valid" -- au lieu d'afficher la
-    partition, quitte a etre fausse a cet endroit precis. Purement
-    defensif : retourne les octets d'origine inchanges si quoi que ce soit
-    echoue."""
+    """Corrige les valeurs manifestement invalides qu'Audiveris peut
+    produire sur des partitions difficiles pour son OMR (ex: notation
+    rythmique en croix/rythme frappe, comme une intro instrumentale avant
+    l'entree du chant) -- notamment des balises <duration> ou <type> dont
+    le contenu n'est pas un nombre/une valeur MusicXML valide (vu en
+    pratique : une seule lettre, ex. "u", visiblement un residu de
+    reconnaissance de texte qui a atterri au mauvais endroit). Sans ca,
+    OSMD (l'affichage de la partition dans MVR) plante completement --
+    ecran blanc avec l'erreur technique "The provided duration is not
+    valid" -- au lieu d'afficher la partition, quitte a etre fausse a cet
+    endroit precis. Purement defensif : retourne les octets d'origine
+    inchanges si quoi que ce soit echoue."""
     try:
         zin = zipfile.ZipFile(io.BytesIO(mxl_bytes))
         container = zin.read("META-INF/container.xml").decode("utf-8")
@@ -431,7 +440,26 @@ def _sanitize_mxl(mxl_bytes):
             _fix_count[0] += 1
             return mo.group(1) + "4" + mo.group(3)
 
+        def _fix_type(mo):
+            if mo.group(2).strip() in _VALID_NOTE_TYPES:
+                return mo.group(0)
+            _fix_count[0] += 1
+            return mo.group(1) + "quarter" + mo.group(3)
+
         fixed_text = re.sub(r"(<duration>)([^<]*)(</duration>)", _fix_duration, xml_text)
+        fixed_text = re.sub(r"(<type[^>]*>)([^<]*)(</type>)", _fix_type, fixed_text)
+
+        # Diagnostic pour les prochains cas non couverts par les deux regles
+        # ci-dessus : toute balise dont le contenu est un seul caractere non
+        # numerique (le residu type "u" observe en pratique peut atterrir
+        # dans a peu pres n'importe quel champ). On corrige au passage en
+        # supprimant juste ce caractere isole, plutot que de laisser OSMD
+        # planter dessus -- et on log precisement ou, pour un vrai
+        # diagnostic si ca se reproduit encore.
+        for _tag_mo in re.finditer(r"<(\w[\w-]*)>([a-zA-Z])</\1>", fixed_text):
+            print(f"[pont MVR] /!\\ Contenu suspect (1 caractere) dans <{_tag_mo.group(1)}> : "
+                  f"\"{_tag_mo.group(2)}\" -- probablement un residu de reconnaissance de texte.")
+
         n = _fix_count[0]
         if n == 0:
             return mxl_bytes
