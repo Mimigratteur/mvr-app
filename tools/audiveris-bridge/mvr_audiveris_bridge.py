@@ -105,6 +105,13 @@ def _run_audiveris(pdf_path, workdir, sheets=None):
         AUDIVERIS_PATH,
         "-batch",
         "-export",
+        # Empeche Audiveris de reutiliser un resultat mis en cache d'une
+        # tentative precedente sur ce meme fichier (meme nom/contenu) --
+        # sans ca, une premiere tentative ratee (ex: reglage de langue
+        # invalide, page sans musique) peut laisser un etat fige que les
+        # tentatives suivantes reutilisent telles quelles, meme apres
+        # correction du reglage en cause.
+        "-force",
         "-constant", "org.audiveris.omr.sheet.ProcessingSwitches.chordNames=true",
         "-constant", "org.audiveris.omr.sheet.ProcessingSwitches.lyrics=true",
         # NB : volontairement une liste courte et fixe (pas la liste
@@ -339,6 +346,7 @@ def _inject_extra_verses(mxl_bytes, verses):
                     break
 
         if not slot_notes:
+            print("[pont MVR] Pas de paroles (couplet 1) reconnues sur la partition -- couplets OCR non alignes.")
             return mxl_bytes
 
         for verse_number, verse_text in verses.items():
