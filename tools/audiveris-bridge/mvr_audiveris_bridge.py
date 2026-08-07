@@ -289,6 +289,12 @@ def _ocr_extra_verses(pdf_path, skip_page_index=0):
         text = re.sub(r"\s+", " ", text)
         if text:
             verses[num] = text
+
+    print("[pont MVR] --- Texte brut OCR (diagnostic) ---")
+    for num in sorted(verses):
+        print(f"[pont MVR]   Couplet {num} : {verses[num]}")
+    print("[pont MVR] --- fin texte brut ---")
+
     return verses
 
 
@@ -352,8 +358,27 @@ def _inject_extra_verses(mxl_bytes, verses):
             print("[pont MVR] Pas de paroles (couplet 1) reconnues sur la partition -- couplets OCR non alignes.")
             return mxl_bytes
 
+        # Diagnostic : le couplet 1 tel qu'Audiveris l'a lui-meme reconnu,
+        # dans l'ordre des emplacements de notes -- c'est le "gabarit" sur
+        # lequel les couplets OCRises sont ensuite calques.
+        verse1_syllables = []
+        for note in slot_notes:
+            for lyric in note.findall("lyric"):
+                if lyric.get("number") == "1":
+                    txt_el = lyric.find("text")
+                    verse1_syllables.append(txt_el.text if txt_el is not None else "")
+                    break
+        print(f"[pont MVR] --- Alignement des couplets (diagnostic) ---")
+        print(f"[pont MVR]   Emplacements (couplet 1, {len(slot_notes)} notes) : " + "|".join(verse1_syllables))
+
         for verse_number, verse_text in verses.items():
             syllables = _hyphenate_verse(verse_text)
+            lang = _guess_verse_language(verse_text)
+            print(f"[pont MVR]   Couplet {verse_number} (langue devinee: {lang}, {len(syllables)} syllabes) : "
+                  + "|".join(s[0] for s in syllables))
+            if len(syllables) != len(slot_notes):
+                print(f"[pont MVR]   /!\\ {len(slot_notes)} emplacements mais {len(syllables)} syllabes "
+                      f"pour le couplet {verse_number} -- decalage a partir de la 1ere difference.")
             for note, (syl_text, syl_type) in zip(slot_notes, syllables):
                 lyric_el = ET.SubElement(note, "lyric")
                 lyric_el.set("number", str(verse_number))
@@ -361,6 +386,7 @@ def _inject_extra_verses(mxl_bytes, verses):
                 syllabic_el.text = syl_type
                 text_el = ET.SubElement(lyric_el, "text")
                 text_el.text = syl_text
+        print("[pont MVR] --- fin diagnostic alignement ---")
 
         new_xml_bytes = ET.tostring(root, encoding="UTF-8", xml_declaration=True)
 
