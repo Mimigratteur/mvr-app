@@ -765,7 +765,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.113.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.114.0</span></h1>
 </div>
 
 <div id="pages">
@@ -6869,6 +6869,26 @@ async function renderSceneOsmd(_0xsong) {
   if (_0xcurId !== _0xsong.id) {
     return;
   }
+  // Le mode partition (Audiveris/MusicXML) n'appliquait jusqu'ici jamais
+  // le tempo du morceau au chargement -- contrairement au mode grille et
+  // au mode Guitar Pro, qui le font deja. Le curseur avancait alors selon
+  // le BPM laisse par le morceau precedemment ouvert, sans rapport avec le
+  // tempo reel de cette partition. On reprend en priorite le tempo deja
+  // enregistre pour ce morceau (reglage manuel precedent), sinon celui que
+  // la partition elle-meme indique (Audiveris l'encode en "noire par
+  // minute" via <sound tempo="...">, quelle que soit la valeur de note
+  // imprimee sur la partition d'origine -- pas besoin de convertir).
+  if (_0xxmlText && _bpmInitializedForSong !== _0xsong.id) {
+    if (_0xsong.bpm) {
+      setBPM(parseFloat(_0xsong.bpm));
+    } else {
+      var _0xtempoMatch = _0xxmlText.match(/<sound[^>]*\btempo="([\d.]+)"/);
+      if (_0xtempoMatch) {
+        setBPM(parseFloat(_0xtempoMatch[1]));
+      }
+    }
+    _bpmInitializedForSong = _0xsong.id;
+  }
   if (!_0xxmlText) {
     _0xinner.innerHTML = "<div class=\"img-loading\" style=\"padding-top:80px;color:#888\"><div style=\"font-size:34px;margin-bottom:14px\">🎼</div><div style=\"color:#333;font-size:15px;margin-bottom:8px\">Partition non disponible sur cet appareil</div><div style=\"max-width:280px;margin:0 auto;line-height:1.5\">Comme pour les partitions-image, le fichier reste stocké uniquement sur l'appareil qui l'a importé.</div></div>";
     return;
@@ -12660,7 +12680,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.113.0 · 06/08/2026<span id="license-watermark"></span>
+  v2.114.0 · 06/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
