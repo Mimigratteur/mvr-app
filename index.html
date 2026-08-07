@@ -247,7 +247,7 @@ select{cursor:pointer}
    il est plus facile de cliquer trop vite sans bien lire (constate le
    03/08/2026 : un clic sur la mauvaise option a produit une grille avec
    4x trop de mesures). */
-#notext-pdf-modal,#group-choice-modal{align-items:center}
+#notext-pdf-modal,#group-choice-modal{align-items:flex-start;padding-top:8vh}
 #notext-pdf-modal .modal{border-radius:14px;max-width:440px}
 .modal{background:var(--bg);border-radius:14px 14px 0 0;width:100%;max-width:640px;
        max-height:90vh;overflow-y:auto;padding:16px 16px calc(16px + var(--safe));
@@ -765,7 +765,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.115.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.115.1</span></h1>
 </div>
 
 <div id="pages">
@@ -12703,7 +12703,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.115.0 · 06/08/2026<span id="license-watermark"></span>
+  v2.115.1 · 06/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
