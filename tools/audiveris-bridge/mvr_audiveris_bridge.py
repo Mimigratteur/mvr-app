@@ -114,14 +114,17 @@ def _run_audiveris(pdf_path, workdir, sheets=None):
         "-force",
         "-constant", "org.audiveris.omr.sheet.ProcessingSwitches.chordNames=true",
         "-constant", "org.audiveris.omr.sheet.ProcessingSwitches.lyrics=true",
-        # NB : volontairement une liste courte et fixe (pas la liste
-        # _TESSERACT_LANG_STRING, plus large, utilisee pour l'OCR des
-        # couplets) -- Audiveris semble mal digerer trop de langues
-        # combinees d'un coup pour sa propre reconnaissance de texte
-        # (titre, paroles sur la partition) : au dela de 4-5 langues, il a
-        # ete observe qu'il abandonnait silencieusement toute reconnaissance
-        # de texte plutot que de simplement etre moins precis.
-        "-constant", "org.audiveris.omr.text.Language.defaultSpecification=fra+lat+spa+eng",
+        # NB : reglage volontairement reduit au strict minimum confirme
+        # fonctionnel (le tout premier test reussi utilisait exactement ce
+        # reglage a 2 langues). Des essais avec plus de langues combinees
+        # (4, puis 12) ont fait echouer completement la reconnaissance de
+        # texte d'Audiveris (titre + paroles disparus, "Untitled Score") --
+        # Audiveris semble tres sensible au nombre de langues combinees
+        # ici, contrairement a Tesseract utilise seul (voir plus bas pour
+        # l'OCR des couplets, qui lui tolere une liste bien plus large).
+        # Ne pas elargir cette ligne sans un test complet, page reelle,
+        # avant de la considerer fiable.
+        "-constant", "org.audiveris.omr.text.Language.defaultSpecification=fra+eng",
         "-output", workdir,
     ]
     if sheets:
