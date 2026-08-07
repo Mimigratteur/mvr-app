@@ -404,6 +404,52 @@ def _inject_extra_verses(mxl_bytes, verses):
         return mxl_bytes
 
 
+def _sanitize_mxl(mxl_bytes):
+    """Corrige les valeurs de duree manifestement invalides (non numeriques)
+    qu'Audiveris peut produire sur des partitions difficiles pour son OMR
+    (ex: notation rythmique en croix/rythme frappe, comme une intro
+    instrumentale avant l'entree du chant). Sans ca, OSMD (l'affichage de
+    la partition dans MVR) plante completement -- ecran blanc avec l'erreur
+    technique "The provided duration is not valid" -- au lieu d'afficher la
+    partition, quitte a etre fausse a cet endroit precis. Purement
+    defensif : retourne les octets d'origine inchanges si quoi que ce soit
+    echoue."""
+    try:
+        zin = zipfile.ZipFile(io.BytesIO(mxl_bytes))
+        container = zin.read("META-INF/container.xml").decode("utf-8")
+        m = re.search(r'full-path="([^"]+)"', container)
+        if not m:
+            return mxl_bytes
+        xml_path = m.group(1)
+        xml_text = zin.read(xml_path).decode("utf-8")
+
+        _fix_count = [0]
+
+        def _fix_duration(mo):
+            if mo.group(2).strip().isdigit():
+                return mo.group(0)
+            _fix_count[0] += 1
+            return mo.group(1) + "4" + mo.group(3)
+
+        fixed_text = re.sub(r"(<duration>)([^<]*)(</duration>)", _fix_duration, xml_text)
+        n = _fix_count[0]
+        if n == 0:
+            return mxl_bytes
+
+        out_buf = io.BytesIO()
+        with zipfile.ZipFile(out_buf, "w", zipfile.ZIP_DEFLATED) as zout:
+            for item in zin.namelist():
+                if item == xml_path:
+                    zout.writestr(item, fixed_text.encode("utf-8"))
+                else:
+                    zout.writestr(item, zin.read(item))
+        print(f"[pont MVR] {n} valeur(s) de duree invalide(s) corrigee(s) dans la partition.")
+        return out_buf.getvalue()
+    except Exception as e:
+        print(f"[pont MVR] Nettoyage des durees impossible ({e}) -- partition envoyee telle quelle.")
+        return mxl_bytes
+
+
 def run_transcription(pdf_bytes, original_name):
     """Ecrit le PDF dans un dossier temporaire, lance Audiveris en mode
     batch avec les reglages qu'on utilise habituellement a la main
@@ -471,6 +517,8 @@ def run_transcription(pdf_bytes, original_name):
         shutil.rmtree(workdir, ignore_errors=True)
     except Exception:
         pass
+
+    mxl_bytes = _sanitize_mxl(mxl_bytes)
 
     return mxl_bytes
 
