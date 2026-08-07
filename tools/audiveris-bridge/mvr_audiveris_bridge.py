@@ -33,6 +33,22 @@ import glob
 import shutil
 import threading
 import time
+import re
+import io
+import zipfile
+import xml.etree.ElementTree as ET
+
+# Ces trois bibliotheques ne sont necessaires que pour la fonctionnalite
+# "couplets supplementaires via OCR" (voir plus bas) -- si elles ne sont
+# pas installees, cette fonctionnalite est simplement desactivee sans
+# empecher le reste du pont (transcription Audiveris normale) de marcher.
+try:
+    import fitz  # PyMuPDF -- rendu des pages PDF en image, sans dependance externe
+    import pytesseract
+    import pyphen
+    OCR_LIBS_OK = True
+except ImportError:
+    OCR_LIBS_OK = False
 
 PORT = 8791
 
@@ -57,6 +73,29 @@ def find_audiveris():
 
 AUDIVERIS_PATH = find_audiveris()
 
+# Chemins courants d'installation de Tesseract OCR sur Windows -- utilise
+# uniquement pour la reconnaissance des couplets supplementaires (texte
+# seul, sans musique) sur une page suivante. Facultatif : si absent, cette
+# fonctionnalite est juste desactivee, le reste du pont marche normalement.
+TESSERACT_CANDIDATE_PATHS = [
+    r"C:\Program Files\Tesseract-OCR\tesseract.exe",
+    r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
+    os.path.expanduser(r"~\AppData\Local\Tesseract-OCR\tesseract.exe"),
+]
+
+
+def find_tesseract():
+    for p in TESSERACT_CANDIDATE_PATHS:
+        if os.path.exists(p):
+            return p
+    return None
+
+
+TESSERACT_PATH = find_tesseract()
+if OCR_LIBS_OK and TESSERACT_PATH:
+    pytesseract.pytesseract.tesseract_cmd = TESSERACT_PATH
+VERSES_FEATURE_OK = OCR_LIBS_OK and TESSERACT_PATH is not None
+
 
 def _run_audiveris(pdf_path, workdir, sheets=None):
     """Lance une commande Audiveris. Si sheets est fourni (ex: "1"), limite
@@ -75,6 +114,167 @@ def _run_audiveris(pdf_path, workdir, sheets=None):
         cmd += ["-sheets", sheets]
     cmd += ["--", pdf_path]
     return subprocess.run(cmd, cwd=workdir, capture_output=True, text=True, timeout=600)
+
+
+_WORD_RE = re.compile(r"[A-Za-zÀ-ÖØ-öø-ÿ]+(?:['’][A-Za-zÀ-ÖØ-öø-ÿ]+)?", re.UNICODE)
+_VERSE_NUM_RE = re.compile(r"(?m)^\s*(\d{1,2})[.\s]*$")
+
+try:
+    _HYPHEN_DIC = pyphen.Pyphen(lang="fr_FR") if OCR_LIBS_OK else None
+except Exception:
+    _HYPHEN_DIC = None
+
+
+def _ocr_page_text(page, dpi=300):
+    """Rend une page PDF (objet fitz) en image puis en extrait le texte via
+    Tesseract. Gere le cas frequent d'une mise en page a 2 colonnes (ex:
+    couplets 4 et 5 imprimes cote a cote) en detectant les mots trop
+    espaces horizontalement et en relisant chaque moitie separement, sinon
+    l'OCR lit les deux colonnes entrelacees ligne par ligne -- illisible."""
+    zoom = dpi / 72
+    pix = page.get_pixmap(matrix=fitz.Matrix(zoom, zoom))
+    img_bytes = pix.tobytes("png")
+    from PIL import Image
+    img = Image.open(io.BytesIO(img_bytes))
+
+    data = pytesseract.image_to_data(img, lang="fra", output_type=pytesseract.Output.DICT)
+    xs = [data["left"][i] + data["width"][i] / 2 for i in range(len(data["text"])) if data["text"][i].strip()]
+    width = img.width
+
+    is_two_columns = False
+    if len(xs) > 6:
+        left_half = [x for x in xs if x < width / 2]
+        right_half = [x for x in xs if x >= width / 2]
+        # Deux colonnes plausibles si les mots se repartissent des deux
+        # cotes de maniere significative (pas juste quelques debordements).
+        if len(left_half) > len(xs) * 0.25 and len(right_half) > len(xs) * 0.25:
+            is_two_columns = True
+
+    if not is_two_columns:
+        return pytesseract.image_to_string(img, lang="fra")
+
+    left_crop = img.crop((0, 0, width // 2, img.height))
+    right_crop = img.crop((width // 2, 0, width, img.height))
+    return (
+        pytesseract.image_to_string(left_crop, lang="fra")
+        + "\n"
+        + pytesseract.image_to_string(right_crop, lang="fra")
+    )
+
+
+def _ocr_extra_verses(pdf_path, skip_page_index=0):
+    """OCRise toutes les pages du PDF sauf skip_page_index (0-indexe, en
+    general la page 1 qui contient la vraie partition), et en extrait les
+    couplets numerotes (ex: "4.", "5."). Retourne un dict {numero: texte}.
+    Ne leve jamais d'exception -- retourne {} en cas d'echec ou si les
+    bibliotheques necessaires ne sont pas installees."""
+    if not VERSES_FEATURE_OK:
+        return {}
+    try:
+        doc = fitz.open(pdf_path)
+        full_text = ""
+        for i in range(len(doc)):
+            if i == skip_page_index:
+                continue
+            full_text += "\n" + _ocr_page_text(doc[i])
+        doc.close()
+    except Exception as e:
+        print(f"[pont MVR] OCR des couplets impossible : {e}")
+        return {}
+
+    matches = list(_VERSE_NUM_RE.finditer(full_text))
+    verses = {}
+    for idx, m in enumerate(matches):
+        num = int(m.group(1))
+        if num < 2 or num > 20:
+            continue  # evite de confondre un numero de page ou autre avec un couplet
+        start = m.end()
+        end = matches[idx + 1].start() if idx + 1 < len(matches) else len(full_text)
+        text = full_text[start:end].strip().replace("\n", " ")
+        text = re.sub(r"\s+", " ", text)
+        if text:
+            verses[num] = text
+    return verses
+
+
+def _hyphenate_verse(text):
+    """Decoupe un texte de couplet en syllabes dans l'ordre, chaque syllabe
+    portant son marqueur MusicXML (begin/middle/end/single), via cesure
+    francaise automatique. Approximation : la cesure automatique ne colle
+    pas toujours exactement a la cesure poetique d'origine, mais reste
+    lisible dans l'immense majorite des cas."""
+    if not _HYPHEN_DIC:
+        return []
+    words = _WORD_RE.findall(text)
+    syllables = []
+    for w in words:
+        parts = _HYPHEN_DIC.inserted(w).split("-")
+        if len(parts) == 1:
+            syllables.append((parts[0], "single"))
+        else:
+            for i, p in enumerate(parts):
+                if i == 0:
+                    syllables.append((p, "begin"))
+                elif i == len(parts) - 1:
+                    syllables.append((p, "end"))
+                else:
+                    syllables.append((p, "middle"))
+    return syllables
+
+
+def _inject_extra_verses(mxl_bytes, verses):
+    """Ajoute les couplets supplementaires (dict {numero: texte}) dans le
+    fichier .mxl (zip contenant le MusicXML), en reutilisant les memes
+    emplacements de notes que le couplet 1, dans l'ordre. Retourne les
+    octets .mxl modifies, ou les octets d'origine inchanges si quoi que ce
+    soit echoue -- cette fonctionnalite ne doit jamais faire echouer une
+    transcription qui a par ailleurs reussi."""
+    if not verses:
+        return mxl_bytes
+    try:
+        zin = zipfile.ZipFile(io.BytesIO(mxl_bytes))
+        container = zin.read("META-INF/container.xml").decode("utf-8")
+        m = re.search(r'full-path="([^"]+)"', container)
+        if not m:
+            return mxl_bytes
+        xml_path = m.group(1)
+        xml_bytes = zin.read(xml_path)
+
+        root = ET.fromstring(xml_bytes)
+        slot_notes = []
+        for note in root.iter("note"):
+            for lyric in note.findall("lyric"):
+                if lyric.get("number") == "1":
+                    slot_notes.append(note)
+                    break
+
+        if not slot_notes:
+            return mxl_bytes
+
+        for verse_number, verse_text in verses.items():
+            syllables = _hyphenate_verse(verse_text)
+            for note, (syl_text, syl_type) in zip(slot_notes, syllables):
+                lyric_el = ET.SubElement(note, "lyric")
+                lyric_el.set("number", str(verse_number))
+                syllabic_el = ET.SubElement(lyric_el, "syllabic")
+                syllabic_el.text = syl_type
+                text_el = ET.SubElement(lyric_el, "text")
+                text_el.text = syl_text
+
+        new_xml_bytes = ET.tostring(root, encoding="UTF-8", xml_declaration=True)
+
+        out_buf = io.BytesIO()
+        with zipfile.ZipFile(out_buf, "w", zipfile.ZIP_DEFLATED) as zout:
+            for item in zin.namelist():
+                if item == xml_path:
+                    zout.writestr(item, new_xml_bytes)
+                else:
+                    zout.writestr(item, zin.read(item))
+        print(f"[pont MVR] {len(verses)} couplet(s) supplementaire(s) ajoute(s) via OCR.")
+        return out_buf.getvalue()
+    except Exception as e:
+        print(f"[pont MVR] Ajout des couplets supplementaires impossible ({e}) -- partition conservee telle quelle.")
+        return mxl_bytes
 
 
 def run_transcription(pdf_bytes, original_name):
@@ -100,6 +300,7 @@ def run_transcription(pdf_bytes, original_name):
     result = _run_audiveris(pdf_path, workdir)
     mxl_files = glob.glob(os.path.join(workdir, "**", "*.mxl"), recursive=True)
 
+    used_page1_fallback = False
     if not mxl_files:
         # Cas frequent avec les vieux recueils de cantiques/psaumes : la
         # musique tient sur la 1ere page, et les couplets suivants (4, 5...)
@@ -111,6 +312,7 @@ def run_transcription(pdf_bytes, original_name):
         print("[pont MVR] Echec sur toutes les pages, nouvelle tentative en limitant a la page 1...")
         result = _run_audiveris(pdf_path, workdir, sheets="1")
         mxl_files = glob.glob(os.path.join(workdir, "**", "*.mxl"), recursive=True)
+        used_page1_fallback = mxl_files != []
 
     if not mxl_files:
         tail = (result.stdout or "")[-1500:] + "\n" + (result.stderr or "")[-1500:]
@@ -121,6 +323,21 @@ def run_transcription(pdf_bytes, original_name):
 
     with open(mxl_files[0], "rb") as f:
         mxl_bytes = f.read()
+
+    if used_page1_fallback and VERSES_FEATURE_OK:
+        # La page 1 seule a ete transcrite -- les autres pages contiennent
+        # probablement des couplets supplementaires en texte seul (voir
+        # commentaire ci-dessus). On tente de les recuperer par OCR et de
+        # les ajouter a la partition, alignes sur les memes emplacements de
+        # notes que le couplet 1. Purement best-effort : n'importe quel
+        # souci ici laisse simplement la partition telle qu'elle etait.
+        try:
+            extra_verses = _ocr_extra_verses(pdf_path, skip_page_index=0)
+            if extra_verses:
+                print(f"[pont MVR] Couplet(s) detecte(s) par OCR : {sorted(extra_verses.keys())}")
+                mxl_bytes = _inject_extra_verses(mxl_bytes, extra_verses)
+        except Exception as e:
+            print(f"[pont MVR] OCR des couplets supplementaires ignore ({e}).")
 
     # Nettoyage best-effort -- ne bloque jamais la reponse si ca echoue
     try:
@@ -159,6 +376,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     "status": "ok",
                     "audiverisFound": AUDIVERIS_PATH is not None,
                     "audiverisPath": AUDIVERIS_PATH,
+                    "extraVersesOcrAvailable": VERSES_FEATURE_OK,
                 }
             ).encode("utf-8")
             self.send_response(200)
@@ -221,6 +439,17 @@ def main():
     else:
         print("!! Audiveris INTROUVABLE dans les emplacements standards.")
         print("   Modifie CANDIDATE_PATHS en haut de ce script si besoin.")
+    if VERSES_FEATURE_OK:
+        print(f"Couplets supplementaires (OCR) : actif -- Tesseract trouve : {TESSERACT_PATH}")
+    elif not OCR_LIBS_OK:
+        print("Couplets supplementaires (OCR) : desactive -- bibliotheques Python manquantes.")
+        print("   Pour l'activer : pip install pymupdf pytesseract pillow pyphen --break-system-packages")
+        print("   (ou 'py -m pip install ...' selon ton installation Python)")
+    else:
+        print("Couplets supplementaires (OCR) : desactive -- Tesseract OCR introuvable.")
+        print("   Installe-le depuis https://github.com/UB-Mannheim/tesseract/wiki")
+        print("   (coche la langue French pendant l'installation), ou modifie")
+        print("   TESSERACT_CANDIDATE_PATHS en haut de ce script si besoin.")
     print(f"Ecoute sur http://127.0.0.1:{PORT}")
     print("Laisse cette fenetre ouverte pendant que tu utilises MVR.")
     print("Ferme-la (ou Ctrl+C) pour arreter le pont.")
