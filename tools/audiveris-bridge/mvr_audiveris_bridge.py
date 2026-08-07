@@ -58,6 +58,25 @@ def find_audiveris():
 AUDIVERIS_PATH = find_audiveris()
 
 
+def _run_audiveris(pdf_path, workdir, sheets=None):
+    """Lance une commande Audiveris. Si sheets est fourni (ex: "1"), limite
+    le traitement a ces pages via l'option -sheets, pour ignorer les pages
+    qui ne contiennent pas de musique (voir run_transcription)."""
+    cmd = [
+        AUDIVERIS_PATH,
+        "-batch",
+        "-export",
+        "-constant", "org.audiveris.omr.sheet.ProcessingSwitches.chordNames=true",
+        "-constant", "org.audiveris.omr.sheet.ProcessingSwitches.lyrics=true",
+        "-constant", "org.audiveris.omr.text.Language.defaultSpecification=fra+eng",
+        "-output", workdir,
+    ]
+    if sheets:
+        cmd += ["-sheets", sheets]
+    cmd += ["--", pdf_path]
+    return subprocess.run(cmd, cwd=workdir, capture_output=True, text=True, timeout=600)
+
+
 def run_transcription(pdf_bytes, original_name):
     """Ecrit le PDF dans un dossier temporaire, lance Audiveris en mode
     batch avec les reglages qu'on utilise habituellement a la main
@@ -78,27 +97,26 @@ def run_transcription(pdf_bytes, original_name):
     with open(pdf_path, "wb") as f:
         f.write(pdf_bytes)
 
-    cmd = [
-        AUDIVERIS_PATH,
-        "-batch",
-        "-export",
-        "-constant", "org.audiveris.omr.sheet.ProcessingSwitches.chordNames=true",
-        "-constant", "org.audiveris.omr.sheet.ProcessingSwitches.lyrics=true",
-        "-constant", "org.audiveris.omr.text.Language.defaultSpecification=fra+eng",
-        "-output", workdir,
-        "--", pdf_path,
-    ]
-
-    result = subprocess.run(
-        cmd, cwd=workdir, capture_output=True, text=True, timeout=600
-    )
-
+    result = _run_audiveris(pdf_path, workdir)
     mxl_files = glob.glob(os.path.join(workdir, "**", "*.mxl"), recursive=True)
+
+    if not mxl_files:
+        # Cas frequent avec les vieux recueils de cantiques/psaumes : la
+        # musique tient sur la 1ere page, et les couplets suivants (4, 5...)
+        # sont imprimes en texte seul sur une page suivante, sans aucune
+        # portee. Audiveris essaie d'y reconnaitre de la musique quand meme,
+        # echoue dessus, et ca fait echouer l'export du livre entier -- meme
+        # si la vraie partition (page 1) a ete correctement transcrite.
+        # On retente alors en ne traitant que la premiere page.
+        print("[pont MVR] Echec sur toutes les pages, nouvelle tentative en limitant a la page 1...")
+        result = _run_audiveris(pdf_path, workdir, sheets="1")
+        mxl_files = glob.glob(os.path.join(workdir, "**", "*.mxl"), recursive=True)
+
     if not mxl_files:
         tail = (result.stdout or "")[-1500:] + "\n" + (result.stderr or "")[-1500:]
         raise RuntimeError(
-            "Audiveris n'a produit aucun fichier .mxl. "
-            "Sortie du programme (fin) :\n" + tail
+            "Audiveris n'a produit aucun fichier .mxl (meme en limitant a la "
+            "1ere page). Sortie du programme (fin) :\n" + tail
         )
 
     with open(mxl_files[0], "rb") as f:
