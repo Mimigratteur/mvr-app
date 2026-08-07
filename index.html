@@ -765,7 +765,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.116.1</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.117.0</span></h1>
 </div>
 
 <div id="pages">
@@ -970,6 +970,7 @@ body.fullscreen #topbar{display:none}
       <div class="osmd-mode-only" style="gap:5px;flex-wrap:nowrap">
         <button class="btn-g" id="osmd-play-btn" onclick="osmdTogglePlay()">▶ Play</button>
         <button class="btn-r" onclick="osmdRestart()">↺ Début</button>
+        <button class="btn-sm" onclick="osmdOpenChordEditor()" title="Corriger les accords mal reconnus par Audiveris">✎ Accords</button>
       </div>
       <button onclick="prevSong()">‹ Préc</button>
       <button onclick="nextSong()">Suiv ›</button>
@@ -1585,6 +1586,20 @@ J&#39;ai voulu planter un oranger">    </textarea>
      hors connexion (partition-photo, moins pratique mais toujours fiable
      sur scène) ou lecture assistée par IA (plus précis, connexion requise
      à cette étape de préparation seulement — jamais pendant un concert). -->
+<div class="modal-bg" id="chord-editor-modal">
+<div class="modal" style="max-width:480px">
+  <h2 style="margin-bottom:4px">✎ Corriger les accords</h2>
+  <p style="font-size:13px;color:var(--tx2);line-height:1.5;margin-top:-4px">
+    Les accords qu'Audiveris a reconnus sur la partition, dans l'ordre. Corrige ceux qui sont faux
+    (ex: <code>Do</code>, <code>Mi m</code>, <code>Sol7</code>, <code>Fa#m</code>) puis enregistre.
+  </p>
+  <div id="chord-editor-list" style="max-height:50vh;overflow-y:auto;display:flex;flex-direction:column;gap:6px;margin:10px 0"></div>
+  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px">
+    <button onclick="hideModal('chord-editor-modal')">Annuler</button>
+    <button class="btn-g" onclick="osmdSaveChordEditor()">💾 Enregistrer</button>
+  </div>
+</div>
+</div>
 <div class="modal-bg" id="notext-pdf-modal">
 <div class="modal">
   <h2 id="notext-pdf-title">Ce PDF ne contient pas de texte</h2>
@@ -6969,6 +6984,147 @@ function osmdTogglePlay() {
     osmdStartAutoScroll();
   }
 }
+async function osmdOpenChordEditor() {
+  var _0xsong = _osmdCurrentSong();
+  if (!_0xsong || !_0xsong.osmdKey) return;
+  var _0xxmlText;
+  try {
+    _0xxmlText = await imgDbGet(_0xsong.osmdKey);
+  } catch (_0xe) {
+    _0xxmlText = null;
+  }
+  if (!_0xxmlText) {
+    alert("Impossible de charger la partition pour la corriger.");
+    return;
+  }
+  var _0xchords = _osmdExtractChords(_0xxmlText);
+  var _0xlistEl = document.getElementById("chord-editor-list");
+  if (!_0xchords.length) {
+    _0xlistEl.innerHTML = "<p style=\"font-size:13px;color:var(--tx2)\">Aucun accord détecté sur cette partition.</p>";
+  } else {
+    _0xlistEl.innerHTML = _0xchords.map(function (_0xc, _0xi) {
+      return "<div style=\"display:flex;align-items:center;gap:8px\">" +
+        "<span style=\"font-size:11px;color:var(--tx3);min-width:62px\">Mesure " + _0xc.measure + "</span>" +
+        "<input type=\"text\" data-chord-idx=\"" + _0xi + "\" value=\"" + _0xc.display.replace(/"/g, "&quot;") + "\" " +
+        "spellcheck=\"false\" style=\"flex:1;padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:14px\">" +
+        "</div>";
+    }).join("");
+  }
+  showModal("chord-editor-modal");
+}
+
+async function osmdSaveChordEditor() {
+  var _0xsong = _osmdCurrentSong();
+  if (!_0xsong || !_0xsong.osmdKey) return;
+  var _0xxmlText;
+  try {
+    _0xxmlText = await imgDbGet(_0xsong.osmdKey);
+  } catch (_0xe) {
+    _0xxmlText = null;
+  }
+  if (!_0xxmlText) return;
+  var _0xchords = _osmdExtractChords(_0xxmlText);
+  var _0xinputs = document.querySelectorAll("#chord-editor-list input[data-chord-idx]");
+  var _0xnewXml = _0xxmlText;
+  var _0xoffsetShift = 0;
+  _0xinputs.forEach(function (_0xinput) {
+    var _0xi = parseInt(_0xinput.getAttribute("data-chord-idx"), 10);
+    var _0xc = _0xchords[_0xi];
+    var _0xnewVal = _0xinput.value.trim();
+    if (!_0xc || _0xnewVal === _0xc.display) return; // pas touche par l'utilisateur
+    var _0xparsed = _osmdParseChordSymbol(_0xnewVal);
+    if (!_0xparsed) return;
+    var _0xnewBlock = _osmdBuildHarmonyXml(_0xparsed);
+    var _0xstart = _0xc.start + _0xoffsetShift;
+    var _0xend = _0xc.end + _0xoffsetShift;
+    _0xnewXml = _0xnewXml.slice(0, _0xstart) + _0xnewBlock + _0xnewXml.slice(_0xend);
+    _0xoffsetShift += _0xnewBlock.length - (_0xc.end - _0xc.start);
+  });
+  if (_0xnewXml !== _0xxmlText) {
+    await imgDbPut(_0xsong.osmdKey, _0xnewXml);
+  }
+  hideModal("chord-editor-modal");
+  await renderSceneOsmd(_0xsong);
+}
+
+// Extrait chaque bloc <harmony>...</harmony> du MusicXML, dans l'ordre du
+// document, avec le numero de mesure englobant et une version lisible
+// (francaise) de l'accord pour l'afficher dans le champ de saisie.
+function _osmdExtractChords(_0xxmlText) {
+  var _0xresults = [];
+  var _0xmeasureRe = /<measure\s+number="(\d+)"/g;
+  var _0xharmonyRe = /<harmony\b[\s\S]*?<\/harmony>/g;
+  var _0xmeasureMarks = [];
+  var _0xmm;
+  while ((_0xmm = _0xmeasureRe.exec(_0xxmlText))) {
+    _0xmeasureMarks.push({ pos: _0xmm.index, num: _0xmm[1] });
+  }
+  var _0xhm;
+  while ((_0xhm = _0xharmonyRe.exec(_0xxmlText))) {
+    var _0xblock = _0xhm[0];
+    var _0xmeasure = "?";
+    for (var _0xi = _0xmeasureMarks.length - 1; _0xi >= 0; _0xi--) {
+      if (_0xmeasureMarks[_0xi].pos <= _0xhm.index) {
+        _0xmeasure = _0xmeasureMarks[_0xi].num;
+        break;
+      }
+    }
+    _0xresults.push({
+      start: _0xhm.index,
+      end: _0xhm.index + _0xblock.length,
+      measure: _0xmeasure,
+      display: _osmdChordDisplayFromHarmony(_0xblock),
+    });
+  }
+  return _0xresults;
+}
+
+var _OSMD_STEP_TO_FR = { C: "Do", D: "Ré", E: "Mi", F: "Fa", G: "Sol", A: "La", B: "Si" };
+var _OSMD_FR_TO_STEP = { do: "C", re: "D", "ré": "D", mi: "E", fa: "F", sol: "G", la: "A", si: "B",
+                          c: "C", d: "D", e: "E", f: "F", g: "G", a: "A", b: "B" };
+var _OSMD_TEXT_TO_KIND = {
+  "": "major", maj: "major", m: "minor", min: "minor", "7": "dominant",
+  maj7: "major-seventh", m7: "minor-seventh", dim: "diminished", "°": "diminished",
+  aug: "augmented", "+": "augmented", sus4: "suspended-fourth", sus2: "suspended-second",
+  "m7b5": "half-diminished",
+};
+
+function _osmdChordDisplayFromHarmony(_0xblock) {
+  var _0xstepM = _0xblock.match(/<root-step>([^<]*)<\/root-step>/);
+  var _0xalterM = _0xblock.match(/<root-alter>([^<]*)<\/root-alter>/);
+  var _0xkindTextM = _0xblock.match(/<kind[^>]*\btext="([^"]*)"/);
+  var _0xstep = _0xstepM ? (_OSMD_STEP_TO_FR[_0xstepM[1]] || _0xstepM[1]) : "?";
+  var _0xalter = _0xalterM ? parseInt(_0xalterM[1], 10) : 0;
+  var _0xalterTxt = _0xalter > 0 ? "#".repeat(_0xalter) : _0xalter < 0 ? "b".repeat(-_0xalter) : "";
+  var _0xkindTxt = _0xkindTextM ? _0xkindTextM[1] : "";
+  return _0xstep + _0xalterTxt + (_0xkindTxt ? " " + _0xkindTxt : "");
+}
+
+// Analyse un texte d'accord tape par l'utilisateur (ex: "Mi m", "Sol7",
+// "Fa#m", "Réb") et retourne les composants MusicXML correspondants, ou
+// null si le texte ne ressemble a rien de reconnaissable.
+function _osmdParseChordSymbol(_0xtext) {
+  var _0xm = _0xtext.trim().match(/^(do|r[eé]|mi|fa|sol|la|si|[a-g])\s*([#b]*)\s*(.*)$/i);
+  if (!_0xm) return null;
+  var _0xstep = _OSMD_FR_TO_STEP[_0xm[1].toLowerCase()];
+  if (!_0xstep) return null;
+  var _0xaccidentals = _0xm[2] || "";
+  var _0xalter = 0;
+  for (var _0xi = 0; _0xi < _0xaccidentals.length; _0xi++) {
+    _0xalter += _0xaccidentals[_0xi] === "#" ? 1 : -1;
+  }
+  var _0xqualityRaw = (_0xm[3] || "").trim().toLowerCase();
+  var _0xkindValue = _OSMD_TEXT_TO_KIND.hasOwnProperty(_0xqualityRaw) ? _OSMD_TEXT_TO_KIND[_0xqualityRaw] : "major";
+  var _0xkindText = (_0xm[3] || "").trim();
+  return { step: _0xstep, alter: _0xalter, kindValue: _0xkindValue, kindText: _0xkindText };
+}
+
+function _osmdBuildHarmonyXml(_0xparsed) {
+  var _0xalterXml = _0xparsed.alter ? "<root-alter>" + _0xparsed.alter + "</root-alter>" : "";
+  return "<harmony><root><root-step>" + _0xparsed.step + "</root-step>" + _0xalterXml + "</root>" +
+    "<kind text=\"" + _0xparsed.kindText.replace(/"/g, "&quot;") + "\">" + _0xparsed.kindValue + "</kind></harmony>";
+}
+
 function osmdRestart() {
   if (!osmdApi) return;
   osmdStopAutoScroll();
@@ -12706,7 +12862,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.116.1 · 06/08/2026<span id="license-watermark"></span>
+  v2.117.0 · 06/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
