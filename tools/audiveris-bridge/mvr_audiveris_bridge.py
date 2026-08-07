@@ -107,7 +107,7 @@ def _run_audiveris(pdf_path, workdir, sheets=None):
         "-export",
         "-constant", "org.audiveris.omr.sheet.ProcessingSwitches.chordNames=true",
         "-constant", "org.audiveris.omr.sheet.ProcessingSwitches.lyrics=true",
-        "-constant", "org.audiveris.omr.text.Language.defaultSpecification=fra+eng",
+        "-constant", "org.audiveris.omr.text.Language.defaultSpecification=fra+lat+spa+eng",
         "-output", workdir,
     ]
     if sheets:
@@ -120,9 +120,48 @@ _WORD_RE = re.compile(r"[A-Za-zÀ-ÖØ-öø-ÿ]+(?:['’][A-Za-zÀ-ÖØ-öø-ÿ]
 _VERSE_NUM_RE = re.compile(r"(?m)^\s*(\d{1,2})[.\s]*$")
 
 try:
-    _HYPHEN_DIC = pyphen.Pyphen(lang="fr_FR") if OCR_LIBS_OK else None
+    _HYPHEN_DICS = {
+        "fr": pyphen.Pyphen(lang="fr"),
+        "es": pyphen.Pyphen(lang="es"),
+        "en": pyphen.Pyphen(lang="en"),
+        # Pas de dictionnaire de cesure latine dans pyphen -- l'italien
+        # donne une approximation correcte dans la plupart des cas (ex:
+        # "Do-mi-nus", "sanc-tus", "lau-da-te" sont exacts), les langues
+        # romanes se decoupant en syllabes de facon proche.
+        "la": pyphen.Pyphen(lang="it"),
+    } if OCR_LIBS_OK else {}
 except Exception:
-    _HYPHEN_DIC = None
+    _HYPHEN_DICS = {}
+
+# Petits lots de mots tres frequents par langue, pour deviner la langue
+# d'un couplet a partir de son texte OCRise (pas de detection de langue
+# fiable a 100%, mais suffisant pour choisir la bonne cesure dans la
+# grande majorite des cas -- un cantique reste souvent dans une seule
+# langue d'un bout a l'autre).
+_LANG_HINT_WORDS = {
+    "fr": {"le", "la", "les", "de", "des", "et", "que", "qui", "je", "tu", "il",
+           "elle", "nous", "vous", "ils", "est", "pour", "dans", "mon", "ma",
+           "ton", "ta", "son", "sa", "ce", "ces", "un", "une", "du", "au",
+           "aux", "ne", "pas", "plus", "tout", "tous", "avec", "sur", "notre"},
+    "la": {"et", "in", "cum", "ad", "est", "sunt", "deo", "domine", "dominus",
+           "filii", "pater", "sancta", "sanctus", "gloria", "christe",
+           "christi", "kyrie", "tibi", "nobis", "nostrum", "noster", "qui",
+           "te", "deum", "laudamus", "eleison"},
+    "es": {"el", "la", "los", "las", "de", "y", "que", "es", "en", "un", "una",
+           "por", "para", "con", "tu", "su", "nos", "mi", "este", "esta",
+           "pero", "mas", "no", "senor", "dios"},
+    "en": {"the", "and", "of", "to", "in", "is", "for", "you", "your", "we",
+           "our", "this", "that", "with", "not", "but", "are", "god", "lord"},
+}
+
+
+def _guess_verse_language(text):
+    words = set(w.lower() for w in _WORD_RE.findall(text))
+    if not words:
+        return "fr"
+    scores = {lang: len(words & hints) for lang, hints in _LANG_HINT_WORDS.items()}
+    best_lang = max(scores, key=scores.get)
+    return best_lang if scores[best_lang] > 0 else "fr"
 
 
 def _ocr_page_text(page, dpi=300):
@@ -137,7 +176,7 @@ def _ocr_page_text(page, dpi=300):
     from PIL import Image
     img = Image.open(io.BytesIO(img_bytes))
 
-    data = pytesseract.image_to_data(img, lang="fra", output_type=pytesseract.Output.DICT)
+    data = pytesseract.image_to_data(img, lang="fra+lat+spa+eng", output_type=pytesseract.Output.DICT)
     xs = [data["left"][i] + data["width"][i] / 2 for i in range(len(data["text"])) if data["text"][i].strip()]
     width = img.width
 
@@ -151,14 +190,14 @@ def _ocr_page_text(page, dpi=300):
             is_two_columns = True
 
     if not is_two_columns:
-        return pytesseract.image_to_string(img, lang="fra")
+        return pytesseract.image_to_string(img, lang="fra+lat+spa+eng")
 
     left_crop = img.crop((0, 0, width // 2, img.height))
     right_crop = img.crop((width // 2, 0, width, img.height))
     return (
-        pytesseract.image_to_string(left_crop, lang="fra")
+        pytesseract.image_to_string(left_crop, lang="fra+lat+spa+eng")
         + "\n"
-        + pytesseract.image_to_string(right_crop, lang="fra")
+        + pytesseract.image_to_string(right_crop, lang="fra+lat+spa+eng")
     )
 
 
@@ -200,15 +239,20 @@ def _ocr_extra_verses(pdf_path, skip_page_index=0):
 def _hyphenate_verse(text):
     """Decoupe un texte de couplet en syllabes dans l'ordre, chaque syllabe
     portant son marqueur MusicXML (begin/middle/end/single), via cesure
-    francaise automatique. Approximation : la cesure automatique ne colle
-    pas toujours exactement a la cesure poetique d'origine, mais reste
-    lisible dans l'immense majorite des cas."""
-    if not _HYPHEN_DIC:
+    automatique dans la langue devinee du couplet (francais/latin/espagnol/
+    anglais). Approximation : la cesure automatique ne colle pas toujours
+    exactement a la cesure poetique d'origine, mais reste lisible dans
+    l'immense majorite des cas."""
+    if not _HYPHEN_DICS:
+        return []
+    lang = _guess_verse_language(text)
+    dic = _HYPHEN_DICS.get(lang) or _HYPHEN_DICS.get("fr")
+    if not dic:
         return []
     words = _WORD_RE.findall(text)
     syllables = []
     for w in words:
-        parts = _HYPHEN_DIC.inserted(w).split("-")
+        parts = dic.inserted(w).split("-")
         if len(parts) == 1:
             syllables.append((parts[0], "single"))
         else:
