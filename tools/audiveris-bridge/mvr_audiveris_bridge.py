@@ -107,7 +107,7 @@ def _run_audiveris(pdf_path, workdir, sheets=None):
         "-export",
         "-constant", "org.audiveris.omr.sheet.ProcessingSwitches.chordNames=true",
         "-constant", "org.audiveris.omr.sheet.ProcessingSwitches.lyrics=true",
-        "-constant", "org.audiveris.omr.text.Language.defaultSpecification=fra+lat+spa+eng",
+        "-constant", f"org.audiveris.omr.text.Language.defaultSpecification={_TESSERACT_LANG_STRING}",
         "-output", workdir,
     ]
     if sheets:
@@ -116,19 +116,40 @@ def _run_audiveris(pdf_path, workdir, sheets=None):
     return subprocess.run(cmd, cwd=workdir, capture_output=True, text=True, timeout=600)
 
 
-_WORD_RE = re.compile(r"[A-Za-zÀ-ÖØ-öø-ÿ]+(?:['’][A-Za-zÀ-ÖØ-öø-ÿ]+)?", re.UNICODE)
+_WORD_RE = re.compile(
+    r"[A-Za-zÀ-ÖØ-öø-ÿ\u0370-\u03FF\u0400-\u04FF]+(?:['’][A-Za-zÀ-ÖØ-öø-ÿ]+)?",
+    re.UNICODE,
+)
 _VERSE_NUM_RE = re.compile(r"(?m)^\s*(\d{1,2})[.\s]*$")
+
+# Langues prises en charge pour l'OCR des couplets et leur cesure. Pense a
+# a la fois : la reconnaissance Tesseract (le pack de langue doit avoir ete
+# installe avec Tesseract, voir demarrer_pont.bat / doc du pont) et la
+# disponibilite d'un dictionnaire de cesure dans pyphen. Facilement
+# extensible : ajoute une entree ici plutot que de tout re-ecrire.
+#   cle = code utilise en interne, valeur = (code langue Tesseract, code langue pyphen)
+# Le latin n'a pas de dictionnaire de cesure dedie dans pyphen -- l'italien
+# donne une approximation correcte (langues romanes proches en syllabation).
+_SUPPORTED_LANGS = {
+    "fr": ("fra", "fr"),
+    "la": ("lat", "it"),
+    "es": ("spa", "es"),
+    "en": ("eng", "en"),
+    "de": ("deu", "de"),
+    "it": ("ita", "it"),
+    "pt": ("por", "pt"),
+    "nl": ("nld", "nl"),
+    "pl": ("pol", "pl"),
+    "ro": ("ron", "ro"),
+    "ru": ("rus", "ru"),
+    "el": ("ell", "el"),
+}
+_TESSERACT_LANG_STRING = "+".join(v[0] for v in _SUPPORTED_LANGS.values())
 
 try:
     _HYPHEN_DICS = {
-        "fr": pyphen.Pyphen(lang="fr"),
-        "es": pyphen.Pyphen(lang="es"),
-        "en": pyphen.Pyphen(lang="en"),
-        # Pas de dictionnaire de cesure latine dans pyphen -- l'italien
-        # donne une approximation correcte dans la plupart des cas (ex:
-        # "Do-mi-nus", "sanc-tus", "lau-da-te" sont exacts), les langues
-        # romanes se decoupant en syllabes de facon proche.
-        "la": pyphen.Pyphen(lang="it"),
+        code: pyphen.Pyphen(lang=pyphen_code)
+        for code, (_, pyphen_code) in _SUPPORTED_LANGS.items()
     } if OCR_LIBS_OK else {}
 except Exception:
     _HYPHEN_DICS = {}
@@ -152,6 +173,24 @@ _LANG_HINT_WORDS = {
            "pero", "mas", "no", "senor", "dios"},
     "en": {"the", "and", "of", "to", "in", "is", "for", "you", "your", "we",
            "our", "this", "that", "with", "not", "but", "are", "god", "lord"},
+    "de": {"der", "die", "das", "und", "ist", "nicht", "ein", "eine", "ich",
+           "du", "er", "sie", "wir", "ihr", "mit", "von", "zu", "auf", "im",
+           "in", "fur", "gott", "herr", "dein", "mein"},
+    "it": {"il", "lo", "la", "le", "gli", "di", "che", "non", "un", "una",
+           "io", "tu", "noi", "voi", "con", "per", "dio", "signore", "e",
+           "sono", "sei"},
+    "pt": {"o", "a", "os", "as", "de", "que", "nao", "um", "uma", "eu", "tu",
+           "nos", "com", "para", "deus", "senhor", "e", "sao", "teu"},
+    "nl": {"de", "het", "een", "en", "niet", "ik", "jij", "wij", "met",
+           "voor", "van", "god", "heer", "uw"},
+    "pl": {"i", "w", "na", "nie", "jest", "to", "z", "do", "dla", "bog",
+           "pan", "twoj", "nasz"},
+    "ro": {"si", "in", "nu", "este", "un", "o", "cu", "pentru", "dumnezeu",
+           "domnul", "tau", "noi"},
+    "ru": {"и", "в", "не", "на", "я", "ты", "мы", "с", "для", "бог",
+           "господь", "твой", "наш"},
+    "el": {"και", "το", "η", "ο", "σε", "με", "για", "θεός", "κύριε",
+           "εμείς", "εσείς"},
 }
 
 
@@ -176,7 +215,7 @@ def _ocr_page_text(page, dpi=300):
     from PIL import Image
     img = Image.open(io.BytesIO(img_bytes))
 
-    data = pytesseract.image_to_data(img, lang="fra+lat+spa+eng", output_type=pytesseract.Output.DICT)
+    data = pytesseract.image_to_data(img, lang=_TESSERACT_LANG_STRING, output_type=pytesseract.Output.DICT)
     xs = [data["left"][i] + data["width"][i] / 2 for i in range(len(data["text"])) if data["text"][i].strip()]
     width = img.width
 
@@ -190,14 +229,14 @@ def _ocr_page_text(page, dpi=300):
             is_two_columns = True
 
     if not is_two_columns:
-        return pytesseract.image_to_string(img, lang="fra+lat+spa+eng")
+        return pytesseract.image_to_string(img, lang=_TESSERACT_LANG_STRING)
 
     left_crop = img.crop((0, 0, width // 2, img.height))
     right_crop = img.crop((width // 2, 0, width, img.height))
     return (
-        pytesseract.image_to_string(left_crop, lang="fra+lat+spa+eng")
+        pytesseract.image_to_string(left_crop, lang=_TESSERACT_LANG_STRING)
         + "\n"
-        + pytesseract.image_to_string(right_crop, lang="fra+lat+spa+eng")
+        + pytesseract.image_to_string(right_crop, lang=_TESSERACT_LANG_STRING)
     )
 
 
