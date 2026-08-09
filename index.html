@@ -765,7 +765,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.121.1</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.122.0</span></h1>
 </div>
 
 <div id="pages">
@@ -916,7 +916,7 @@ body.fullscreen #topbar{display:none}
       <!-- Mode "partition image" : photo(s)/PDF scanné affiché tel quel,
            avec défilement automatique ou manuel (glissement doigt/molette).
            Aucune interprétation du contenu — juste l'image qui défile. -->
-      <div id="img-stage" style="display:none" ontouchstart="imgOnUserScroll()" onwheel="imgOnUserScroll()">
+      <div id="img-stage" style="display:none" ontouchstart="imgOnUserScroll()" onwheel="imgOnUserScroll()" onclick="imgHandlePageClick(event)">
         <!-- Repere visuel FIXE (ne defile pas) indiquant ou se trouve la
              mesure en cours de lecture — sans lui, rien n'indiquait
              clairement au musicien ou regarder sur la page qui defile. -->
@@ -1650,10 +1650,10 @@ J&#39;ai voulu planter un oranger">    </textarea>
   <div id="img-markers-list" style="margin-top:10px;font-size:13px;display:flex;flex-direction:column;gap:4px;max-height:160px;overflow-y:auto"></div>
 
   <div style="margin-top:16px;font-weight:600;font-size:14px">Reprises</div>
-  <p style="font-size:12px;color:var(--tx2);line-height:1.4;margin-top:-2px">
-    Une par ligne, format « mesure de départ &gt; mesure d'arrivée ». Ex : la mesure 30
-    renvoie à la mesure 3 s'écrit <code>30&gt;3</code>. Chaque reprise ne se déclenche
-    qu'une seule fois par lecture (pas de boucle infinie).
+  <button class="btn-g" style="margin-top:6px" onclick="imgStartRepeatPicker()">🔁 Poser une reprise en cliquant sur la partition</button>
+  <p style="font-size:12px;color:var(--tx2);line-height:1.4;margin-top:8px">
+    Ou écris-les directement ici, une par ligne, format « mesure de départ &gt; mesure d'arrivée[*nombre de fois] ». Ex : la mesure 30
+    renvoie à la mesure 3, deux fois, s'écrit <code>30&gt;3*2</code> (sans <code>*2</code> = une seule fois).
   </p>
   <textarea id="img-repeats-input" rows="3" placeholder="30>3
 32>35" style="width:100%;font-family:monospace;font-size:13px;padding:8px;box-sizing:border-box"></textarea>
@@ -6404,7 +6404,7 @@ function imgStartAutoScroll() {
     var _0xmaxMeasure = Math.max.apply(null, _0xmarkerKeys.map(Number));
     var _0xvirtualPos = _0xminMeasure;
     var _0xrepeatsList = (_0xcurSongForSpeed.imgRepeats || []).map(function (_0xr) {
-      return { from: _0xr.from, to: _0xr.to, fired: false };
+      return { from: _0xr.from, to: _0xr.to, timesLeft: Math.max(1, _0xr.times || 1) - 1 };
     });
     showPlaybackToast("▶ Lecture partition calée sur " + bpm + " BPM (" + _0xmarkerKeys.length + " repères, " + _0xrepeatsList.length + " reprise" + (_0xrepeatsList.length > 1 ? "s" : "") + ")");
     (function () {
@@ -6416,12 +6416,13 @@ function imgStartAutoScroll() {
           var _0xdt = (_0xts - imgLastTs) / 1000;
           _0xvirtualPos += _0xdt * _0xmeasuresPerSecond;
           // Verifie si on vient de franchir le point de depart d'une
-          // reprise non encore declenchee — saute alors instantanement.
+          // reprise pas encore epuisee — saute alors instantanement,
+          // autant de fois que demande (timesLeft).
           _0xrepeatsList.forEach(function (_0xrep) {
-            if (!_0xrep.fired && _0xvirtualPos >= _0xrep.from) {
+            if (_0xrep.timesLeft > 0 && _0xvirtualPos >= _0xrep.from) {
               _0xvirtualPos = _0xrep.to;
-              _0xrep.fired = true;
-              showPlaybackToast("↩ Reprise : mesure " + _0xrep.from + " → " + _0xrep.to);
+              _0xrep.timesLeft--;
+              showPlaybackToast("↩ Reprise : mesure " + _0xrep.from + " → " + _0xrep.to + (_0xrep.timesLeft > 0 ? " (encore " + _0xrep.timesLeft + "×)" : ""));
             }
           });
           var _0xy = imgYForMeasure(_0xmarkers, _0xvirtualPos);
@@ -6586,7 +6587,7 @@ function imgOpenMarkersPanel() {
   var _0xrepeatsEl = document.getElementById("img-repeats-input");
   if (_0xsong && _0xrepeatsEl) {
     var _0xreps = _0xsong.imgRepeats || [];
-    _0xrepeatsEl.value = _0xreps.map(function (_0xr) { return _0xr.from + ">" + _0xr.to; }).join("\n");
+    _0xrepeatsEl.value = _0xreps.map(function (_0xr) { return _0xr.from + ">" + _0xr.to + (_0xr.times && _0xr.times > 1 ? "*" + _0xr.times : ""); }).join("\n");
   }
   imgRenderMarkersList();
   showModal("img-markers-modal");
@@ -6638,6 +6639,81 @@ function imgDeleteMarker(_0xm) {
   }
   imgRenderMarkersList();
 }
+// Inverse de imgYForMeasure : etant donne une position de defilement
+// (en pixels), estime le numero de mesure correspondant par interpolation
+// entre les reperes existants -- utilise pour convertir un simple clic sur
+// la partition en numero de mesure, sans que le musicien ait besoin de le
+// connaitre ou de le taper.
+function imgMeasureForY(_0xmarkers, _0xy) {
+  var _0xkeys = Object.keys(_0xmarkers).map(Number).sort(function (_0xa, _0xb) {
+    return _0xmarkers[_0xa] - _0xmarkers[_0xb];
+  });
+  if (_0xkeys.length < 2) {
+    return null;
+  }
+  var _0xfirstY = _0xmarkers[_0xkeys[0]];
+  var _0xlastY = _0xmarkers[_0xkeys[_0xkeys.length - 1]];
+  if (_0xy <= _0xfirstY) return _0xkeys[0];
+  if (_0xy >= _0xlastY) return _0xkeys[_0xkeys.length - 1];
+  for (var _0xi = 0; _0xi < _0xkeys.length - 1; _0xi++) {
+    var _0xloM = _0xkeys[_0xi], _0xhiM = _0xkeys[_0xi + 1];
+    var _0xloY = _0xmarkers[_0xloM], _0xhiY = _0xmarkers[_0xhiM];
+    if (_0xy >= _0xloY && _0xy <= _0xhiY) {
+      var _0xratio = _0xhiY > _0xloY ? (_0xy - _0xloY) / (_0xhiY - _0xloY) : 0;
+      return Math.round(_0xloM + _0xratio * (_0xhiM - _0xloM));
+    }
+  }
+  return null;
+}
+
+var _imgRepeatPickState = null; // null | "from" | "to"
+var _imgRepeatPickFromY = null;
+
+function imgStartRepeatPicker() {
+  var _0xsong = _imgCurSongForMarkers();
+  var _0xmarkerCount = Object.keys((_0xsong && _0xsong.imgMarkers) || {}).length;
+  if (_0xmarkerCount < 2) {
+    alert("Pose d'abord au moins 2 repères (bouton « 📍 Marquer ici ») avant de pouvoir placer une reprise par simple clic — ils servent à situer les mesures sur la partition.");
+    return;
+  }
+  hideModal("img-markers-modal");
+  _imgRepeatPickState = "from";
+  showPlaybackToast("🔁 Clique sur la partition à l'endroit de la barre de reprise (où ça revient en arrière).");
+}
+
+function imgHandlePageClick(_0xevt) {
+  if (!_imgRepeatPickState) return;
+  var _0xstage = document.getElementById("img-stage");
+  if (!_0xstage) return;
+  var _0xstageRect = _0xstage.getBoundingClientRect();
+  var _0xy = _0xstage.scrollTop + (_0xevt.clientY - _0xstageRect.top);
+  var _0xsong = _imgCurSongForMarkers();
+  var _0xmarkers = (_0xsong && _0xsong.imgMarkers) || {};
+  var _0xmeasure = imgMeasureForY(_0xmarkers, _0xy);
+  if (_0xmeasure === null) return;
+
+  if (_imgRepeatPickState === "from") {
+    _imgRepeatPickFromY = _0xmeasure;
+    _imgRepeatPickState = "to";
+    showPlaybackToast("🔁 Repère de départ posé (mesure ~" + _0xmeasure + "). Clique maintenant sur l'endroit où ça doit revenir.");
+    return;
+  }
+  if (_imgRepeatPickState === "to") {
+    var _0xfromM = _imgRepeatPickFromY;
+    var _0xtoM = _0xmeasure;
+    _imgRepeatPickState = null;
+    _imgRepeatPickFromY = null;
+    var _0xtimesStr = prompt("Combien de fois cette section doit-elle être jouée (répétitions comprises) ?", "2");
+    var _0xtimes = parseInt(_0xtimesStr, 10);
+    if (!_0xtimes || _0xtimes < 1) _0xtimes = 2;
+    if (!_0xsong.imgRepeats) _0xsong.imgRepeats = [];
+    _0xsong.imgRepeats.push({ from: _0xfromM, to: _0xtoM, times: _0xtimes });
+    dbSave();
+    imgOpenMarkersPanel();
+    showPlaybackToast("✓ Reprise ajoutée : mesure " + _0xfromM + " → " + _0xtoM + (_0xtimes > 1 ? " (×" + _0xtimes + ")" : ""));
+  }
+}
+
 function imgSaveMarkersAndRepeats() {
   var _0xsong = _imgCurSongForMarkers();
   if (!_0xsong) {
@@ -6654,9 +6730,9 @@ function imgSaveMarkersAndRepeats() {
     if (!_0xtrimmed) {
       return;
     }
-    var _0xm = _0xtrimmed.match(/^(\d+)\s*(?:>|->|→|=>|-)\s*(\d+)$/);
+    var _0xm = _0xtrimmed.match(/^(\d+)\s*(?:>|->|→|=>|-)\s*(\d+)\s*(?:\*\s*(\d+))?$/);
     if (_0xm) {
-      _0xreps.push({ from: parseInt(_0xm[1], 10), to: parseInt(_0xm[2], 10) });
+      _0xreps.push({ from: parseInt(_0xm[1], 10), to: parseInt(_0xm[2], 10), times: _0xm[3] ? parseInt(_0xm[3], 10) : 1 });
     } else {
       _0xignoredLines.push(_0xtrimmed);
     }
@@ -13003,7 +13079,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.121.1 · 06/08/2026<span id="license-watermark"></span>
+  v2.122.0 · 06/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
