@@ -765,7 +765,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.120.1</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.121.0</span></h1>
 </div>
 
 <div id="pages">
@@ -6881,6 +6881,34 @@ var osmdVerseCount = 1; // nb de couplets detectes (lignes de paroles) dans la p
 var osmdVersePass = 1; // couplet en cours de lecture (1-indexe)
 var osmdCurSongId = null;
 
+// Filet de securite : en test (jsdom + vraie bibliotheque OSMD 2.1.0), le
+// curseur "mesure entiere" (cursorsOptions type:3) a produit une largeur
+// aberrante (des milliards de pixels, signe d'un calcul de largeur negatif
+// mal converti) de facon reproductible, meme sur un fichier a plusieurs
+// mesures -- possiblement specifique a l'environnement de test simplifie,
+// mais impossible a garantir sans navigateur reel sous la main. Par
+// prudence, on ramene la largeur/hauteur du curseur a des valeurs
+// raisonnables si jamais elles depassent la taille de la partition
+// affichee, plutot que de risquer un rectangle demesure qui recouvrirait
+// tout l'ecran.
+function _osmdClampCursorSize() {
+  try {
+    var _0ximg = osmdApi.cursor.cursorElement;
+    if (!_0ximg) return;
+    var _0xcontainer = document.getElementById("osmd-stage-inner");
+    var _0xmaxW = _0xcontainer ? _0xcontainer.clientWidth : 2000;
+    var _0xmaxH = 400;
+    if (_0ximg.width > _0xmaxW || _0ximg.width < 0) {
+      _0ximg.width = Math.min(_0xmaxW, 300);
+      _0ximg.style.width = _0ximg.width + "px";
+    }
+    if (_0ximg.height > _0xmaxH || _0ximg.height < 0) {
+      _0ximg.height = 40;
+      _0ximg.style.height = _0ximg.height + "px";
+    }
+  } catch (_0xe) {}
+}
+
 async function renderSceneOsmd(_0xsong) {
   osmdStopAutoScroll();
   if (osmdApi) {
@@ -6974,7 +7002,16 @@ async function renderSceneOsmd(_0xsong) {
     // lui-meme le nombre de mesures par ligne selon la largeur disponible
     // -- son comportement par defaut, plus fiable dans l'ensemble.
     osmdApi.render();
+    // IMPORTANT : par defaut OSMD donne un z-index NEGATIF au curseur des
+    // qu'une couleur de fond est definie (cursorsOptions.color) -- ce qui
+    // le rend completement invisible, cache derriere la partition, meme
+    // si tout le reste (position, couleur, opacite) est correct. Verifie
+    // et reproduit en local (jsdom + vraie bibliotheque OSMD 2.1.0, la
+    // meme version que celle chargee ici) avant ce correctif : le
+    // <img id="cursorImg-0"> genere avait bien style="z-index: -1".
+    try { osmdApi.cursor.wantedZIndex = 10; } catch (_0xzi) {}
     osmdApi.cursor.show();
+    _osmdClampCursorSize();
     var _0xcurId2 = curSet && curSet.songIds ? curSet.songIds[curIdx] : null;
     if (_0xcurId2 !== _0xsong.id) {
       return;
@@ -7302,6 +7339,7 @@ async function osmdStartAutoScroll() {
         osmdApi.cursor.next();
         _0xguardCount++;
       }
+      if (_0xguardCount > 0) _osmdClampCursorSize();
       // (repere de diagnostic retire -- servait a corriger le bug de
       // casse note.notes/note.Notes, plus utile en usage normal)
       if (osmdApi.cursor.iterator.endReached) {
@@ -12961,7 +12999,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.120.1 · 06/08/2026<span id="license-watermark"></span>
+  v2.121.0 · 06/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
