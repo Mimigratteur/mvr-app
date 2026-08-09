@@ -362,12 +362,6 @@ input[type=range]{accent-color:var(--G);touch-action:pan-y}
 /* Curseur OSMD repeint aux couleurs de l'app (ambre), meme esprit que le
    curseur alphaTab ci-dessus. */
 .cursorCanvas{opacity:.4}
-#osmd-measure-highlight{
-  position:absolute;display:none;pointer-events:none;
-  background:rgba(232,184,109,.28);border-radius:4px;
-  transition:left .08s linear,top .08s linear,width .08s linear,height .08s linear;
-  z-index:5;
-}
 #osmd-play-btn:disabled{opacity:.5}
 
 /* Éditeur direct du mode paroles+accords — même esprit "fiche papier" que
@@ -771,7 +765,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.119.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.119.1</span></h1>
 </div>
 
 <div id="pages">
@@ -943,7 +937,6 @@ body.fullscreen #topbar{display:none}
            echoue sur des partitions complexes (plusieurs voix/instruments). -->
       <div id="osmd-stage" style="display:none">
         <div id="osmd-stage-inner">
-          <div id="osmd-measure-highlight"></div>
           <div id="osmd-render-target"></div>
         </div>
       </div>
@@ -6882,78 +6875,7 @@ var osmdStartWholeNotes = 0;
 var osmdWholeNoteBudget = 0;
 var osmdVerseCount = 1; // nb de couplets detectes (lignes de paroles) dans la partition affichee
 var osmdVersePass = 1; // couplet en cours de lecture (1-indexe)
-var osmdMeasureBoxes = []; // position/taille (en pixels, relatif au conteneur) de chaque mesure
-var osmdLastHighlightedMeasure = -1;
 var osmdCurSongId = null;
-
-// Calcule la position/taille en pixels de chaque mesure sur la partition
-// deja rendue, en parcourant une fois tout le morceau avec le curseur natif
-// d'OSMD (deja fiable pour la position) plutot que de recalculer a la main
-// les unites internes d'OSMD -- plus robuste face aux differences entre
-// versions. Le parcours se fait dans le meme "tick" JS (aucun repaint
-// visible entre-temps), donc invisible pour l'utilisateur ; le curseur est
-// remis au debut juste apres.
-function _osmdComputeMeasureBoxes() {
-  var _0xboxes = [];
-  if (!osmdApi) return _0xboxes;
-  var _0xcontainer = document.getElementById("osmd-stage-inner");
-  if (!_0xcontainer) return _0xboxes;
-  try {
-    osmdApi.cursor.reset();
-    osmdApi.cursor.show();
-    var _0xguard = 0;
-    while (!osmdApi.cursor.iterator.endReached && _0xguard < 20000) {
-      var _0xcursorEl = _0xcontainer.querySelector(".cursorCanvas");
-      var _0xmeasureIdx = _osmdGetCurrentMeasureIdx();
-      if (_0xcursorEl && typeof _0xmeasureIdx === "number") {
-        var _0xcRect = _0xcursorEl.getBoundingClientRect();
-        var _0xpRect = _0xcontainer.getBoundingClientRect();
-        var _0xleft = _0xcRect.left - _0xpRect.left;
-        var _0xtop = _0xcRect.top - _0xpRect.top;
-        var _0xright = _0xleft + _0xcRect.width;
-        var _0xbottom = _0xtop + _0xcRect.height;
-        if (!_0xboxes[_0xmeasureIdx]) {
-          _0xboxes[_0xmeasureIdx] = { left: _0xleft, right: _0xright, top: _0xtop, bottom: _0xbottom };
-        } else {
-          var _0xb = _0xboxes[_0xmeasureIdx];
-          _0xb.left = Math.min(_0xb.left, _0xleft);
-          _0xb.right = Math.max(_0xb.right, _0xright);
-          _0xb.top = Math.min(_0xb.top, _0xtop);
-          _0xb.bottom = Math.max(_0xb.bottom, _0xbottom);
-        }
-      }
-      osmdApi.cursor.next();
-      _0xguard++;
-    }
-  } catch (_0xe) {
-    console.warn("osmd measure boxes error", _0xe);
-  }
-  try {
-    osmdApi.cursor.reset();
-    osmdApi.cursor.hide();
-  } catch (_0xe2) {}
-  return _0xboxes;
-}
-
-// Surligne toute la mesure en cours d'un coup (comme le fait deja le mode
-// grille), plutot que de suivre chaque note individuellement -- juger le
-// morceau en concert est plus confortable avec un repere large et stable
-// qu'avec un curseur fin qui saute a chaque note.
-function _osmdUpdateMeasureHighlight(_0xmeasureIdx) {
-  var _0xel = document.getElementById("osmd-measure-highlight");
-  if (!_0xel) return;
-  var _0xbox = osmdMeasureBoxes[_0xmeasureIdx];
-  if (!_0xbox) {
-    _0xel.style.display = "none";
-    return;
-  }
-  var _0xpad = 4;
-  _0xel.style.left = Math.max(0, _0xbox.left - _0xpad) + "px";
-  _0xel.style.top = Math.max(0, _0xbox.top - _0xpad) + "px";
-  _0xel.style.width = (_0xbox.right - _0xbox.left + _0xpad * 2) + "px";
-  _0xel.style.height = (_0xbox.bottom - _0xbox.top + _0xpad * 2) + "px";
-  _0xel.style.display = "block";
-}
 
 async function renderSceneOsmd(_0xsong) {
   osmdStopAutoScroll();
@@ -7028,7 +6950,8 @@ async function renderSceneOsmd(_0xsong) {
       autoResize: true,
       backend: "svg",
       drawTitle: true,
-      followCursor: true
+      followCursor: true,
+      cursorsOptions: [{ type: 3, color: "#E8B86D", alpha: 0.4, follow: true }]
     });
     await osmdApi.load(_0xxmlText);
     // S'assure explicitement que le curseur suit les reprises nativement
@@ -7048,9 +6971,6 @@ async function renderSceneOsmd(_0xsong) {
     } catch (_0xns) {}
     osmdApi.render();
     osmdApi.cursor.show();
-    osmdMeasureBoxes = _osmdComputeMeasureBoxes();
-    osmdLastHighlightedMeasure = -1;
-    _osmdUpdateMeasureHighlight(_osmdGetCurrentMeasureIdx());
     var _0xcurId2 = curSet && curSet.songIds ? curSet.songIds[curIdx] : null;
     if (_0xcurId2 !== _0xsong.id) {
       return;
@@ -7274,9 +7194,7 @@ function osmdRestart() {
   osmdVersePass = 1;
   try {
     osmdApi.cursor.reset();
-    osmdApi.cursor.hide();
-    osmdLastHighlightedMeasure = -1;
-    _osmdUpdateMeasureHighlight(_osmdGetCurrentMeasureIdx());
+    osmdApi.cursor.show();
   } catch (_0xe) {}
   try {
     var _0xleadInSec = (gpLeadInBeats || 0) * (60 / (bpm || 100));
@@ -7324,7 +7242,6 @@ async function osmdStartAutoScroll() {
   osmdStartTs = null;
   osmdWholeNoteBudget = 0;
   osmdSetPlayBtnState("playing");
-  try { osmdApi.cursor.hide(); } catch (_0xch) {}
   // Lecture audio synchronisee (fichier importe pour ce morceau) -- ce
   // mecanisme existait deja pour le mode grille et le mode paroles+accords,
   // mais n'etait jamais branche sur le mode partition (Audiveris/OSMD).
@@ -7383,11 +7300,6 @@ async function osmdStartAutoScroll() {
       }
       // (repere de diagnostic retire -- servait a corriger le bug de
       // casse note.notes/note.Notes, plus utile en usage normal)
-      var _0xcurMeasureIdx = _osmdGetCurrentMeasureIdx();
-      if (_0xcurMeasureIdx !== osmdLastHighlightedMeasure) {
-        osmdLastHighlightedMeasure = _0xcurMeasureIdx;
-        _osmdUpdateMeasureHighlight(_0xcurMeasureIdx);
-      }
       if (osmdApi.cursor.iterator.endReached) {
         if (osmdVersePass < osmdVerseCount) {
           // Plusieurs couplets sur la meme melodie (psaume, cantique...) --
@@ -7399,9 +7311,7 @@ async function osmdStartAutoScroll() {
           osmdWholeNoteBudget = 0;
           try {
             osmdApi.cursor.reset();
-            osmdApi.cursor.hide();
-            osmdLastHighlightedMeasure = -1;
-            _osmdUpdateMeasureHighlight(_osmdGetCurrentMeasureIdx());
+            osmdApi.cursor.show();
           } catch (_0xrst) {}
           showPlaybackToast("Couplet " + osmdVersePass + "/" + osmdVerseCount);
           osmdRafId = requestAnimationFrame(_0xtick);
@@ -8103,8 +8013,7 @@ function onFontChange() {
     try {
       osmdApi.zoom = _0xszVal / 30;
       osmdApi.render();
-      osmdMeasureBoxes = _osmdComputeMeasureBoxes();
-      _osmdUpdateMeasureHighlight(osmdLastHighlightedMeasure);
+      osmdApi.cursor.show();
     } catch (_0xoz) {}
   }
   curRowIdx = 0;
@@ -13020,7 +12929,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.119.0 · 06/08/2026<span id="license-watermark"></span>
+  v2.119.1 · 06/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
