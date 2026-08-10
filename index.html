@@ -765,7 +765,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.122.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.122.1</span></h1>
 </div>
 
 <div id="pages">
@@ -1433,6 +1433,14 @@ Am | F | C | G"></textarea>
     <button class="btn-sm" onclick="osmdOpenChordEditor()">✎ Corriger les accords</button>
   </div>
 
+  <div id="sm-img-markers" style="display:none;margin:10px 0 14px;padding:10px 12px;border:1px solid var(--bd);border-radius:8px">
+    <label style="font-size:12px;color:var(--tx2)">🖼️ Partition-photo</label>
+    <div style="font-size:11.5px;color:var(--tx3);margin:2px 0 8px">
+      Prépare le défilement automatique et les reprises à l'avance — pratique avant un concert, quand tu as un peu de temps devant toi.
+    </div>
+    <button class="btn-sm" onclick="imgOpenMarkersPanel(editingSong && editingSong.id)">📍 Repères &amp; reprises</button>
+  </div>
+
   <div style="margin:10px 0 14px;padding:10px 12px;border:1px solid var(--bd);border-radius:8px">
     <label style="font-size:12px;color:var(--tx2)">🤖 Trouver la vraie grille via IA (optionnel)</label>
     <div style="font-size:11.5px;color:var(--tx3);margin:2px 0 8px">
@@ -1643,14 +1651,17 @@ J&#39;ai voulu planter un oranger">    </textarea>
     et un de chaque côté d'une reprise), le défilement automatique calcule le reste
     et saute tout seul aux bons endroits pendant la lecture.
   </p>
+  <div id="img-markers-offstage-note" style="display:none;background:var(--Al,#3a3020);color:var(--A,#F4B860);font-size:12px;padding:8px 10px;border-radius:8px;margin-top:8px;line-height:1.4">
+    ⚠️ Ce morceau n'est pas celui affiché sur scène en ce moment — le clic sur la partition et « Marquer ici » ont besoin de le voir à l'écran. Lance-le sur scène pour les utiliser ; le texte des reprises reste modifiable ici dans tous les cas.
+  </div>
   <div class="row" style="gap:6px;align-items:center;margin-top:10px">
     <input type="number" id="img-marker-measure-input" min="1" max="999" placeholder="N° mesure" style="width:90px">
-    <button class="btn-g" onclick="imgAddMarkerAtCurrentScroll()">📍 Marquer ici</button>
+    <button class="btn-g" id="img-mark-at-scroll-btn" onclick="imgAddMarkerAtCurrentScroll()">📍 Marquer ici</button>
   </div>
   <div id="img-markers-list" style="margin-top:10px;font-size:13px;display:flex;flex-direction:column;gap:4px;max-height:160px;overflow-y:auto"></div>
 
   <div style="margin-top:16px;font-weight:600;font-size:14px">Reprises</div>
-  <button class="btn-g" style="margin-top:6px" onclick="imgStartRepeatPicker()">🔁 Poser une reprise en cliquant sur la partition</button>
+  <button class="btn-g" id="img-repeat-pick-btn" style="margin-top:6px" onclick="imgStartRepeatPicker()">🔁 Poser une reprise en cliquant sur la partition</button>
   <p style="font-size:12px;color:var(--tx2);line-height:1.4;margin-top:8px">
     Ou écris-les directement ici, une par ligne, format « mesure de départ &gt; mesure d'arrivée[*nombre de fois] ». Ex : la mesure 30
     renvoie à la mesure 3, deux fois, s'écrit <code>30&gt;3*2</code> (sans <code>*2</code> = une seule fois).
@@ -3307,6 +3318,10 @@ function openSongModal(_0x541ba6) {
   var _0xsmOsmdEl = document.getElementById("sm-osmd-chords");
   if (_0xsmOsmdEl) {
     _0xsmOsmdEl.style.display = _0x3639c3 && _0x3639c3.osmdKey ? "block" : "none";
+  }
+  var _0xsmImgEl = document.getElementById("sm-img-markers");
+  if (_0xsmImgEl) {
+    _0xsmImgEl.style.display = _0x3639c3 && _0x3639c3.imgPageCount ? "block" : "none";
   }
   var _0x58a4f2 = document.getElementById("sm-tempo-analysis-status");
   if (_0x58a4f2) {
@@ -6577,12 +6592,18 @@ function imgStopAutoScroll() {
 // (scrollTop) sur la partition-image. Avec au moins 2 reperes, la
 // position de N'IMPORTE QUELLE mesure entre les deux se calcule par
 // interpolation lineaire — pas besoin de marquer TOUTES les mesures.
+var _imgMarkersSongId = null;
 function _imgCurSongForMarkers() {
+  if (_imgMarkersSongId) {
+    var _0xtracked = songs.find(function (_0xs) { return _0xs.id === _imgMarkersSongId; });
+    if (_0xtracked) return _0xtracked;
+  }
   return curSet && curSet.songIds ? songs.find(function (_0xs) {
     return _0xs.id === curSet.songIds[curIdx];
   }) : null;
 }
-function imgOpenMarkersPanel() {
+function imgOpenMarkersPanel(_0xforceSongId) {
+  _imgMarkersSongId = _0xforceSongId || (curSet && curSet.songIds ? curSet.songIds[curIdx] : null);
   var _0xsong = _imgCurSongForMarkers();
   var _0xrepeatsEl = document.getElementById("img-repeats-input");
   if (_0xsong && _0xrepeatsEl) {
@@ -6590,6 +6611,19 @@ function imgOpenMarkersPanel() {
     _0xrepeatsEl.value = _0xreps.map(function (_0xr) { return _0xr.from + ">" + _0xr.to + (_0xr.times && _0xr.times > 1 ? "*" + _0xr.times : ""); }).join("\n");
   }
   imgRenderMarkersList();
+  // Le clic direct sur la partition et le repere "a cette position de
+  // defilement" n'ont de sens que si ce morceau est bien celui affiche a
+  // l'ecran en ce moment (sinon, rien de correspondant a l'ecran a
+  // cliquer/scroller) -- on l'indique clairement plutot que de laisser
+  // ces boutons sembler marcher alors qu'ils captureraient la position
+  // d'un tout autre morceau.
+  var _0xonStage = curSet && curSet.songIds && curSet.songIds[curIdx] === _0xsong.id;
+  var _0xpickBtn = document.getElementById("img-repeat-pick-btn");
+  var _0xmarkAtBtn = document.getElementById("img-mark-at-scroll-btn");
+  var _0xoffStageNote = document.getElementById("img-markers-offstage-note");
+  if (_0xpickBtn) _0xpickBtn.disabled = !_0xonStage;
+  if (_0xmarkAtBtn) _0xmarkAtBtn.disabled = !_0xonStage;
+  if (_0xoffStageNote) _0xoffStageNote.style.display = _0xonStage ? "none" : "block";
   showModal("img-markers-modal");
 }
 function imgRenderMarkersList() {
@@ -6671,6 +6705,11 @@ var _imgRepeatPickFromY = null;
 
 function imgStartRepeatPicker() {
   var _0xsong = _imgCurSongForMarkers();
+  var _0xonStage = curSet && curSet.songIds && _0xsong && curSet.songIds[curIdx] === _0xsong.id;
+  if (!_0xonStage) {
+    alert("Ce morceau doit être affiché sur scène pour pouvoir cliquer dessus. Lance-le sur scène d'abord.");
+    return;
+  }
   var _0xmarkerCount = Object.keys((_0xsong && _0xsong.imgMarkers) || {}).length;
   if (_0xmarkerCount < 2) {
     alert("Pose d'abord au moins 2 repères (bouton « 📍 Marquer ici ») avant de pouvoir placer une reprise par simple clic — ils servent à situer les mesures sur la partition.");
@@ -13079,7 +13118,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.122.0 · 06/08/2026<span id="license-watermark"></span>
+  v2.122.1 · 06/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
