@@ -765,7 +765,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.122.1</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.123.0</span></h1>
 </div>
 
 <div id="pages">
@@ -7743,6 +7743,10 @@ function renderSceneLyrics(_0x2dd84b, _0x549452, _0x42462c) {
         var _0x6d9474 = transposeChord(_0x492f1e.chord, transposeOff, _0x549452);
         _0x5a6f68.textContent = _0x6d9474;
         _0x5a6f68.dataset.chord = _0x6d9474;
+        _0x5a6f68.style.cursor = "pointer";
+        (function (_0xchordIdx) {
+          _0x5a6f68.onclick = function () { lyrJumpToChordIndex(_0xchordIdx); };
+        })(allChords.length);
         _0x1064c3.appendChild(_0x5a6f68);
         allChords.push(_0x5a6f68);
       });
@@ -7750,7 +7754,11 @@ function renderSceneLyrics(_0x2dd84b, _0x549452, _0x42462c) {
       var _0x398f41 = document.createElement("span");
       _0x398f41.className = "chord lyr-chord lyr-ghost";
       _0x398f41.style.left = "0em";
+      _0x398f41.style.cursor = "pointer";
       _0x398f41.dataset.chord = allChords.length ? allChords[allChords.length - 1].dataset.chord : "";
+      (function (_0xchordIdx) {
+        _0x398f41.onclick = function () { lyrJumpToChordIndex(_0xchordIdx); };
+      })(allChords.length);
       _0x1064c3.appendChild(_0x398f41);
       allChords.push(_0x398f41);
     }
@@ -7782,6 +7790,27 @@ function renderSceneLyrics(_0x2dd84b, _0x549452, _0x42462c) {
   curRowX = 0;
   applyTransform();
   highlightAt(0);
+}
+// Permet de choisir l'endroit de depart de la lecture en cliquant
+// directement sur un accord/une ligne, plutot que de toujours reprendre au
+// tout debut du morceau. Ne fait rien pendant la lecture (le clic sert
+// alors a autre chose potentiellement) -- uniquement utile a l'arret, pour
+// preparer le depart avant d'appuyer sur Play.
+function lyrJumpToChordIndex(_0xidx) {
+  if (playing || precounting) {
+    return;
+  }
+  highlightAt(_0xidx);
+  var _0xrows = getRows();
+  for (var _0xi = 0; _0xi < _0xrows.length; _0xi++) {
+    if (_0xrows[_0xi].querySelector(".chord") === allChords[_0xidx] ||
+        Array.prototype.indexOf.call(_0xrows[_0xi].querySelectorAll(".chord"), allChords[_0xidx]) !== -1) {
+      curRowIdx = _0xi;
+      break;
+    }
+  }
+  applyTransform();
+  showPlaybackToast("▶ Départ fixé ici — appuie sur Play pour commencer à cet endroit");
 }
 function highlightAt(_0x3a5bf0) {
   var _0x433175 = _0x552966;
@@ -13118,7 +13147,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.122.1 · 06/08/2026<span id="license-watermark"></span>
+  v2.123.0 · 06/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
