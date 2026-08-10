@@ -765,7 +765,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.123.2</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.123.3</span></h1>
 </div>
 
 <div id="pages">
@@ -6458,13 +6458,12 @@ function imgStartAutoScroll() {
   }
   var _0xbpmSpeed = imgComputeBpmSpeed(_0xcurSongForSpeed, _0x12bfcb);
   if (_0xbpmSpeed !== null) {
-    showPlaybackToast("▶ [DIAG] Calé sur BPM : " + bpm + " BPM · vitesse=" + _0xbpmSpeed.toFixed(1) + "px/s · " + _0xcurSongForSpeed.imgTotalMeasures + " mesures");
+    showPlaybackToast("▶ Défilement calé sur " + bpm + " BPM · " + _0xcurSongForSpeed.imgTotalMeasures + " mesures");
   } else {
     // Avertit clairement si la vitesse manuelle est a 0 — sinon la lecture
     // "marche" techniquement (le bouton passe bien sur Pause) mais rien ne
     // bouge a l'ecran, ce qui donne l'impression que Play ne fait rien.
     var _0xspeedCheck = parseInt(document.getElementById("scroll-spd").value, 10) || 0;
-    showPlaybackToast("▶ [DIAG] Vitesse manuelle : slider=" + _0xspeedCheck + " · bpm=" + bpm + " · vitesse calculée=" + (_0xspeedCheck * 18 * ((bpm || 100) / 100)).toFixed(1) + "px/s");
     if (_0xspeedCheck === 0) {
       showPlaybackToast("⚠️ Marque des repères (📍) pour un calage précis, ou augmente le curseur « Vitesse »");
     }
@@ -6482,13 +6481,11 @@ function imgStartAutoScroll() {
         // Repli quand le nombre de mesures du morceau n'est pas connu
         // (typiquement un morceau en mode "paroles + accords", qui n'a pas
         // le champ imgTotalMeasures propre au mode partition-photo) --
-        // avant, ce repli ignorait totalement le tempo regle au curseur.
-        // On le fait maintenant influencer proportionnellement la vitesse
-        // manuelle (repere : bpm=100 => vitesse inchangee par rapport a
-        // avant), pour que le curseur tempo ait un effet meme sans info
-        // de mesures precise.
+        // simple et previsible : uniquement le curseur Vitesse, sans
+        // melange avec le tempo (un bpm auto-detecte pouvait fausser
+        // completement l'echelle et rendre le curseur peu lisible).
         var _0x82c97a = parseInt(document.getElementById("scroll-spd").value, 10) || 0;
-        _0x4dec51 = _0x82c97a * 18 * ((bpm || 100) / 100);
+        _0x4dec51 = _0x82c97a * 18;
       }
       _0x12bfcb.scrollTop += _0x4dec51 * _0x3c8905;
       if (_0x12bfcb.scrollTop + _0x12bfcb.clientHeight >= _0x12bfcb.scrollHeight - 2) {
@@ -13156,7 +13153,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.123.2 · 06/08/2026<span id="license-watermark"></span>
+  v2.123.3 · 06/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
