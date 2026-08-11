@@ -765,7 +765,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.124.1</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.125.0</span></h1>
 </div>
 
 <div id="pages">
@@ -962,6 +962,8 @@ body.fullscreen #topbar{display:none}
       <div class="img-mode-only" style="gap:5px;flex-wrap:nowrap;align-items:center">
         <button class="btn-g" id="img-play-btn" onclick="imgTogglePlay()">▶ Play</button>
         <button class="btn-r" onclick="imgRestart()">↺ Début</button>
+        <button class="btn-sm" onclick="imgMarkCustomStart()">📍 Début</button>
+        <button class="btn-sm" onclick="imgMarkCustomEnd()">📍 Fin</button>
         <button class="btn-sm" onclick="imgOpenMarkersPanel()">📍 Repères &amp; reprises</button>
       </div>
       <!-- Contrôles du mode "tablature visuelle" -->
@@ -6498,6 +6500,13 @@ function imgStartAutoScroll() {
         _0x4dec51 = _0x82c97a * _0x82c97a * 0.4;
       }
       _0x12bfcb.scrollTop += _0x4dec51 * _0x3c8905;
+      var _0xcustomEnd = _0xcurSongForSpeed && typeof _0xcurSongForSpeed.imgCustomEndScroll === "number"
+        ? _0xcurSongForSpeed.imgCustomEndScroll : null;
+      if (_0xcustomEnd !== null && _0x12bfcb.scrollTop >= _0xcustomEnd) {
+        _0x12bfcb.scrollTop = _0xcustomEnd;
+        imgStopAutoScroll();
+        return;
+      }
       if (_0x12bfcb.scrollTop + _0x12bfcb.clientHeight >= _0x12bfcb.scrollHeight - 2) {
         imgStopAutoScroll();
         return;
@@ -6879,10 +6888,31 @@ function imgComputeBpmSpeed(_0xsong, _0xstageEl) {
   return _0xscrollable / _0xtotalSeconds;
 }
 function imgRestart() {
-  var _0x3f4f9b = _0x552966;
-  var _0x1d04e1 = _0x4bc6f9;
   imgStopAutoScroll();
-  document.getElementById("img-stage").scrollTop = 0;
+  var _0xsong = _imgCurSongForMarkers();
+  var _0xstartY = _0xsong && typeof _0xsong.imgCustomStartScroll === "number" ? _0xsong.imgCustomStartScroll : 0;
+  document.getElementById("img-stage").scrollTop = _0xstartY;
+}
+// Facon simple de choisir ou la lecture doit commencer/s'arreter, pour un
+// morceau sans structure de mesures (paroles+accords, PDF de site web...) :
+// fais defiler la partition a la main jusqu'a l'endroit voulu, puis clique
+// le bouton correspondant -- pas besoin de cliquer directement sur le
+// texte ni de connaitre un numero de mesure.
+function imgMarkCustomStart() {
+  var _0xstage = document.getElementById("img-stage");
+  var _0xsong = _imgCurSongForMarkers();
+  if (!_0xstage || !_0xsong) return;
+  _0xsong.imgCustomStartScroll = _0xstage.scrollTop;
+  dbSave();
+  showPlaybackToast("📍 Début fixé ici — « ↺ Début » y ramènera désormais");
+}
+function imgMarkCustomEnd() {
+  var _0xstage = document.getElementById("img-stage");
+  var _0xsong = _imgCurSongForMarkers();
+  if (!_0xstage || !_0xsong) return;
+  _0xsong.imgCustomEndScroll = _0xstage.scrollTop;
+  dbSave();
+  showPlaybackToast("📍 Fin fixée ici — la lecture s'arrêtera à cet endroit");
 }
 function imgUpdatePlayBtn() {
   var _0x4ad39c = _0x4bc6f9;
@@ -13163,7 +13193,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.124.1 · 06/08/2026<span id="license-watermark"></span>
+  v2.125.0 · 06/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
