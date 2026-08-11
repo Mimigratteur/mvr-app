@@ -765,7 +765,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.123.3</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.124.0</span></h1>
 </div>
 
 <div id="pages">
@@ -6485,7 +6485,13 @@ function imgStartAutoScroll() {
         // melange avec le tempo (un bpm auto-detecte pouvait fausser
         // completement l'echelle et rendre le curseur peu lisible).
         var _0x82c97a = parseInt(document.getElementById("scroll-spd").value, 10) || 0;
-        _0x4dec51 = _0x82c97a * 18;
+        // Echelle progressive (quadratique) plutot que lineaire : avec un
+        // simple "valeur x 18", les basses valeurs (0-2) restent quasi
+        // imperceptibles et des la valeur 3 la vitesse semblait deja trop
+        // rapide -- toute la plage utile etait coincee entre ces deux
+        // valeurs. Une courbe quadratique etale mieux le controle : fin en
+        // bas (2 => ~3px/s), large amplitude en haut (20 => 300px/s).
+        _0x4dec51 = _0x82c97a * _0x82c97a * 0.75;
       }
       _0x12bfcb.scrollTop += _0x4dec51 * _0x3c8905;
       if (_0x12bfcb.scrollTop + _0x12bfcb.clientHeight >= _0x12bfcb.scrollHeight - 2) {
@@ -13153,7 +13159,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.123.3 · 06/08/2026<span id="license-watermark"></span>
+  v2.124.0 · 06/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
