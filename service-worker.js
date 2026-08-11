@@ -4,7 +4,7 @@
 // IMPORTANT : incrémenter ce numéro à chaque déploiement d'une nouvelle version.
 // C'est ce qui permet au navigateur de détecter qu'un nouveau Service Worker
 // existe (le fichier service-worker.js a changé) et de proposer la mise à jour.
-const APP_VERSION = '81';
+const APP_VERSION = '10';
 const CACHE_NAME = 'mvr-cache-v' + APP_VERSION;
 // Un seul fichier à mettre en cache : manifest + icônes sont encodés en
 // base64 DIRECTEMENT dans index.html (voir le commentaire en tête de ce
