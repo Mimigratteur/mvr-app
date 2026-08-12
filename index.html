@@ -765,7 +765,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.125.1</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.125.2</span></h1>
 </div>
 
 <div id="pages">
@@ -1629,8 +1629,8 @@ J&#39;ai voulu planter un oranger">    </textarea>
     <button onclick="notextPdfOnline()">🤖 Lire avec l'IA <span id="notext-pdf-ai-caveat" style="display:none">(en secours seulement)</span><br><span style="font-size:11px;font-weight:400;opacity:.85">À utiliser seulement si la grille ci-dessus semble fausse une fois créée — connexion internet requise</span></button>
     <button onclick="notextPdfOffline()">📷 Garder en partition-photo<br><span style="font-size:11px;font-weight:400;opacity:.85">Fonctionne 100% hors connexion, pas de grille interactive</span></button>
     <button id="notext-pdf-audiveris-btn" style="display:none" onclick="notextPdfViaAudiveris()">🎼 Notation complète avec curseur (via Audiveris)<br><span style="font-size:11px;font-weight:400;opacity:.85">La vraie partition (notes, portée) suivie par le curseur pendant la lecture — pont local requis</span></button>
-    <button onclick="notextPdfCancel()" style="opacity:.75">✕ Annuler — je me suis trompé de fichier</button>
   </div>
+  <button onclick="notextPdfCancel()" style="margin-top:14px;width:100%;background:transparent;border:1px solid var(--bd);color:var(--tx2);font-weight:600;padding:10px;border-radius:8px">Annuler</button>
   <label id="notext-pdf-auto-audiveris-wrap" style="display:none;align-items:center;gap:7px;margin-top:12px;font-size:12.5px;color:var(--tx2);cursor:pointer">
     <input type="checkbox" id="notext-pdf-auto-audiveris" onchange="prefs.autoAudiveris = this.checked; dbSave();">
     Toujours utiliser Audiveris automatiquement pour les prochaines partitions (ne plus demander)
@@ -13201,7 +13201,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.125.1 · 06/08/2026<span id="license-watermark"></span>
+  v2.125.2 · 06/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
