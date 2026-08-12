@@ -765,7 +765,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.125.4</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.125.5</span></h1>
 </div>
 
 <div id="pages">
@@ -5467,7 +5467,7 @@ function gpMeasureDurationMs(_0x1310cb, _0x5c0a2e) {
 }
 var gpCurrentSubIdx = -1;
 function gpHighlightSubChord(_0x4a0e63, _0x4e4d3a) {
-  var _0xd81ce3 = gpAllMeasureEls[_0x4a0e63];
+  var _0xd81ce3 = document.querySelector('.gp-measure-box[data-flatidx="' + _0x4a0e63 + '"]') || gpAllMeasureEls[_0x4a0e63];
   if (!_0xd81ce3) {
     return;
   }
@@ -5485,7 +5485,7 @@ function gpHighlightSubChord(_0x4a0e63, _0x4e4d3a) {
   }
 }
 function gpUpdateSubChordForMeasure(_0x2834c, _0x29be3f, _0xc5f5fe) {
-  var _0x31601b = gpAllMeasureEls[_0x2834c];
+  var _0x31601b = document.querySelector('.gp-measure-box[data-flatidx="' + _0x2834c + '"]') || gpAllMeasureEls[_0x2834c];
   if (!_0x31601b) {
     return;
   }
@@ -5740,13 +5740,25 @@ function gpStartAutoScroll(_0xaf6c82) {
   gpPlayTimer = requestAnimationFrame(_0x355343);
 }
 function gpHighlightMeasure(_0x1c2e7b) {
-  gpAllMeasureEls.forEach(function (_0x1fc779) {
+  document.querySelectorAll(".gp-measure-current").forEach(function (_0x1fc779) {
     _0x1fc779.classList.remove("gp-measure-current");
   });
   document.querySelectorAll(".gp-beatcell-active, .gp-beat-tick-active").forEach(function (_0x108b10) {
     _0x108b10.classList.remove("gp-beatcell-active", "gp-beat-tick-active");
   });
-  var _0x5d3c31 = gpAllMeasureEls[_0x1c2e7b];
+  // Recherche l'element A CHAQUE APPEL par son attribut data-flatidx, plutot
+  // que de se fier a gpAllMeasureEls[idx] (un tableau capture UNE SEULE FOIS
+  // au debut de la lecture) -- si quoi que ce soit modifie la page entre
+  // temps (n'importe quel re-rendu, meme partiel), ce tableau peut finir
+  // par pointer vers des elements detaches/perimes : le calcul de mesure
+  // reste juste, mais plus rien ne s'affiche visuellement, un decalage
+  // invisible au niveau du code mais bien réel a l'ecran. Interroger la
+  // page en direct rend cette fonction increvable face a ce cas de figure,
+  // quelle qu'en soit la cause exacte.
+  var _0x5d3c31 = document.querySelector('.gp-measure-box[data-flatidx="' + _0x1c2e7b + '"]');
+  if (!_0x5d3c31) {
+    _0x5d3c31 = gpAllMeasureEls[_0x1c2e7b];
+  }
   if (!_0x5d3c31) {
     return;
   }
@@ -13208,7 +13220,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.125.4 · 06/08/2026<span id="license-watermark"></span>
+  v2.125.5 · 06/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
