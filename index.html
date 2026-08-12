@@ -765,7 +765,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.125.3</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.125.4</span></h1>
 </div>
 
 <div id="pages">
@@ -3084,6 +3084,12 @@ async function exportSongToPdf(_0xsongId) {
   var _0xparsed = parseGridPaper(_0xsong.grid || "");
   var _0xboxW = 32, _0xboxH = 18, _0xgap = 3;
   var _0xperRow = Math.max(1, Math.floor((_0xusableW + _0xgap) / (_0xboxW + _0xgap)));
+  // Compteur de mesure global, continu sur tout le morceau -- avant, il
+  // repartait de 1 a chaque nouvelle ligne/annotation (a cause de _0xi,
+  // remis a zero par le forEach externe), ce qui rendait impossible de
+  // reperer une mesure precise (ex: "mesure 30") en comparant ce PDF a
+  // l'ecran de scene, qui lui numerote deja en continu.
+  var _0xglobalMeasureNum = 1;
 
   function _0xensureSpace(_0xneeded) {
     if (_0xy + _0xneeded > _0xpageH - _0xmargin - 8) {
@@ -3114,7 +3120,8 @@ async function exportSongToPdf(_0xsongId) {
         _0xdoc.setFont("helvetica", "normal");
         _0xdoc.setFontSize(7);
         _0xdoc.setTextColor(150, 150, 150);
-        _0xdoc.text(String(_0xi + _0xj + 1), _0xx + 1.5, _0xy + 4);
+        _0xdoc.text(String(_0xglobalMeasureNum), _0xx + 1.5, _0xy + 4);
+        _0xglobalMeasureNum++;
         _0xdoc.setTextColor(0, 0, 0);
         // Simplifie une mesure divisée ("Am/-/F/-") en la liste de ses
         // accords réels, séparés par un espace — un PDF imprimé n'a pas
@@ -13201,7 +13208,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.125.3 · 06/08/2026<span id="license-watermark"></span>
+  v2.125.4 · 06/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
