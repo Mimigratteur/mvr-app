@@ -765,7 +765,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.126.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.127.0</span></h1>
 </div>
 
 <div id="pages">
@@ -5232,15 +5232,17 @@ function gpExportPlaybackLog() {
     "Morceau : " + (_0xcurSong ? _0xcurSong.name : "?"),
     "Date : " + new Date().toISOString(),
     "",
-    "mesure | temps réel écoulé (s) | temps calculé (s) | écart (s) | bpm",
+    "mesure | temps réel (s) | temps calculé (s) | écart calc (s) | coût JS (ms) | délai peinture écran (ms)",
   ];
   gpPlaybackLog.forEach(function (_0xe) {
     var _0xecart = _0xe.tCalcMs !== undefined ? ((_0xe.tReelMs - _0xe.tCalcMs) / 1000).toFixed(3) : "-";
     _0xlines.push(
       String(_0xe.mesure).padStart(4) + "   | " +
-      (_0xe.tReelMs / 1000).toFixed(3).padStart(8) + "              | " +
+      (_0xe.tReelMs / 1000).toFixed(3).padStart(6) + "        | " +
       (_0xe.tCalcMs !== undefined ? (_0xe.tCalcMs / 1000).toFixed(3).padStart(8) : "-".padStart(8)) + "           | " +
-      String(_0xecart).padStart(7) + "   | " + (_0xe.bpm || "-")
+      String(_0xecart).padStart(6) + "         | " +
+      (_0xe.jsMs !== undefined && _0xe.jsMs !== null ? String(_0xe.jsMs) : "-").padStart(6) + "       | " +
+      (_0xe.paintMs !== undefined && _0xe.paintMs !== null ? String(_0xe.paintMs) : "(en attente)")
     );
   });
   var _0xblob = new Blob([_0xlines.join("\n")], { type: "text/plain" });
@@ -5775,14 +5777,32 @@ function gpStartAutoScroll(_0xaf6c82) {
         gpSetMode("lecture");
         return;
       }
+      var _0xhlStart = performance.now();
       gpHighlightMeasure(gpPlayMeasureIdx);
+      var _0xhlJsMs = performance.now() - _0xhlStart;
       gpCurrentSubIdx = -1;
-      gpPlaybackLog.push({
+      var _0xlogEntry = {
         mesure: gpPlayMeasureIdx + 1,
         tReelMs: Math.round(performance.now() - gpPlaybackLogT0),
         tCalcMs: Math.round(_0xtotalElapsed),
         bpm: bpm,
-      });
+        jsMs: Math.round(_0xhlJsMs * 10) / 10,
+        paintMs: null,
+      };
+      gpPlaybackLog.push(_0xlogEntry);
+      // Mesure le delai jusqu'a la PEINTURE reelle a l'ecran (pas juste
+      // l'execution JS) via le "double rAF" : le premier requestAnimationFrame
+      // se declenche juste avant la prochaine peinture, le second juste
+      // apres -- l'ecart entre les deux (par rapport a l'instant du
+      // changement) revele un eventuel retard d'affichage invisible au
+      // simple calcul JS, meme si celui-ci reste par ailleurs instantane.
+      (function (_0xentry, _0xstart) {
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () {
+            _0xentry.paintMs = Math.round((performance.now() - _0xstart) * 10) / 10;
+          });
+        });
+      })(_0xlogEntry, _0xhlStart);
     }
     gpUpdateSubChordForMeasure(gpPlayMeasureIdx, _0xwithinMeasureMs, _0x2045b2);
     _0x2a5f22 = _0x1f62b3;
@@ -13271,7 +13291,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.126.0 · 06/08/2026<span id="license-watermark"></span>
+  v2.127.0 · 06/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
