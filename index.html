@@ -765,7 +765,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.129.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.129.1</span></h1>
 </div>
 
 <div id="pages">
@@ -9595,6 +9595,16 @@ async function gpAnalyzeAudioAlignment() {
     var _0xtotalMeasures = 0;
     _0xparsed.rows.forEach(function (_0xrow) { _0xtotalMeasures += _0xrow.measures.length; });
     if (_0xtotalMeasures < 2) throw new Error("Grille trop courte pour une comparaison utile.");
+    // Liste a plat de l'accord de chaque mesure, dans l'ordre -- sert a ne
+    // verifier que les mesures ou la grille indique un VRAI changement
+    // d'accord par rapport a la precedente. Beaucoup de mesures gardent le
+    // meme accord plusieurs fois de suite (frequent en blues, ex: "Gm |
+    // Gm | Gm") -- verifier ces limites-la n'a pas de sens (rien n'y
+    // change vraiment) et ne faisait qu'ajouter du bruit au diagnostic.
+    var _0xflatChords = [];
+    _0xparsed.rows.forEach(function (_0xrow) {
+      _0xrow.measures.forEach(function (_0xm) { _0xflatChords.push((_0xm || "").trim()); });
+    });
 
     var _0xbpm = parseFloat(_0xsong.bpm) || 100;
     var _0xtimesig = _0xsong.beatsPerBox || _0xsong.timesig || 4;
@@ -9603,10 +9613,15 @@ async function gpAnalyzeAudioAlignment() {
     var _0xaudioOffset = _pbGetLeadSilence(_0xsong.id);
 
     var _0xflagged = [];
+    var _0xcheckedCount = 0;
     var _0xtoleranceSec = Math.max(0.25, _0xmeasureDurSec * 0.3);
     for (var _0xm = 1; _0xm < _0xtotalMeasures; _0xm++) {
+      if (_0xflatChords[_0xm] === _0xflatChords[_0xm - 1] || !_0xflatChords[_0xm]) {
+        continue; // pas de vrai changement attendu ici selon la grille -- rien a verifier
+      }
       var _0xexpected = _0xaudioOffset + _0xleadInSec + _0xm * _0xmeasureDurSec;
       if (_0xexpected > _0xdurCap) break;
+      _0xcheckedCount++;
       var _0xclosest = null;
       var _0xclosestGap = Infinity;
       for (var _0xk = 0; _0xk < _0xdetected.length; _0xk++) {
@@ -9622,10 +9637,11 @@ async function gpAnalyzeAudioAlignment() {
     }
 
     if (_0xstatusEl) {
+      var _0xsummary = "(" + _0xcheckedCount + " changement(s) d'accord réel(s) vérifié(s) dans la grille)<br>";
       if (!_0xflagged.length) {
-        _0xstatusEl.innerHTML = "✓ Aucun décalage significatif détecté — la grille semble bien alignée sur l'audio.";
+        _0xstatusEl.innerHTML = _0xsummary + "✓ Aucun décalage significatif détecté — la grille semble bien alignée sur l'audio.";
       } else {
-        var _0xhtml = "⚠️ " + _0xflagged.length + " mesure(s) suspecte(s) — vérifie ces endroits en priorité (approximatif, à confirmer à l'oreille) :<br><br>";
+        var _0xhtml = _0xsummary + "⚠️ " + _0xflagged.length + " mesure(s) suspecte(s) — vérifie ces endroits en priorité (approximatif, à confirmer à l'oreille) :<br><br>";
         _0xflagged.slice(0, 15).forEach(function (_0xf) {
           _0xhtml += "Mesure " + _0xf.mesure + " : attendu à " + _0xf.attendu.toFixed(1) + "s, changement détecté vers " +
             _0xf.detecte.toFixed(1) + "s (écart " + (_0xf.ecart > 0 ? "+" : "") + _0xf.ecart.toFixed(1) + "s)<br>";
@@ -13431,7 +13447,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.129.0 · 06/08/2026<span id="license-watermark"></span>
+  v2.129.1 · 06/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
