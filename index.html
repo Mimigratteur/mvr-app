@@ -765,7 +765,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.130.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.130.1</span></h1>
 </div>
 
 <div id="pages">
@@ -966,6 +966,7 @@ body.fullscreen #topbar{display:none}
         <button class="btn-sm" onclick="imgMarkCustomStart()">📍 Début</button>
         <button class="btn-sm" onclick="imgMarkCustomEnd()">📍 Fin</button>
         <button class="btn-sm" onclick="imgOpenMarkersPanel()">📍 Repères &amp; reprises</button>
+        <button class="btn-sm" onclick="gpExportPlaybackLog()" title="Télécharge le détail de la dernière lecture (mesure par mesure) pour diagnostiquer un décalage">📋 Journal</button>
       </div>
       <!-- Contrôles du mode "tablature visuelle" -->
       <div class="tab-mode-only" style="gap:5px;flex-wrap:nowrap">
@@ -6719,6 +6720,8 @@ function gpStartScoreAutoScroll(_0x3c1154) {
   gpScorePlaying = true;
   imgPlaying = true;
   imgUpdatePlayBtn();
+  gpPlaybackLog = [{ mesure: gpScorePlayIdx + 1, tReelMs: 0, note: "debut (moteur score)" }];
+  gpPlaybackLogT0 = performance.now();
   gpHighlightScoreMeasure(gpScorePlayIdx);
   // Même correctif anti-dérive que le lecteur de grille (gpStartAutoScroll) :
   // un repère de temps fixe posé une seule fois, la position se recalcule
@@ -6751,7 +6754,27 @@ function gpStartScoreAutoScroll(_0x3c1154) {
         gpStopScoreAutoScroll();
         return;
       }
+      var _0xscoreHlStart = performance.now();
       gpHighlightScoreMeasure(gpScorePlayIdx);
+      var _0xscoreHlJsMs = performance.now() - _0xscoreHlStart;
+      if (!gpPlaybackLogT0) gpPlaybackLogT0 = _0xanchorTs;
+      var _0xscoreLogEntry = {
+        mesure: gpScorePlayIdx + 1,
+        tReelMs: Math.round(performance.now() - gpPlaybackLogT0),
+        tCalcMs: Math.round(_0xtotalElapsed),
+        bpm: bpm,
+        jsMs: Math.round(_0xscoreHlJsMs * 10) / 10,
+        paintMs: null,
+        moteur: "score",
+      };
+      gpPlaybackLog.push(_0xscoreLogEntry);
+      (function (_0xentry, _0xstart) {
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () {
+            _0xentry.paintMs = Math.round((performance.now() - _0xstart) * 10) / 10;
+          });
+        });
+      })(_0xscoreLogEntry, _0xscoreHlStart);
     }
     gpScoreRafId = requestAnimationFrame(_0x3156ab);
   }
@@ -13455,7 +13478,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.130.0 · 06/08/2026<span id="license-watermark"></span>
+  v2.130.1 · 06/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
