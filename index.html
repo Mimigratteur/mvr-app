@@ -765,7 +765,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.128.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.129.0</span></h1>
 </div>
 
 <div id="pages">
@@ -1424,6 +1424,13 @@ Am | F | C | G"></textarea>
       <div style="margin-top:8px">
         <button class="btn-sm" onclick="analyzeAudioTempo()">🎯 Détecter le tempo depuis l'audio</button>
         <div id="sm-tempo-analysis-status" style="font-size:11.5px;color:var(--tx3);margin-top:6px"></div>
+      </div>
+      <div id="sm-grid-align-wrap" style="display:none;margin-top:10px">
+        <button class="btn-sm" onclick="gpAnalyzeAudioAlignment()">🔍 Vérifier l'alignement grille ↔ audio</button>
+        <div style="font-size:11px;color:var(--tx3);margin:4px 0">
+          Compare, mesure par mesure, où les accords devraient être (calcul MVR) à où un vrai changement d'accord est détecté dans l'audio — signale les mesures suspectes, sans jamais modifier la lecture en direct.
+        </div>
+        <div id="sm-grid-align-status" style="font-size:11.5px;color:var(--tx3);margin-top:6px;max-height:220px;overflow-y:auto"></div>
       </div>
     </div>
   </div>
@@ -3333,6 +3340,10 @@ function openSongModal(_0x541ba6) {
   var _0xsmImgEl = document.getElementById("sm-img-markers");
   if (_0xsmImgEl) {
     _0xsmImgEl.style.display = _0x3639c3 && _0x3639c3.imgPageCount ? "block" : "none";
+  }
+  var _0xsmAlignEl = document.getElementById("sm-grid-align-wrap");
+  if (_0xsmAlignEl) {
+    _0xsmAlignEl.style.display = _0x3639c3 && _0x3639c3.grid && _0x3639c3.audioKey ? "block" : "none";
   }
   var _0x58a4f2 = document.getElementById("sm-tempo-analysis-status");
   if (_0x58a4f2) {
@@ -9546,6 +9557,87 @@ function _audioEstimateTempo(_0x1d32f4, _0x38de1c, _0x2c9f74, _0x3ff599, _0xtime
     alt: _0x5130e5
   };
 }
+// Compare, mesure par mesure, l'instant OU UN CHANGEMENT D'ACCORD DEVRAIT
+// SE PRODUIRE selon le calcul pur de MVR (tempo constant) a l'instant OU UN
+// VRAI changement d'accord est detecte dans l'audio (analyse chroma,
+// reutilise les memes briques que la detection d'accords a l'import).
+// Purement informatif : ne modifie jamais la lecture en direct, juste un
+// diagnostic pour corriger la grille soi-meme en connaissance de cause.
+async function gpAnalyzeAudioAlignment() {
+  if (!editingSong) return;
+  var _0xsong = songs.find(function (_0xs) { return _0xs.id === editingSong; });
+  if (!_0xsong || !_0xsong.audioKey || !_0xsong.grid) return;
+  var _0xstatusEl = document.getElementById("sm-grid-align-status");
+  if (_0xstatusEl) _0xstatusEl.innerHTML = "⏳ Analyse en cours… (peut prendre 10-30s selon la durée du morceau)";
+  try {
+    var _0xbuf = await ensurePlaybackAudioBuffer(_0xsong);
+    if (!_0xbuf) throw new Error("Fichier audio introuvable sur cet appareil.");
+    var _0xleft = _0xbuf.getChannelData(0);
+    var _0xmono;
+    if (_0xbuf.numberOfChannels > 1) {
+      var _0xright = _0xbuf.getChannelData(1);
+      _0xmono = new Float32Array(_0xleft.length);
+      for (var _0xi = 0; _0xi < _0xleft.length; _0xi++) {
+        _0xmono[_0xi] = (_0xleft[_0xi] + _0xright[_0xi]) / 2;
+      }
+    } else {
+      _0xmono = _0xleft;
+    }
+    var _0xsr = _0xbuf.sampleRate;
+    var _0xdurCap = Math.min(_0xbuf.duration, 360); // plafond 6 min, evite un calcul trop long
+
+    var _0xchroma = _audioChromaSeries(_0xmono, _0xsr, 0, _0xdurCap, 0.1);
+    if (_0xchroma.length < 3) throw new Error("Analyse impossible (fichier trop court ou silencieux).");
+    var _0xsmoothed = _audioSmoothChroma(_0xchroma, 1);
+    var _0xdetected = _audioFindChordChangePoints(_0xsmoothed);
+
+    var _0xparsed = parseGridPaper(_0xsong.grid || "");
+    var _0xtotalMeasures = 0;
+    _0xparsed.rows.forEach(function (_0xrow) { _0xtotalMeasures += _0xrow.measures.length; });
+    if (_0xtotalMeasures < 2) throw new Error("Grille trop courte pour une comparaison utile.");
+
+    var _0xbpm = parseFloat(_0xsong.bpm) || 100;
+    var _0xtimesig = _0xsong.beatsPerBox || _0xsong.timesig || 4;
+    var _0xmeasureDurSec = gpMeasureDurationMs(_0xbpm, _0xtimesig) / 1000;
+    var _0xleadInSec = (_0xsong.leadInBeats || 0) * (60 / _0xbpm);
+    var _0xaudioOffset = _pbGetLeadSilence(_0xsong.id);
+
+    var _0xflagged = [];
+    var _0xtoleranceSec = Math.max(0.25, _0xmeasureDurSec * 0.3);
+    for (var _0xm = 1; _0xm < _0xtotalMeasures; _0xm++) {
+      var _0xexpected = _0xaudioOffset + _0xleadInSec + _0xm * _0xmeasureDurSec;
+      if (_0xexpected > _0xdurCap) break;
+      var _0xclosest = null;
+      var _0xclosestGap = Infinity;
+      for (var _0xk = 0; _0xk < _0xdetected.length; _0xk++) {
+        var _0xgap = Math.abs(_0xdetected[_0xk] - _0xexpected);
+        if (_0xgap < _0xclosestGap) {
+          _0xclosestGap = _0xgap;
+          _0xclosest = _0xdetected[_0xk];
+        }
+      }
+      if (_0xclosest !== null && _0xclosestGap > _0xtoleranceSec) {
+        _0xflagged.push({ mesure: _0xm + 1, attendu: _0xexpected, detecte: _0xclosest, ecart: _0xclosest - _0xexpected });
+      }
+    }
+
+    if (_0xstatusEl) {
+      if (!_0xflagged.length) {
+        _0xstatusEl.innerHTML = "✓ Aucun décalage significatif détecté — la grille semble bien alignée sur l'audio.";
+      } else {
+        var _0xhtml = "⚠️ " + _0xflagged.length + " mesure(s) suspecte(s) — vérifie ces endroits en priorité (approximatif, à confirmer à l'oreille) :<br><br>";
+        _0xflagged.slice(0, 15).forEach(function (_0xf) {
+          _0xhtml += "Mesure " + _0xf.mesure + " : attendu à " + _0xf.attendu.toFixed(1) + "s, changement détecté vers " +
+            _0xf.detecte.toFixed(1) + "s (écart " + (_0xf.ecart > 0 ? "+" : "") + _0xf.ecart.toFixed(1) + "s)<br>";
+        });
+        if (_0xflagged.length > 15) _0xhtml += "… et " + (_0xflagged.length - 15) + " autre(s).";
+        _0xstatusEl.innerHTML = _0xhtml;
+      }
+    }
+  } catch (_0xerr) {
+    if (_0xstatusEl) _0xstatusEl.textContent = "❌ " + _0xerr.message;
+  }
+}
 async function analyzeAudioTempo() {
   var _0x8dcaef = _0x552966;
   var _0xcd5c72 = _0x4bc6f9;
@@ -13339,7 +13431,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.128.0 · 06/08/2026<span id="license-watermark"></span>
+  v2.129.0 · 06/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
