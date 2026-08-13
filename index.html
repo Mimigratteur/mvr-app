@@ -765,7 +765,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.127.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.128.0</span></h1>
 </div>
 
 <div id="pages">
@@ -3494,6 +3494,7 @@ var _pbBufferSongId = null;
 var _pbSourceNode = null;
 var _pbStartCtxTime = 0;
 var _pbStartOffset = 0;
+var _pbLeadSilenceCache = {};
 var _pbIsPlaying = false;
 function _pbEnsureCtx() {
   if (!_pbAudioCtx) {
@@ -3569,12 +3570,47 @@ async function ensurePlaybackAudioBuffer(_0xf42b72) {
     var _0xarrBuf = await _0xresp.arrayBuffer();
     _pbAudioBuffer = await _0xctx.decodeAudioData(_0xarrBuf);
     _pbBufferSongId = _0xf42b72.id;
+    if (!(_0xf42b72.id in _pbLeadSilenceCache)) {
+      _pbLeadSilenceCache[_0xf42b72.id] = _pbDetectLeadSilence(_pbAudioBuffer);
+    }
     return _pbAudioBuffer;
   } catch (_0xerr2) {
     _pbAudioBuffer = null;
     _pbBufferSongId = null;
     return null;
   }
+}
+// Detecte la duree du silence en tout debut de fichier audio (avant que la
+// musique ne commence vraiment), pour que "revenir au debut" saute ce
+// silence au lieu de faire partir la lecture audio dans le vide pendant
+// que la grille, elle, est deja sur la mesure 1. Simple mesure d'amplitude
+// par fenetres de 20ms sur le canal mixe, jusqu'a depasser un seuil bas
+// (-40dB) de facon soutenue (evite de se caler sur un unique pic parasite).
+function _pbDetectLeadSilence(_0xbuffer) {
+  try {
+    var _0xdata = _0xbuffer.getChannelData(0);
+    var _0xsr = _0xbuffer.sampleRate;
+    var _0xwin = Math.round(_0xsr * 0.02);
+    var _0xthreshold = 0.01; // ~ -40dB
+    var _0xmaxSearchSamples = Math.min(_0xdata.length, _0xsr * 12); // cherche au plus 12s
+    for (var _0xi = 0; _0xi < _0xmaxSearchSamples; _0xi += _0xwin) {
+      var _0xsum = 0;
+      var _0xend = Math.min(_0xi + _0xwin, _0xdata.length);
+      for (var _0xj = _0xi; _0xj < _0xend; _0xj++) {
+        _0xsum += _0xdata[_0xj] * _0xdata[_0xj];
+      }
+      var _0xrms = Math.sqrt(_0xsum / (_0xend - _0xi));
+      if (_0xrms > _0xthreshold) {
+        return Math.max(0, _0xi / _0xsr - 0.05); // petite marge avant l'attaque
+      }
+    }
+    return 0;
+  } catch (_0xe) {
+    return 0;
+  }
+}
+function _pbGetLeadSilence(_0xsongId) {
+  return (_0xsongId && _pbLeadSilenceCache[_0xsongId]) || 0;
 }
 async function syncAudioPlayback(_0x255b2f) {
   var _0x36e575 = _0x552966;
@@ -3631,7 +3667,8 @@ function resetAudioPlayback() {
   var _0x3f6d28 = _0x552966;
   var _0x400c1d = _0x4bc6f9;
   _pbStopSource();
-  _pbStartOffset = 0;
+  var _0xcurSongForReset = curSet && curSet.songIds ? songs.find(function (_0xs) { return _0xs.id === curSet.songIds[curIdx]; }) : null;
+  _pbStartOffset = _pbGetLeadSilence(_0xcurSongForReset && _0xcurSongForReset.id);
 }
 function quickDeleteSong(_0x376ff5) {
   var _0x3f9616 = _0x552966;
@@ -4361,12 +4398,23 @@ function renderScene() {
     // morceau suivant — ce qui donnait l'impression que l'audio "démarre"
     // plus loin que prévu (par exemple sur la 2e mesure au lieu de la 1re).
     _pbStopSource();
-    _pbStartOffset = 0;
+    _pbStartOffset = _pbGetLeadSilence(_0x7b139e.id);
     // Lance l'analyse de tempo/phase DES L'OUVERTURE du morceau (pas juste
     // au Play) pour lui laisser le temps de finir avant la premiere lecture.
     // Sure maintenant que c'est non-bloquant (voir _ensureMeasureTimeMapCached).
     if (_0x7b139e.audioKey) {
       _ensureMeasureTimeMapCached(_0x7b139e);
+      // Precharge le tampon audio (et donc la detection du silence de tete)
+      // des l'ouverture du morceau, pas seulement au premier Play -- sinon
+      // le tout premier "Début" avant d'avoir jamais lance la lecture ne
+      // beneficiait pas encore du silence detecte. Sans bloquer l'affichage
+      // (fire-and-forget), et corrige _pbStartOffset une fois pret si
+      // l'utilisateur n'a encore rien touche entre-temps.
+      ensurePlaybackAudioBuffer(_0x7b139e).then(function () {
+        if (curSet && curSet.songIds && curSet.songIds[curIdx] === _0x7b139e.id && !_pbIsPlaying) {
+          _pbStartOffset = _pbGetLeadSilence(_0x7b139e.id);
+        }
+      });
     }
   }
   _lastRenderedSongId = _0x7b139e.id;
@@ -13291,7 +13339,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.127.0 · 06/08/2026<span id="license-watermark"></span>
+  v2.128.0 · 06/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
