@@ -765,7 +765,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.131.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.131.1</span></h1>
 </div>
 
 <div id="pages">
@@ -13183,41 +13183,15 @@ async function exportData() {
     type: "application/json"
   });
   var _0xexportFileName = "prompteur_" + new Date().toISOString().slice(0, 10) + ".json";
-  // Ouvre le vrai sélecteur d'emplacement du systeme (gestionnaire de
-  // fichiers) quand le navigateur le permet, pour choisir ou enregistrer —
-  // au lieu d'un telechargement automatique et silencieux vers le dossier
-  // par defaut. Repli sur l'ancienne methode si l'API n'est pas disponible
-  // (Firefox, Safari notamment, selon les versions).
-  if (window.showSaveFilePicker) {
-    try {
-      hideModal("confirm-modal");
-      var _0xfileHandle = await window.showSaveFilePicker({
-        suggestedName: _0xexportFileName,
-        types: [{
-          description: "Sauvegarde MVR (JSON)",
-          accept: { "application/json": [".json"] }
-        }]
-      });
-      var _0xwritable = await _0xfileHandle.createWritable();
-      await _0xwritable.write(_0x305fe6);
-      await _0xwritable.close();
-      return;
-    } catch (_0xpickerErr) {
-      // L'utilisateur a annulé la fenêtre, ou une erreur est survenue —
-      // dans les deux cas, ne pas forcer un téléchargement de secours
-      // silencieux à sa place (il a peut-être annulé exprès).
-      if (_0xpickerErr && _0xpickerErr.name === "AbortError") {
-        return;
-      }
-    }
-  }
   hideModal("confirm-modal");
   var _0x1ba451 = document.createElement("a");
   _0x1ba451.href = URL.createObjectURL(_0x305fe6);
   _0x1ba451.download = _0xexportFileName;
+  document.body.appendChild(_0x1ba451);
   _0x1ba451.click();
-  URL.revokeObjectURL(_0x1ba451.href);
-  showAlert("✓ Export terminé : \"" + _0xexportFileName + "\" a été envoyé vers le dossier de téléchargements de ton navigateur (souvent \"Téléchargements\" ou \"Downloads\").");
+  document.body.removeChild(_0x1ba451);
+  setTimeout(function () { URL.revokeObjectURL(_0x1ba451.href); }, 5000);
+  showAlert("✓ Export terminé : \"" + _0xexportFileName + "\" a été envoyé vers le dossier de téléchargements de ton navigateur (souvent \"Téléchargements\" ou \"Downloads\" — vérifie aussi si ton navigateur a demandé où l'enregistrer).");
 }
 async function importData(_0x1bfe8e) {
   var _0x4dc17f = _0x552966;
@@ -13494,7 +13468,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.131.0 · 06/08/2026<span id="license-watermark"></span>
+  v2.131.1 · 06/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
