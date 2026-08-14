@@ -765,7 +765,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.132.1</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.133.0</span></h1>
 </div>
 
 <div id="pages">
@@ -13296,10 +13296,52 @@ async function exportData() {
       }
     }
 
+    // 3) Pages de partition-photo (jamais incluses jusqu'ici, meme avant
+    //    aujourd'hui) -- une image par page, nommee avec le titre du
+    //    morceau et le numero de page, pour un reattachement en masse
+    //    similaire a l'audio.
+    var _0ximgSongs = songs.filter(function (_0xs) { return _0xs.imgPageCount && _0xs.imgKeyPrefix; });
+    var _0ximgDone = 0;
+    var _0ximgSkipped = 0;
+    for (var _0xj = 0; _0xj < _0ximgSongs.length; _0xj++) {
+      var _0xisong = _0ximgSongs[_0xj];
+      for (var _0xp = 0; _0xp < _0xisong.imgPageCount; _0xp++) {
+        if (_0xmsgEl) {
+          _0xmsgEl.textContent = "Téléchargement des pages de partition… " + (_0xj + 1) + "/" + _0ximgSongs.length + " (" + _0xisong.name + ", page " + (_0xp + 1) + ")";
+        }
+        try {
+          var _0xpageDataUrl = await Promise.race([
+            imgDbGet(_0xisong.imgKeyPrefix + "_" + _0xp),
+            new Promise(function (_0xresolve) { setTimeout(function () { _0xresolve(null); }, 20000); })
+          ]);
+          if (!_0xpageDataUrl) {
+            _0ximgSkipped++;
+            continue;
+          }
+          var _0xpresp = await fetch(_0xpageDataUrl);
+          var _0xpblob = await _0xpresp.blob();
+          var _0xpext = (_0xpblob.type.split("/")[1] || "jpg").split(";")[0];
+          var _0xpsafeName = _0xisong.name.replace(/[\\/:*?"<>|]/g, "_").slice(0, 60);
+          var _0xpageA = document.createElement("a");
+          _0xpageA.href = URL.createObjectURL(_0xpblob);
+          _0xpageA.download = _0xpsafeName + "_page" + (_0xp + 1) + "." + _0xpext;
+          document.body.appendChild(_0xpageA);
+          _0xpageA.click();
+          document.body.removeChild(_0xpageA);
+          setTimeout(function (_0xurl) { return function () { URL.revokeObjectURL(_0xurl); }; }(_0xpageA.href), 5000);
+          _0ximgDone++;
+          await new Promise(function (_0xr) { setTimeout(_0xr, 400); });
+        } catch (_0xpageErr) {
+          _0ximgSkipped++;
+        }
+      }
+    }
+
     hideModal("confirm-modal");
-    showAlert("✓ Export terminé : \"" + _0xexportFileName + "\" (morceaux + setlists) + " + _0xdone + " fichier(s) audio séparé(s), tous dans tes Téléchargements." +
-      (_0xskipped ? " (" + _0xskipped + " piste(s) audio ignorée(s), trop longues à lire.)" : "") +
-      " Après l'import du fichier principal sur l'autre appareil, rattache chaque piste audio manuellement via la Fiche du morceau (\"Ajouter une piste audio\").");
+    showAlert("✓ Export terminé : \"" + _0xexportFileName + "\" (morceaux + setlists) + " + _0xdone + " fichier(s) audio + " + _0ximgDone + " page(s) de partition-photo, tous dans tes Téléchargements." +
+      (_0xskipped ? " (" + _0xskipped + " piste(s) audio ignorée(s).)" : "") +
+      (_0ximgSkipped ? " (" + _0ximgSkipped + " page(s) de partition ignorée(s).)" : "") +
+      " Après import du fichier principal : \"🎵 Rattacher tous les fichiers audio\" pour l'audio, et rouvre chaque partition-photo pour réimporter ses pages si besoin.");
   } catch (_0xfatalErr) {
     hideModal("confirm-modal");
     showAlert("❌ Erreur pendant l'export : " + (_0xfatalErr && _0xfatalErr.message ? _0xfatalErr.message : String(_0xfatalErr)));
@@ -13580,7 +13622,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.132.1 · 06/08/2026<span id="license-watermark"></span>
+  v2.133.0 · 06/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
