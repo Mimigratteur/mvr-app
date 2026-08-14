@@ -765,7 +765,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.131.6</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.132.0</span></h1>
 </div>
 
 <div id="pages">
@@ -13170,53 +13170,26 @@ function deleteHistory(_0x160b5a) {
 }
 async function exportData() {
   try {
-    showAlert("Préparation de l'export (peut prendre un instant si des pistes audio sont incluses)…");
-    var _0x2c6803 = {};
-    var _0xaudioSongs = songs.filter(function (_0xs) { return !!_0xs.audioKey; });
+    showAlert("Préparation de l'export…");
     var _0xmsgEl = document.getElementById("confirm-modal-msg");
-    var _0xskipped = 0;
-    for (var _0x497604 = 0; _0x497604 < songs.length; _0x497604++) {
-      var _0x52ab43 = songs[_0x497604];
-      if (_0x52ab43.audioKey) {
-        var _0xdoneCount = _0xaudioSongs.indexOf(_0x52ab43) + 1;
-        if (_0xmsgEl) {
-          _0xmsgEl.textContent = "Préparation de l'export… piste audio " + _0xdoneCount + "/" + _0xaudioSongs.length +
-            " (" + _0x52ab43.name + ")";
-        }
-        try {
-          // Delai maximum (20s) par piste -- sans ca, une seule piste dont
-          // la lecture locale bloque (meme cause que sur la publication de
-          // groupe, corrigee juste avant) figeait tout l'export
-          // indefiniment et silencieusement, sans le moindre message
-          // d'erreur -- exactement le signalement "rien ne se passe".
-          var _0x3e79f2 = await Promise.race([
-            imgDbGet(_0x52ab43.audioKey),
-            new Promise(function (_0xresolve) { setTimeout(function () { _0xresolve(null); }, 20000); })
-          ]);
-          if (_0x3e79f2) {
-            _0x2c6803[_0x52ab43.audioKey] = _0x3e79f2;
-          } else {
-            _0xskipped++;
-          }
-        } catch (_0x2c0eff) {
-          _0xskipped++;
-        }
-      }
-    }
-    if (_0xmsgEl) _0xmsgEl.textContent = "Export prêt — enregistrement en cours…";
+
+    // 1) Fichier principal : SANS l'audio -- juste morceaux/setlists/textes,
+    //    toujours petit, ne peut jamais atteindre la limite de taille de
+    //    chaine de caracteres du navigateur (contrairement a l'ancienne
+    //    version qui embarquait tout l'audio encode en un seul bloc JSON
+    //    geant -- "Invalid string length" au-dela d'une certaine quantite
+    //    de musique).
     var _0x305fe6 = new Blob([JSON.stringify({
       songs: songs,
       sets: sets,
       hist: hist,
       prefs: prefs,
-      audioData: _0x2c6803,
-      v: 6,
+      v: 7,
       date: new Date().toISOString()
     }, null, 2)], {
       type: "application/json"
     });
     var _0xexportFileName = "prompteur_" + new Date().toISOString().slice(0, 10) + ".json";
-    hideModal("confirm-modal");
     var _0x1ba451 = document.createElement("a");
     _0x1ba451.href = URL.createObjectURL(_0x305fe6);
     _0x1ba451.download = _0xexportFileName;
@@ -13224,12 +13197,54 @@ async function exportData() {
     _0x1ba451.click();
     document.body.removeChild(_0x1ba451);
     setTimeout(function () { URL.revokeObjectURL(_0x1ba451.href); }, 5000);
-    showAlert("✓ Export terminé : \"" + _0xexportFileName + "\" a été envoyé vers le dossier de téléchargements de ton navigateur (souvent \"Téléchargements\" ou \"Downloads\" — vérifie aussi si ton navigateur a demandé où l'enregistrer)." +
-      (_0xskipped ? " (" + _0xskipped + " piste(s) audio non incluse(s), trop longues à lire.)" : ""));
+
+    // 2) Chaque piste audio, telechargee individuellement sous son propre
+    //    fichier (pas de limite de taille par piste, contrairement au tout
+    //    combine). Nommee clairement avec le titre du morceau pour la
+    //    reattacher facilement via "Ajouter une piste audio" dans la fiche
+    //    du morceau, une fois le fichier principal importe.
+    var _0xaudioSongs = songs.filter(function (_0xs) { return !!_0xs.audioKey; });
+    var _0xdone = 0;
+    var _0xskipped = 0;
+    for (var _0xi = 0; _0xi < _0xaudioSongs.length; _0xi++) {
+      var _0xsong = _0xaudioSongs[_0xi];
+      if (_0xmsgEl) {
+        _0xmsgEl.textContent = "Téléchargement des pistes audio… " + (_0xi + 1) + "/" + _0xaudioSongs.length + " (" + _0xsong.name + ")";
+      }
+      try {
+        var _0xdataUrl = await Promise.race([
+          imgDbGet(_0xsong.audioKey),
+          new Promise(function (_0xresolve) { setTimeout(function () { _0xresolve(null); }, 20000); })
+        ]);
+        if (!_0xdataUrl) {
+          _0xskipped++;
+          continue;
+        }
+        var _0xresp = await fetch(_0xdataUrl);
+        var _0xblob = await _0xresp.blob();
+        var _0xext = (_0xblob.type.split("/")[1] || "audio").split(";")[0];
+        var _0xsafeName = _0xsong.name.replace(/[\\/:*?"<>|]/g, "_").slice(0, 60);
+        var _0xaudioA = document.createElement("a");
+        _0xaudioA.href = URL.createObjectURL(_0xblob);
+        _0xaudioA.download = _0xsafeName + "." + _0xext;
+        document.body.appendChild(_0xaudioA);
+        _0xaudioA.click();
+        document.body.removeChild(_0xaudioA);
+        setTimeout(function (_0xurl) { return function () { URL.revokeObjectURL(_0xurl); }; }(_0xaudioA.href), 5000);
+        _0xdone++;
+        // Petite pause entre chaque telechargement -- certains navigateurs
+        // bloquent ou ignorent des telechargements trop rapproches.
+        await new Promise(function (_0xr) { setTimeout(_0xr, 400); });
+      } catch (_0xaudioErr) {
+        _0xskipped++;
+      }
+    }
+
+    hideModal("confirm-modal");
+    showAlert("✓ Export terminé : \"" + _0xexportFileName + "\" (morceaux + setlists) + " + _0xdone + " fichier(s) audio séparé(s), tous dans tes Téléchargements." +
+      (_0xskipped ? " (" + _0xskipped + " piste(s) audio ignorée(s), trop longues à lire.)" : "") +
+      " Après l'import du fichier principal sur l'autre appareil, rattache chaque piste audio manuellement via la Fiche du morceau (\"Ajouter une piste audio\").");
   } catch (_0xfatalErr) {
-    // Filet de securite global : affiche l'erreur exacte au lieu d'un
-    // silence total si quoi que ce soit d'imprevu echoue -- essentiel pour
-    // diagnostiquer un blocage sans repere, comme celui signale.
     hideModal("confirm-modal");
     showAlert("❌ Erreur pendant l'export : " + (_0xfatalErr && _0xfatalErr.message ? _0xfatalErr.message : String(_0xfatalErr)));
   }
@@ -13509,7 +13524,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.131.6 · 06/08/2026<span id="license-watermark"></span>
+  v2.132.0 · 06/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
