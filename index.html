@@ -765,7 +765,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.130.1</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.131.0</span></h1>
 </div>
 
 <div id="pages">
@@ -13147,9 +13147,21 @@ async function exportData() {
   var _0x2418fe = _0x4bc6f9;
   showAlert("Préparation de l'export (peut prendre un instant si des pistes audio sont incluses)…");
   var _0x2c6803 = {};
+  var _0xaudioSongs = songs.filter(function (_0xs) { return !!_0xs.audioKey; });
+  var _0xmsgEl = document.getElementById("confirm-modal-msg");
   for (var _0x497604 = 0; _0x497604 < songs.length; _0x497604++) {
     var _0x52ab43 = songs[_0x497604];
     if (_0x52ab43.audioKey) {
+      // Message mis a jour a chaque piste audio traitee -- avant, le
+      // message restait fige sur "Préparation de l'export…" du debut a la
+      // fin, sans aucun signe visible d'activite pendant potentiellement
+      // plusieurs dizaines de secondes sur une bibliotheque avec beaucoup
+      // de pistes audio, donnant l'impression que ça avait plante.
+      if (_0xmsgEl) {
+        var _0xdoneCount = _0xaudioSongs.indexOf(_0x52ab43) + 1;
+        _0xmsgEl.textContent = "Préparation de l'export… piste audio " + _0xdoneCount + "/" + _0xaudioSongs.length +
+          " (" + _0x52ab43.name + ")";
+      }
       try {
         var _0x3e79f2 = await imgDbGet(_0x52ab43.audioKey);
         if (_0x3e79f2) {
@@ -13158,6 +13170,7 @@ async function exportData() {
       } catch (_0x2c0eff) {}
     }
   }
+  if (_0xmsgEl) _0xmsgEl.textContent = "Export prêt — choisis où l'enregistrer…";
   var _0x305fe6 = new Blob([JSON.stringify({
     songs: songs,
     sets: sets,
@@ -13177,6 +13190,7 @@ async function exportData() {
   // (Firefox, Safari notamment, selon les versions).
   if (window.showSaveFilePicker) {
     try {
+      hideModal("confirm-modal");
       var _0xfileHandle = await window.showSaveFilePicker({
         suggestedName: _0xexportFileName,
         types: [{
@@ -13197,11 +13211,13 @@ async function exportData() {
       }
     }
   }
+  hideModal("confirm-modal");
   var _0x1ba451 = document.createElement("a");
   _0x1ba451.href = URL.createObjectURL(_0x305fe6);
   _0x1ba451.download = _0xexportFileName;
   _0x1ba451.click();
   URL.revokeObjectURL(_0x1ba451.href);
+  showAlert("✓ Export terminé : \"" + _0xexportFileName + "\" a été envoyé vers le dossier de téléchargements de ton navigateur (souvent \"Téléchargements\" ou \"Downloads\").");
 }
 async function importData(_0x1bfe8e) {
   var _0x4dc17f = _0x552966;
@@ -13478,7 +13494,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.130.1 · 06/08/2026<span id="license-watermark"></span>
+  v2.131.0 · 06/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
