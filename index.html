@@ -765,7 +765,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.131.5</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.131.6</span></h1>
 </div>
 
 <div id="pages">
@@ -13169,55 +13169,70 @@ function deleteHistory(_0x160b5a) {
   renderHistory();
 }
 async function exportData() {
-  var _0x18e0b4 = _0x552966;
-  var _0x2418fe = _0x4bc6f9;
-  showAlert("Préparation de l'export (peut prendre un instant si des pistes audio sont incluses)…");
-  var _0x2c6803 = {};
-  var _0xaudioSongs = songs.filter(function (_0xs) { return !!_0xs.audioKey; });
-  var _0xmsgEl = document.getElementById("confirm-modal-msg");
-  for (var _0x497604 = 0; _0x497604 < songs.length; _0x497604++) {
-    var _0x52ab43 = songs[_0x497604];
-    if (_0x52ab43.audioKey) {
-      // Message mis a jour a chaque piste audio traitee -- avant, le
-      // message restait fige sur "Préparation de l'export…" du debut a la
-      // fin, sans aucun signe visible d'activite pendant potentiellement
-      // plusieurs dizaines de secondes sur une bibliotheque avec beaucoup
-      // de pistes audio, donnant l'impression que ça avait plante.
-      if (_0xmsgEl) {
+  try {
+    showAlert("Préparation de l'export (peut prendre un instant si des pistes audio sont incluses)…");
+    var _0x2c6803 = {};
+    var _0xaudioSongs = songs.filter(function (_0xs) { return !!_0xs.audioKey; });
+    var _0xmsgEl = document.getElementById("confirm-modal-msg");
+    var _0xskipped = 0;
+    for (var _0x497604 = 0; _0x497604 < songs.length; _0x497604++) {
+      var _0x52ab43 = songs[_0x497604];
+      if (_0x52ab43.audioKey) {
         var _0xdoneCount = _0xaudioSongs.indexOf(_0x52ab43) + 1;
-        _0xmsgEl.textContent = "Préparation de l'export… piste audio " + _0xdoneCount + "/" + _0xaudioSongs.length +
-          " (" + _0x52ab43.name + ")";
-      }
-      try {
-        var _0x3e79f2 = await imgDbGet(_0x52ab43.audioKey);
-        if (_0x3e79f2) {
-          _0x2c6803[_0x52ab43.audioKey] = _0x3e79f2;
+        if (_0xmsgEl) {
+          _0xmsgEl.textContent = "Préparation de l'export… piste audio " + _0xdoneCount + "/" + _0xaudioSongs.length +
+            " (" + _0x52ab43.name + ")";
         }
-      } catch (_0x2c0eff) {}
+        try {
+          // Delai maximum (20s) par piste -- sans ca, une seule piste dont
+          // la lecture locale bloque (meme cause que sur la publication de
+          // groupe, corrigee juste avant) figeait tout l'export
+          // indefiniment et silencieusement, sans le moindre message
+          // d'erreur -- exactement le signalement "rien ne se passe".
+          var _0x3e79f2 = await Promise.race([
+            imgDbGet(_0x52ab43.audioKey),
+            new Promise(function (_0xresolve) { setTimeout(function () { _0xresolve(null); }, 20000); })
+          ]);
+          if (_0x3e79f2) {
+            _0x2c6803[_0x52ab43.audioKey] = _0x3e79f2;
+          } else {
+            _0xskipped++;
+          }
+        } catch (_0x2c0eff) {
+          _0xskipped++;
+        }
+      }
     }
+    if (_0xmsgEl) _0xmsgEl.textContent = "Export prêt — enregistrement en cours…";
+    var _0x305fe6 = new Blob([JSON.stringify({
+      songs: songs,
+      sets: sets,
+      hist: hist,
+      prefs: prefs,
+      audioData: _0x2c6803,
+      v: 6,
+      date: new Date().toISOString()
+    }, null, 2)], {
+      type: "application/json"
+    });
+    var _0xexportFileName = "prompteur_" + new Date().toISOString().slice(0, 10) + ".json";
+    hideModal("confirm-modal");
+    var _0x1ba451 = document.createElement("a");
+    _0x1ba451.href = URL.createObjectURL(_0x305fe6);
+    _0x1ba451.download = _0xexportFileName;
+    document.body.appendChild(_0x1ba451);
+    _0x1ba451.click();
+    document.body.removeChild(_0x1ba451);
+    setTimeout(function () { URL.revokeObjectURL(_0x1ba451.href); }, 5000);
+    showAlert("✓ Export terminé : \"" + _0xexportFileName + "\" a été envoyé vers le dossier de téléchargements de ton navigateur (souvent \"Téléchargements\" ou \"Downloads\" — vérifie aussi si ton navigateur a demandé où l'enregistrer)." +
+      (_0xskipped ? " (" + _0xskipped + " piste(s) audio non incluse(s), trop longues à lire.)" : ""));
+  } catch (_0xfatalErr) {
+    // Filet de securite global : affiche l'erreur exacte au lieu d'un
+    // silence total si quoi que ce soit d'imprevu echoue -- essentiel pour
+    // diagnostiquer un blocage sans repere, comme celui signale.
+    hideModal("confirm-modal");
+    showAlert("❌ Erreur pendant l'export : " + (_0xfatalErr && _0xfatalErr.message ? _0xfatalErr.message : String(_0xfatalErr)));
   }
-  if (_0xmsgEl) _0xmsgEl.textContent = "Export prêt — choisis où l'enregistrer…";
-  var _0x305fe6 = new Blob([JSON.stringify({
-    songs: songs,
-    sets: sets,
-    hist: hist,
-    prefs: prefs,
-    audioData: _0x2c6803,
-    v: 6,
-    date: new Date().toISOString()
-  }, null, 2)], {
-    type: "application/json"
-  });
-  var _0xexportFileName = "prompteur_" + new Date().toISOString().slice(0, 10) + ".json";
-  hideModal("confirm-modal");
-  var _0x1ba451 = document.createElement("a");
-  _0x1ba451.href = URL.createObjectURL(_0x305fe6);
-  _0x1ba451.download = _0xexportFileName;
-  document.body.appendChild(_0x1ba451);
-  _0x1ba451.click();
-  document.body.removeChild(_0x1ba451);
-  setTimeout(function () { URL.revokeObjectURL(_0x1ba451.href); }, 5000);
-  showAlert("✓ Export terminé : \"" + _0xexportFileName + "\" a été envoyé vers le dossier de téléchargements de ton navigateur (souvent \"Téléchargements\" ou \"Downloads\" — vérifie aussi si ton navigateur a demandé où l'enregistrer).");
 }
 async function importData(_0x1bfe8e) {
   var _0x4dc17f = _0x552966;
@@ -13494,7 +13509,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.131.5 · 06/08/2026<span id="license-watermark"></span>
+  v2.131.6 · 06/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
