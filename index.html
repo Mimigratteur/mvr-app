@@ -765,7 +765,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.133.1</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.133.2</span></h1>
 </div>
 
 <div id="pages">
@@ -3718,6 +3718,19 @@ async function syncAudioPlayback(_0x255b2f) {
     return;
   }
   if (_0x255b2f) {
+    // Reveille le contexte audio EN PREMIER, avant toute attente (chargement
+    // du fichier) -- meme piege que le selecteur de fichier natif rencontre
+    // plus tot : un navigateur peut retirer l'autorisation liee au clic
+    // apres un delai, meme court. Reveiller ici, au tout debut, maximise la
+    // chance que ca marche (probablement la cause du "pas de son" observe
+    // sur un nouvel appareil/profil navigateur, ou l'autorisation est plus
+    // stricte par defaut).
+    var _0xctxEarly = _pbEnsureCtx();
+    if (_0xctxEarly.state === "suspended") {
+      try {
+        await _0xctxEarly.resume();
+      } catch (_0xresumeEarlyErr) {}
+    }
     var _0xbuf = await ensurePlaybackAudioBuffer(_0xe9ca8f);
     if (!_0xbuf) {
       return;
@@ -3740,6 +3753,15 @@ async function syncAudioPlayback(_0x255b2f) {
     _pbStartOffset = _0xoffset;
     _pbIsPlaying = true;
     _ensureMeasureTimeMapCached(_0xe9ca8f);
+    // Filet de securite final : si le contexte est encore suspendu malgre
+    // les deux tentatives de reveil ci-dessus, le son ne sortira pas meme
+    // si tout le reste (visuel, calcul) fonctionne normalement -- avertit
+    // clairement au lieu d'un silence total sans explication. Solution
+    // connue dans ce cas : cliquer une seconde fois sur Play suffit
+    // generalement (le navigateur autorise la lecture au clic suivant).
+    if (_0xctx.state !== "running") {
+      showPlaybackToast("⚠️ Le son est peut-être bloqué par le navigateur — appuie une seconde fois sur Play si tu n'entends rien.");
+    }
   } else {
     if (_pbIsPlaying) {
       _pbStartOffset = _pbCurrentTime();
@@ -13622,7 +13644,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.133.1 · 06/08/2026<span id="license-watermark"></span>
+  v2.133.2 · 06/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
