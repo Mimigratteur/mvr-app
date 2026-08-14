@@ -765,7 +765,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.131.2</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.131.3</span></h1>
 </div>
 
 <div id="pages">
@@ -2807,6 +2807,12 @@ async function _doPublish(_0x15d5ed, _0x14f2cd, _0x5691fe) {
         var _0x214cc8 = await imgDbGet(_0xdf8ea3.audioKey);
         if (_0x214cc8) {
           syncStatus("⏳ Envoi de la piste audio " + (_0x208bf2 + 1) + "/" + _0x51dbc1.length + "…");
+          // Delai maximum (45s) par piste -- sans ca, une seule piste qui
+          // bloque (fichier volumineux, coupure reseau momentanee) figeait
+          // tout le processus indefiniment, sans jamais pouvoir passer a la
+          // suivante ni echouer proprement.
+          var _0xuploadCtrl = new AbortController();
+          var _0xuploadTimeout = setTimeout(function () { _0xuploadCtrl.abort(); }, 45000);
           var _0x22d614 = await fetch(SYNC_URL + "/audio/" + encodeURIComponent(_0xdf8ea3.audioKey) + "?group=" + encodeURIComponent(_0x14f2cd.id), {
             method: "POST",
             headers: {
@@ -2815,8 +2821,10 @@ async function _doPublish(_0x15d5ed, _0x14f2cd, _0x5691fe) {
             },
             body: JSON.stringify({
               data: _0x214cc8
-            })
+            }),
+            signal: _0xuploadCtrl.signal
           });
+          clearTimeout(_0xuploadTimeout);
           var _0x58528c = await _0x22d614.json();
           if (_0x22d614.ok && _0x58528c.ok) {
             _0x4f35fe++;
@@ -2917,7 +2925,10 @@ async function _doFetchGroupSetlists(_0x6a9e41) {
             var _0x244310 = await imgDbGet(_0x1879e2.audioKey);
             if (!_0x244310) {
               syncStatus("⏳ Téléchargement de la piste audio " + (_0x1d87c8 + _0x920c82 + 1) + "…");
-              var _0x4bd8e3 = await fetch(SYNC_URL + "/audio/" + encodeURIComponent(_0x1879e2.audioKey));
+              var _0xdlCtrl = new AbortController();
+              var _0xdlTimeout = setTimeout(function () { _0xdlCtrl.abort(); }, 45000);
+              var _0x4bd8e3 = await fetch(SYNC_URL + "/audio/" + encodeURIComponent(_0x1879e2.audioKey), { signal: _0xdlCtrl.signal });
+              clearTimeout(_0xdlTimeout);
               var _0x1a7b43 = await _0x4bd8e3.json();
               if (_0x4bd8e3.ok && _0x1a7b43.ok && _0x1a7b43.data) {
                 await imgDbPut(_0x1879e2.audioKey, _0x1a7b43.data);
@@ -13471,7 +13482,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.131.2 · 06/08/2026<span id="license-watermark"></span>
+  v2.131.3 · 06/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
