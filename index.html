@@ -765,7 +765,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.133.2</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.133.3</span></h1>
 </div>
 
 <div id="pages">
@@ -3508,6 +3508,16 @@ async function batchAttachAudio(_0xinput) {
       var _0xaudioKey = "audio_" + _0xsong.id;
       await imgDbPut(_0xaudioKey, _0xdataUrl);
       _0xsong.audioKey = _0xaudioKey;
+      // Vide le cache memoire du tampon audio pour ce morceau -- sans ca,
+      // si une lecture avait deja ete tentee AVANT ce rattachement (echec,
+      // rien en cache ou tampon vide), ensurePlaybackAudioBuffer() pouvait
+      // continuer a renvoyer cet ancien resultat au lieu de recharger le
+      // fichier qu'on vient tout juste de rattacher -- silence total malgre
+      // un rattachement pourtant reussi.
+      if (_pbBufferSongId === _0xsong.id) {
+        _pbAudioBuffer = null;
+        _pbBufferSongId = null;
+      }
       _0xmatched++;
       if (_0xstatusEl) _0xstatusEl.textContent = "⏳ Rattachement… " + _0xmatched + "/" + _0xfiles.length;
     } catch (_0xerr) {
@@ -3546,6 +3556,10 @@ async function smAttachAudio(_0x104e3a) {
       if (_0x300e8a) {
         _0x300e8a.audioKey = _0x1d854f;
         dbSave();
+      }
+      if (_pbBufferSongId === editingSong) {
+        _pbAudioBuffer = null;
+        _pbBufferSongId = null;
       }
       document.getElementById("sm-audio-none").style.display = "none";
       document.getElementById("sm-audio-present").style.display = "block";
@@ -13644,7 +13658,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.133.2 · 06/08/2026<span id="license-watermark"></span>
+  v2.133.3 · 06/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
