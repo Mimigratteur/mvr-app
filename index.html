@@ -765,7 +765,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.134.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.135.0</span></h1>
 </div>
 
 <div id="pages">
@@ -1650,7 +1650,11 @@ J&#39;ai voulu planter un oranger">    </textarea>
     <button id="notext-pdf-audiveris-btn" style="display:none" onclick="notextPdfViaAudiveris()">🎼 Notation complète avec curseur (via Audiveris)<br><span style="font-size:11px;font-weight:400;opacity:.85">La vraie partition (notes, portée) suivie par le curseur pendant la lecture — pont local requis</span></button>
   </div>
   <button onclick="notextPdfCancel()" style="margin-top:14px;width:100%;background:transparent;border:1px solid var(--R);color:var(--R);font-weight:600;padding:10px;border-radius:8px">Annuler</button>
-  <label id="notext-pdf-auto-audiveris-wrap" style="display:none;align-items:center;gap:7px;margin-top:12px;font-size:12.5px;color:var(--tx2);cursor:pointer">
+  <label id="notext-pdf-auto-ai-wrap" style="display:flex;align-items:center;gap:7px;margin-top:12px;font-size:12.5px;color:var(--tx2);cursor:pointer">
+    <input type="checkbox" id="notext-pdf-auto-ai" onchange="prefs.autoAI = this.checked; dbSave();">
+    Toujours utiliser l'IA automatiquement pour les prochaines partitions sans texte (ne plus demander) — nécessite une clé API configurée
+  </label>
+  <label id="notext-pdf-auto-audiveris-wrap" style="display:none;align-items:center;gap:7px;margin-top:8px;font-size:12.5px;color:var(--tx2);cursor:pointer">
     <input type="checkbox" id="notext-pdf-auto-audiveris" onchange="prefs.autoAudiveris = this.checked; dbSave();">
     Toujours utiliser Audiveris automatiquement pour les prochaines partitions (ne plus demander)
   </label>
@@ -11163,6 +11167,16 @@ async function pdfLoad(_0x482068) {
 var _pendingImagePdfFile = null;
 var _pendingTextGridFound = false;
 function showNoTextPdfChoice(_0x360d28) {
+  // Cas le plus favorable et le plus fiable : la grille (accords ET
+  // mesures) a ete detectee DIRECTEMENT dans le vrai texte du PDF -- pas
+  // besoin de demander quoi que ce soit, c'est deja la methode recommandee
+  // par MVR lui-meme (voir le texte du modal, desormais saute). Les
+  // options IA/photo restent disponibles ensuite depuis la fiche du
+  // morceau si jamais le resultat semble faux a la relecture.
+  if (_pendingTextGridFound) {
+    pdfUseDetectedGrid();
+    return;
+  }
   var _0x1title = document.getElementById("notext-pdf-title");
   var _0x1msg = document.getElementById("notext-pdf-msg");
   var _0x1gridbtn = document.getElementById("notext-pdf-usegrid-btn");
@@ -11170,9 +11184,11 @@ function showNoTextPdfChoice(_0x360d28) {
   var _0x1audiverisBtn = document.getElementById("notext-pdf-audiveris-btn");
   var _0x1autoWrap = document.getElementById("notext-pdf-auto-audiveris-wrap");
   var _0x1autoCheckbox = document.getElementById("notext-pdf-auto-audiveris");
+  var _0x1autoAiCheckbox = document.getElementById("notext-pdf-auto-ai");
   if (_0x1audiverisBtn) _0x1audiverisBtn.style.display = "";
   if (_0x1autoWrap) _0x1autoWrap.style.display = "flex";
   if (_0x1autoCheckbox) _0x1autoCheckbox.checked = !!prefs.autoAudiveris;
+  if (_0x1autoAiCheckbox) _0x1autoAiCheckbox.checked = !!prefs.autoAI;
   // Si l'utilisateur a deja demande a automatiser ce choix, et que le pont
   // Audiveris repond bien, on saute directement cette fenetre plutot que de
   // redemander a chaque import -- comportement voulu, pas un raccourci
@@ -11189,6 +11205,19 @@ function showNoTextPdfChoice(_0x360d28) {
       _osmdShowPdfChoiceModal(_0x360d28);
     });
     return;
+  }
+  // Meme principe pour l'IA -- ne saute automatiquement que si une cle API
+  // est bien configuree (sinon "Lire avec l'IA" redirigerait de toute
+  // facon vers le copier-coller manuel pour claude.ai, ce qui n'a rien
+  // d'automatique -- inutile de sauter la fenetre dans ce cas, l'utilisateur
+  // doit voir qu'il lui manque une clé).
+  if (prefs.autoAI) {
+    var _0x1hasApiKey = false;
+    try { _0x1hasApiKey = !!localStorage.getItem("mvr_anthropic_api_key"); } catch (_0x1e) {}
+    if (_0x1hasApiKey) {
+      notextPdfOnline();
+      return;
+    }
   }
   _osmdShowPdfChoiceModal(_0x360d28);
 }
@@ -13703,7 +13732,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.134.0 · 31/08/2026<span id="license-watermark"></span>
+  v2.135.0 · 31/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
