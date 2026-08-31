@@ -765,7 +765,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.133.3</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.134.0</span></h1>
 </div>
 
 <div id="pages">
@@ -1432,7 +1432,12 @@ Am | F | C | G"></textarea>
         <div id="sm-tempo-analysis-status" style="font-size:11.5px;color:var(--tx3);margin-top:6px"></div>
       </div>
       <div id="sm-grid-align-wrap" style="display:none;margin-top:10px">
-        <button class="btn-sm" onclick="gpAnalyzeAudioAlignment()">🔍 Vérifier l'alignement grille ↔ audio</button>
+        <button class="btn-sm" onclick="autoPlaceAudioMarkers(songs.find(function(s){return s.id===editingSong;}), document.getElementById('sm-chordsync-status'))">🎯 Proposer des repères automatiquement</button>
+        <div style="font-size:11px;color:var(--tx3);margin:4px 0">
+          Détecte les changements d'accord dans l'audio et pose des repères (🎯) aux endroits correspondants de la grille — se lance déjà tout seul à chaque rattachement audio. Ce sont des propositions à vérifier à l'oreille, pas une correction automatique de la lecture en direct (qui reste au calcul par tempo constant, comme avant).
+        </div>
+        <div id="sm-chordsync-status" style="font-size:11.5px;color:var(--tx3);margin-top:4px"></div>
+        <button class="btn-sm" style="margin-top:8px" onclick="gpAnalyzeAudioAlignment()">🔍 Vérifier l'alignement grille ↔ audio</button>
         <div style="font-size:11px;color:var(--tx3);margin:4px 0">
           Compare, mesure par mesure, où les accords devraient être (calcul MVR) à où un vrai changement d'accord est détecté dans l'audio — signale les mesures suspectes, sans jamais modifier la lecture en direct.
         </div>
@@ -3488,6 +3493,7 @@ async function batchAttachAudio(_0xinput) {
   if (_0xstatusEl) _0xstatusEl.textContent = "⏳ Rattachement en cours…";
   var _0xmatched = 0;
   var _0xunmatched = [];
+  var _0xsyncCandidates = []; // morceaux qui viennent de recevoir un audio ET ont deja une grille -- a synchroniser automatiquement une fois le rattachement termine
   for (var _0xi = 0; _0xi < _0xfiles.length; _0xi++) {
     var _0xfile = _0xfiles[_0xi];
     var _0xfileBaseName = _sanitizeNameForMatch(_0xfile.name.replace(/\.[^.]+$/, ""));
@@ -3518,6 +3524,7 @@ async function batchAttachAudio(_0xinput) {
         _pbAudioBuffer = null;
         _pbBufferSongId = null;
       }
+      if (_0xsong.grid) _0xsyncCandidates.push(_0xsong);
       _0xmatched++;
       if (_0xstatusEl) _0xstatusEl.textContent = "⏳ Rattachement… " + _0xmatched + "/" + _0xfiles.length;
     } catch (_0xerr) {
@@ -3530,7 +3537,25 @@ async function batchAttachAudio(_0xinput) {
     _0xstatusEl.innerHTML = "✓ " + _0xmatched + " piste(s) audio rattachée(s) automatiquement." +
       (_0xunmatched.length ? "<br>⚠️ " + _0xunmatched.length + " fichier(s) sans morceau correspondant (nom différent) : " +
         _0xunmatched.slice(0, 8).join(", ") + (_0xunmatched.length > 8 ? "…" : "") +
-        " — à rattacher manuellement via la Fiche du morceau." : "");
+        " — à rattacher manuellement via la Fiche du morceau." : "") +
+      (_0xsyncCandidates.length ? "<br><span id=\"batch-chordsync-status\">⏳ Synchronisation automatique grille ↔ audio en arrière-plan (0/" + _0xsyncCandidates.length + ")…</span>" : "");
+  }
+  // Synchronisation automatique (detection des changements d'accord, voir
+  // autoPlaceAudioMarkers) -- lancee ICI, APRES avoir termine et affiche le
+  // rattachement, plutot
+  // que dans la boucle ci-dessus : chaque analyse prend quelques secondes,
+  // la faire au fil du rattachement aurait fortement ralenti le retour
+  // visuel "X/Y rattache" pendant tout le traitement.
+  if (_0xsyncCandidates.length) {
+    var _0xsyncDone = 0;
+    for (var _0xsi = 0; _0xsi < _0xsyncCandidates.length; _0xsi++) {
+      await autoPlaceAudioMarkers(_0xsyncCandidates[_0xsi], null);
+      _0xsyncDone++;
+      var _0xbatchSyncEl = document.getElementById("batch-chordsync-status");
+      if (_0xbatchSyncEl) _0xbatchSyncEl.textContent = "⏳ Synchronisation automatique grille ↔ audio en arrière-plan (" + _0xsyncDone + "/" + _0xsyncCandidates.length + ")…";
+    }
+    var _0xbatchSyncElFinal = document.getElementById("batch-chordsync-status");
+    if (_0xbatchSyncElFinal) _0xbatchSyncElFinal.textContent = "✓ Synchronisation automatique terminée (" + _0xsyncCandidates.length + " morceau(x)).";
   }
 }
 async function smAttachAudio(_0x104e3a) {
@@ -3563,6 +3588,16 @@ async function smAttachAudio(_0x104e3a) {
       }
       document.getElementById("sm-audio-none").style.display = "none";
       document.getElementById("sm-audio-present").style.display = "block";
+      // Synchronisation automatique grille <-> audio (propose des reperes,
+      // voir autoPlaceAudioMarkers) -- lancee des que l'audio est rattache, SI
+      // le morceau a deja une grille avec des accords nommes. Pas de "await"
+      // : ca prend quelques secondes, inutile de faire attendre le musicien
+      // devant la fiche pendant ce temps -- le statut se met a jour tout
+      // seul des que c'est termine.
+      if (_0x300e8a && _0x300e8a.grid) {
+        var _0xchordSyncStatusEl = document.getElementById("sm-chordsync-status");
+        autoPlaceAudioMarkers(_0x300e8a, _0xchordSyncStatusEl);
+      }
     } catch (_0x4238a0) {
       showAlert("Erreur lors de l'enregistrement de la piste audio : " + _0x4238a0.message);
     }
@@ -6115,186 +6150,18 @@ function invalidateAudioSyncOnBpmChange(_0xsong, _0xnewBpm) {
   _0xcache.times = _0xrescaled;
 }
 async function _ensureMeasureTimeMapCached(_0x17adbc) {
-  // DESACTIVE le 02/08/2026 (principe explicite : aucune interaction entre
-  // la grille et l'audio au-dela du depart). Cette analyse ne sert plus a
-  // rien — plus aucun code ne consulte son resultat (voir _0xhasRefinedTempo
-  // et _0xhasReliableMarkers, tous deux fixes a false) — inutile de
-  // continuer a consommer du CPU pour la calculer.
+  // Reste desactive : la lecture en direct n'utilise plus cette carte (voir
+  // le principe "grille et audio n'interagissent jamais au-dela du depart",
+  // acte le 02/08/2026, confirme apres de nouveaux tests le 31/08/2026 --
+  // une methode de synchronisation automatique par accords (DTW) a ete
+  // testee et s'est averee porter un biais systematique des que le tempo
+  // declare n'est pas exactement le tempo reel, memes aux points de vrai
+  // changement d'accord -- pas assez fiable pour piloter la lecture en
+  // direct. La synchronisation automatique sert desormais uniquement a
+  // PROPOSER des reperes manuels (voir autoPlaceAudioMarkers), verifies par
+  // le musicien avant d'etre utilises -- jamais a corriger la lecture
+  // toute seule.
   return;
-  if (!_0x17adbc.audioKey) {
-    return;
-  }
-  // Inutile de lancer ce calcul (couteux, meme optimise) si le morceau a des
-  // points d'orgue : son resultat ne sera de toute facon jamais utilise
-  // (voir _0xhasFermatas plus bas) puisque l'hypothese "periode constante"
-  // est incompatible avec un point d'orgue. Autant ne pas consommer de CPU
-  // pour rien pendant que la lecture demarre.
-  if (_0x17adbc.fermatas && Object.keys(_0x17adbc.fermatas).length > 0) {
-    return;
-  }
-  if (window._measureTimeMapCache && window._measureTimeMapCache.songId === _0x17adbc.id) {
-    return;
-  }
-  if (window._measureTimeMapAnalyzing === _0x17adbc.id) {
-    return;
-  }
-  window._measureTimeMapAnalyzing = _0x17adbc.id;
-  try {
-    var _0x223756 = await imgDbGet(_0x17adbc.audioKey);
-    if (!_0x223756) {
-      return;
-    }
-    var _0x58479f = await fetch(_0x223756);
-    var _0x5642a8 = await _0x58479f.arrayBuffer();
-    if (!window._audioCtx) {
-      window._audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    }
-    var _0x1f0f35 = await window._audioCtx.decodeAudioData(_0x5642a8);
-    var _0x280829 = _0x1f0f35.getChannelData(0);
-    var _0x5266be = _0x280829;
-    if (_0x1f0f35.numberOfChannels > 1) {
-      var _0x105907 = _0x1f0f35.getChannelData(1);
-      _0x5266be = new Float32Array(_0x280829.length);
-      for (var _0x18b1e1 = 0; _0x18b1e1 < _0x280829.length; _0x18b1e1++) {
-        _0x5266be[_0x18b1e1] = (_0x280829[_0x18b1e1] + _0x105907[_0x18b1e1]) / 2;
-      }
-    }
-    var _0x3d0c86 = _0x1f0f35.sampleRate;
-    var _0x37b173 = _0x5266be.length / _0x3d0c86;
-    var _0x3bff23 = _audioOnsetNovelty(_0x5266be, _0x3d0c86);
-    var _0x5cba44 = _0x3bff23.novelty;
-    var _0x28fb02 = _0x3bff23.hopSeconds;
-    var _0x18697f = parseFloat(_0x17adbc.bpm) || 100;
-    var _0x21ad79 = gpMeasureDurationMs(_0x18697f, _0x17adbc.beatsPerBox || _0x17adbc.timesig) / 1000;
-    if (_0x21ad79 < 0.2 || _0x21ad79 > 20) {
-      return;
-    }
-    var _0x1e6a3d = _0x17adbc.beatsPerBox || _0x17adbc.timesig || 4;
-    var _0xc1f0e7 = _0x21ad79 / _0x1e6a3d;
-    var _0x3d6c20 = 0;
-    for (var _0x20e599 = 0; _0x20e599 < _0x5cba44.length; _0x20e599++) {
-      _0x3d6c20 += _0x5cba44[_0x20e599];
-    }
-    _0x3d6c20 /= _0x5cba44.length || 1;
-    var _0x2d26f6 = new Float32Array(_0x5cba44.length);
-    for (var _0x20e599 = 0; _0x20e599 < _0x5cba44.length; _0x20e599++) {
-      _0x2d26f6[_0x20e599] = _0x5cba44[_0x20e599] - _0x3d6c20;
-    }
-    function _0x2f0d97(_0x4c15ee) {
-      var _0x4d111e = Math.round(_0x4c15ee / _0x28fb02);
-      if (_0x4d111e < 0 || _0x4d111e >= _0x2d26f6.length) {
-        return 0;
-      }
-      return _0x2d26f6[_0x4d111e];
-    }
-    var _0x4f8e70 = 60;
-    // Recherche du MEILLEUR TEMPO RÉEL, pas seulement d'un décalage de phase.
-    // L'ancienne version verrouillait la période de mesure strictement sur
-    // le BPM déclaré dans la grille et ne cherchait qu'un décalage — un tout
-    // petit écart entre ce BPM déclaré et le tempo réel de l'enregistrement
-    // (courant même sur une prise "propre", quelques dixièmes de BPM)
-    // s'accumule mesure après mesure et finit par décaler visiblement le
-    // curseur (typiquement perceptible après 15-30 mesures). On teste donc
-    // aussi de légères variations de tempo (±3%, soit environ ±3 BPM à
-    // 100 BPM) en plus de la phase, et on garde la combinaison qui colle le
-    // mieux aux vrais changements détectés dans l'audio sur TOUTE la durée
-    // du morceau — ce qui revient bien à un calcul linéaire pur une fois le
-    // (tempo, décalage) trouvés, comme il se doit pour une grille à tempo
-    // propre. Limite honnête : si le morceau a un vrai rubato (tempo qui
-    // varie en cours de route), un seul couple (tempo, décalage) ne peut
-    // pas suivre parfaitement partout — seule une vraie détection de
-    // battements mesure par mesure le pourrait, hors de portée ici.
-    //
-    // PERFORMANCE : cette recherche testait a l'origine ~540 000 combinaisons
-    // d'un coup, de facon synchrone — bloquait l'affichage plusieurs secondes
-    // (essaye une premiere fois le 02/08/2026, retire aussitot car le blocage
-    // etait pire que le probleme qu'il resolvait). Reecrite en DEUX PASSES
-    // (grossiere puis fine autour du meilleur candidat, ~15x moins de travail
-    // au total) ET en petits morceaux qui rendent la main au navigateur entre
-    // chaque tranche de calcul (await + setTimeout) — jamais plus de
-    // quelques millisecondes de blocage d'affilee, quelle que soit la duree
-    // du morceau.
-    async function _0xsearchBestTempoAsync() {
-      var _0xbestScore = -Infinity, _0xbestOffset = 0, _0xbestPeriod = _0x21ad79;
-      var _0xyieldEvery = 3; // rendre la main tous les 3 pas de la boucle externe (tempo)
-
-      async function _0xrunPass(_0xscaleMin2, _0xscaleMax2, _0xscaleStep2, _0xoffsetStepFn) {
-        var _0xcount = 0;
-        for (var _0xscale = _0xscaleMin2; _0xscale <= _0xscaleMax2; _0xscale += _0xscaleStep2) {
-          var _0xperiodTry = _0x21ad79 * _0xscale;
-          var _0xoffsetStep = _0xoffsetStepFn(_0xperiodTry);
-          for (var _0xoff = 0; _0xoff < _0xperiodTry; _0xoff += _0xoffsetStep) {
-            var _0xscoreSum = 0;
-            for (var _0xt = _0xoff; _0xt < _0x37b173; _0xt += _0xperiodTry) {
-              _0xscoreSum += _0x2f0d97(_0xt) * Math.exp(-_0xt / _0x4f8e70);
-            }
-            if (_0xscoreSum > _0xbestScore) {
-              _0xbestScore = _0xscoreSum;
-              _0xbestOffset = _0xoff;
-              _0xbestPeriod = _0xperiodTry;
-            }
-          }
-          _0xcount++;
-          if (_0xcount % _0xyieldEvery === 0) {
-            await new Promise(function (_0xr) { setTimeout(_0xr, 0); });
-          }
-        }
-      }
-
-      // Passe 1 (grossiere) : pas large sur le tempo ET sur le decalage —
-      // trouve rapidement la bonne zone sans tester chaque micro-decalage.
-      // Plage elargie a +/-8% (au lieu de +/-3% a l'origine) : un tempo
-      // declare peut reellement s'ecarter de plus de 3% du tempo reel (test
-      // du 02/08/2026 sur un cas concret : ecart de ~2.9%, tout pres de
-      // l'ancienne limite, laissant un residu de derive non corrige).
-      await _0xrunPass(0.92, 1.08, 0.006, function (_0xp) { return Math.max(0.02, _0xp / 20); });
-      // Passe 2 (fine) : autour du meilleur candidat de la passe 1, avec la
-      // precision d'origine — beaucoup moins de combinaisons a tester
-      // puisque la zone est deja bien resserree.
-      var _0xrefineScale = _0xbestPeriod / _0x21ad79;
-      var _0xscaleLo = Math.max(0.92, _0xrefineScale - 0.008);
-      var _0xscaleHi = Math.min(1.08, _0xrefineScale + 0.008);
-      var _0xfineOffsetStep = Math.max(0.005, _0x28fb02 / 2);
-      await _0xrunPass(_0xscaleLo, _0xscaleHi, 0.0012, function () { return _0xfineOffsetStep; });
-
-      return { score: _0xbestScore, offset: _0xbestOffset, period: _0xbestPeriod };
-    }
-    var _0xsearchResult = await _0xsearchBestTempoAsync();
-    var _0xc7047c = _0xsearchResult.score;
-    var _0x18dc00 = _0xsearchResult.offset;
-    var _0x21ad79Best = _0xsearchResult.period;
-    _0x21ad79 = _0x21ad79Best;
-    var _0x4e2b4f = Math.min(2000, Math.ceil(_0x37b173 / _0x21ad79) + 4);
-    var _0xfe472d = [];
-    for (var _0x5edb41 = 0; _0x5edb41 < _0x4e2b4f; _0x5edb41++) {
-      _0xfe472d.push(_0x18dc00 + _0x5edb41 * _0x21ad79);
-    }
-    var _0x4d2696 = (_0x17adbc.audioMarkers || []).slice().sort(function (_0x2514dd, _0x280f04) {
-      return _0x2514dd.measureIdx - _0x280f04.measureIdx;
-    });
-    _0x4d2696.forEach(function (_0x429d76) {
-      if (_0x429d76.measureIdx >= 0 && _0x429d76.measureIdx < _0xfe472d.length) {
-        _0xfe472d[_0x429d76.measureIdx] = _0x429d76.time;
-      }
-    });
-    // Fiabilite : le score obtenu doit etre nettement positif (alignement
-    // reel avec les evenements detectes dans l'audio), pas juste "meilleur
-    // que les autres essais" — un morceau tres uniforme/peu percussif peut
-    // n'avoir aucun bon alignement possible, mieux vaut alors ne pas
-    // corriger du tout que de faire confiance a un score faible/negatif.
-    var _0xscoreNorm = _0xc7047c / (_0x4e2b4f || 1);
-    var _0xreliable = _0xscoreNorm > 0.5;
-    window._measureTimeMapCache = {
-      songId: _0x17adbc.id,
-      times: _0xfe472d,
-      period: _0x21ad79,
-      offset: _0x18dc00,
-      reliable: _0xreliable
-    };
-    console.log("[MVR] Carte de synchro audio construite (alignement de phase + tempo affiné) — " + _0xfe472d.length + " mesures, décalage=" + _0x18dc00.toFixed(3) + "s, période affinée=" + _0x21ad79.toFixed(4) + "s (déclarée=" + (gpMeasureDurationMs(parseInt(_0x17adbc.bpm, 10) || 100, _0x1e6a3d) / 1000).toFixed(4) + "s).");
-  } catch (_0x589a63) {} finally {
-    window._measureTimeMapAnalyzing = null;
-  }
 }
 async function seekAudioToMeasure(_0x70681d) {
   var _0x36572d = _0x4bc6f9;
@@ -10177,6 +10044,184 @@ function _audioFindChordChangePoints(_0x497f34) {
     return Math.max(0, _0x512c5e.t - _0xdetectionLagCorrection);
   });
 }
+// ═══════════════════════════════════════════════════════════════════════
+// Aide automatique a la synchronisation grille <-> audio : detecte les
+// VRAIS changements d'accord dans l'audio (reutilise le pipeline chroma
+// deja en production pour l'extraction de grille depuis l'audio) et les
+// fait correspondre, dans l'ordre, aux vrais changements d'accord de la
+// grille -- pour PROPOSER automatiquement des reperes manuels (le
+// mecanisme 🎯 deja existant, deja fiable) plutot que de forcer le
+// musicien a les poser un par un a l'oreille.
+// ---------------------------------------------------------------------
+// Pourquoi pas une correction automatique EN DIRECT pendant la lecture :
+// une premiere version (methode DTW comparant la grille entiere au chroma
+// de l'audio) a ete testee ici le 31/08/2026 sur plusieurs scenarios
+// synthetiques avant integration. Elle s'est reveillee porter un biais
+// SYSTEMATIQUE des que le tempo declare n'est pas exactement le tempo reel
+// (cas tres courant) -- y compris aux points de vrai changement d'accord,
+// pas seulement dans les mesures ambigues (accords repetes). Ce biais
+// aurait pu, en conditions reelles de concert, faire sauter la grille au
+// mauvais endroit avec une confiance affichee pourtant elevee -- exactement
+// le risque qui avait fait abandonner les deux tentatives precedentes
+// (02/08/2026). Plutot que de livrer un mecanisme dont la fiabilite reelle
+// reste incertaine, MVR se limite ici a PROPOSER des reperes, verifiables
+// et corrigibles a l'oreille avant d'etre utilises -- coherent avec le
+// principe deja en place dans ce fichier ("plus fiable de confirmer a
+// l'oreille par le musicien que devine par un algorithme").
+var _CHORDSYNC_MIN_MEASURES = 6;    // grille trop courte -> pas assez d'information pour une aide utile
+var _CHORDSYNC_MIN_CHANGES = 3;     // pas assez de vrais changements d'accord dans la grille pour proposer quoi que ce soit d'utile
+
+// Suffixe texte d'accord (ex: "m7", "maj7", "sus4") -> intervalles en
+// demi-tons depuis la fondamentale, pour construire un gabarit chroma (12
+// demi-tons) a comparer au contenu audio reel. Volontairement plus large
+// que _AUDIO_CHORD_TYPES (qui ne sert qu'a la RECONNAISSANCE d'un accord
+// depuis l'audio, avec seulement 4 qualites pour limiter les ambiguites) :
+// ici on part d'un nom d'accord DEJA CONNU (celui saisi dans la grille).
+function _chordSuffixToIntervals(_suffix) {
+  var s = (_suffix || "").trim();
+  if (/^(maj9|Δ9)/i.test(s)) return [0, 4, 7, 11, 2];
+  if (/^(maj7|Δ7|M7)/i.test(s)) return [0, 4, 7, 11];
+  if (/^(maj|Δ)$/i.test(s)) return [0, 4, 7];
+  if (/^(dim7|°7|o7)/i.test(s)) return [0, 3, 6, 9];
+  if (/^(dim|°|o)/i.test(s)) return [0, 3, 6];
+  if (/^(aug|\+)/i.test(s)) return [0, 4, 8];
+  if (/^(m7b5|m7-5|ø)/i.test(s)) return [0, 3, 6, 10];
+  if (/^(mmaj7|mM7)/i.test(s)) return [0, 3, 7, 11];
+  if (/^m9/i.test(s)) return [0, 3, 7, 10, 2];
+  if (/^m6/i.test(s)) return [0, 3, 7, 9];
+  if (/^m7/i.test(s)) return [0, 3, 7, 10];
+  if (/^madd9/i.test(s)) return [0, 3, 7, 2];
+  if (/^(m|min)([^a-zA-Z]|$)/i.test(s)) return [0, 3, 7];
+  if (/^9/.test(s)) return [0, 4, 7, 10, 2];
+  if (/^7sus4/i.test(s)) return [0, 5, 7, 10];
+  if (/^7/.test(s)) return [0, 4, 7, 10];
+  if (/^(6\/9|69)/.test(s)) return [0, 4, 7, 9, 2];
+  if (/^6/.test(s)) return [0, 4, 7, 9];
+  if (/^add9/i.test(s)) return [0, 4, 7, 2];
+  if (/^sus2/i.test(s)) return [0, 2, 7];
+  if (/^(sus4|sus)/i.test(s)) return [0, 5, 7];
+  if (/^5/.test(s)) return [0, 7];
+  return [0, 4, 7]; // aucun suffixe reconnu -> accord majeur par defaut
+}
+function _chordNameToChromaVec(_chordName) {
+  if (!_chordName) return null;
+  var main = _chordName.trim().split("/")[0].trim(); // ignore la basse alternative (accord/basse)
+  var m = main.match(/^([A-G][b#]?)(.*)$/);
+  if (!m) return null;
+  var rootIdx = NOTE_IDX[m[1]];
+  if (rootIdx === undefined) return null;
+  var ivs = _chordSuffixToIntervals(m[2]);
+  var vec = new Float64Array(12);
+  ivs.forEach(function (iv) { vec[(rootIdx + iv) % 12] = 1; });
+  return vec;
+}
+function _flattenGridChords(_song) {
+  var parsed = parseGridPaper(_song.grid || "");
+  var flat = [];
+  parsed.rows.forEach(function (row) {
+    row.measures.forEach(function (m) { flat.push((m || "").trim()); });
+  });
+  return flat;
+}
+function _chromaVecEqual(_a, _b) {
+  for (var k = 0; k < 12; k++) { if (_a[k] !== _b[k]) return false; }
+  return true;
+}
+// Indices de mesure (0-based, dans la liste APLATIE de la grille) ou un
+// VRAI changement d'accord se produit par rapport a la mesure nommee
+// precedente -- ignore les mesures vides et les repetitions du meme
+// accord (frequentes, ex. "Gm | Gm | Gm"), qui n'apportent aucune preuve
+// acoustique de frontiere.
+function _findGridChordChangeMeasures(_flat) {
+  var result = [];
+  var prevVec = null;
+  for (var i = 0; i < _flat.length; i++) {
+    var vec = _chordNameToChromaVec(_flat[i]);
+    if (!vec) continue;
+    if (!prevVec || !_chromaVecEqual(vec, prevVec)) result.push(i);
+    prevVec = vec;
+  }
+  return result;
+}
+// Fonction principale : detecte les changements d'accord dans l'audio et
+// PROPOSE des reperes manuels (song.audioMarkers) aux mesures de la grille
+// qui correspondent, dans l'ordre. Ne modifie jamais la grille elle-meme,
+// ne pilote jamais la lecture en direct -- se contente d'alimenter le
+// mecanisme de reperes deja existant et deja fiable (🎯). Retourne le
+// nombre de reperes proposes, ou null en cas d'echec/impossibilite.
+async function autoPlaceAudioMarkers(_song, _statusEl) {
+  if (!_song || !_song.audioKey || !_song.grid) return null;
+  var flat = _flattenGridChords(_song);
+  if (flat.length < _CHORDSYNC_MIN_MEASURES) return null;
+  var changeMeasures = _findGridChordChangeMeasures(flat);
+  // Le tout premier accord nomme sert de repere de DEPART (mesure 0 du
+  // point de vue de la grille) ; les suivants sont les vraies TRANSITIONS
+  // (un changement audible entre deux accords differents).
+  var transitionMeasures = changeMeasures.slice(1);
+  if (transitionMeasures.length < _CHORDSYNC_MIN_CHANGES) {
+    if (_statusEl) _statusEl.textContent = "⚠️ Pas assez de changements d'accord distincts dans cette grille pour proposer des repères utiles.";
+    return null;
+  }
+  if (_statusEl) _statusEl.innerHTML = "⏳ Analyse de l'audio pour repérer les changements d'accord…";
+  try {
+    var dataUrl = await imgDbGet(_song.audioKey);
+    if (!dataUrl) throw new Error("Fichier audio introuvable sur cet appareil.");
+    var resp = await fetch(dataUrl);
+    var arrBuf = await resp.arrayBuffer();
+    if (!window._audioCtx) window._audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    var buf = await window._audioCtx.decodeAudioData(arrBuf);
+    var left = buf.getChannelData(0);
+    var mono = left;
+    if (buf.numberOfChannels > 1) {
+      var right = buf.getChannelData(1);
+      mono = new Float32Array(left.length);
+      for (var k = 0; k < left.length; k++) mono[k] = (left[k] + right[k]) / 2;
+    }
+    var sr = buf.sampleRate;
+    var durCap = Math.min(buf.duration, 480); // plafond 8 min, comme les autres analyses audio de MVR
+    await new Promise(function (r) { setTimeout(r, 0); }); // laisse la main au navigateur avant le calcul CPU
+    // Reutilise le MEME pipeline chroma deja en production (extraction de
+    // grille depuis l'audio, "Vérifier l'alignement") -- deja mesure et
+    // corrige pour son retard de detection systematique.
+    var chroma = _audioChromaSeries(mono, sr, 0, durCap, 0.1);
+    if (chroma.length < 4) throw new Error("Audio trop court ou silencieux pour analyser.");
+    var smoothed = _audioSmoothChroma(chroma, 1);
+    var detectedTimes = _audioFindChordChangePoints(smoothed);
+    if (detectedTimes.length < 2) throw new Error("Aucun changement d'accord net détecté dans cet audio.");
+    // Point de depart (mesure 0 de la grille) : debut reel du contenu utile
+    // dans le fichier (au-dela du silence de tete eventuel), via la MEME
+    // detection deja utilisee et deja fiable pour demarrer la lecture.
+    var startTime = _pbDetectLeadSilence(buf);
+    // Correspondance par ORDRE entre les transitions de la grille et les
+    // changements detectes dans l'audio -- prend le plus court des deux
+    // pour eviter tout decalage en cascade si l'un des deux a quelques
+    // faux positifs/negatifs en fin de liste.
+    var pairCount = Math.min(transitionMeasures.length, detectedTimes.length);
+    var proposed = [{ measureIdx: changeMeasures[0], time: Math.max(0, startTime) }];
+    for (var p = 0; p < pairCount; p++) {
+      proposed.push({ measureIdx: transitionMeasures[p], time: detectedTimes[p] });
+    }
+    if (!_song.audioMarkers) _song.audioMarkers = [];
+    // Retire d'anciens reperes AUTOMATIQUES precedents (marques via
+    // "auto: true") avant d'ajouter les nouveaux -- ne touche jamais aux
+    // reperes poses A LA MAIN par le musicien (sans ce marqueur).
+    _song.audioMarkers = _song.audioMarkers.filter(function (m) { return !m.auto; });
+    proposed.forEach(function (m) {
+      _song.audioMarkers.push({ measureIdx: m.measureIdx, time: m.time, auto: true });
+    });
+    dbSave();
+    if (window._measureTimeMapCache && window._measureTimeMapCache.songId === _song.id) window._measureTimeMapCache = null;
+    if (_statusEl) {
+      _statusEl.innerHTML = "✓ " + proposed.length + " repère(s) proposé(s) automatiquement (1 point de départ + " + pairCount + " changement(s) d'accord détecté(s))." +
+        (pairCount < transitionMeasures.length ? " " + (transitionMeasures.length - pairCount) + " changement(s) de la grille n'ont pas trouvé de correspondance claire dans l'audio — vérifie la fin du morceau à l'oreille." : "") +
+        "<br><span style=\"color:var(--tx2)\">Vérifie-les à l'oreille avant de jouer en scène (▶ Play puis écoute chaque changement) — ce sont des propositions, pas une certitude.</span>";
+    }
+    return proposed.length;
+  } catch (err) {
+    if (_statusEl) _statusEl.textContent = "❌ " + err.message;
+    return null;
+  }
+}
 function _audioSegmentChords(_0x41559a, _0x45a5ca, _0x76fb96, _0x5b30a8, _0xkeyInfo) {
   var _0x18809b = _0x4bc6f9;
   var _0xbec710 = _audioChromaSeries(_0x41559a, _0x45a5ca, _0x76fb96, _0x5b30a8, 0.1);
@@ -13658,7 +13703,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.133.3 · 06/08/2026<span id="license-watermark"></span>
+  v2.134.0 · 31/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
