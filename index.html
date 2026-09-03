@@ -49,6 +49,28 @@ async function _ensurePdfjs(){
   });
 }
 
+// ── Tesseract.js loader (OCR) ──
+// Meme principe que _ensurePdfjs ci-dessus : charge la bibliotheque depuis
+// un CDN. Une fois chargee AU MOINS UNE FOIS avec une connexion internet,
+// le service worker de MVR la met en cache automatiquement (strategie
+// "cache d'abord" deja en place pour toute requete, voir service-worker.js)
+// -- les imports suivants fonctionnent alors meme sans reseau, exactement
+// comme le reste de l'app. C'est ce qui permet l'OCR en mode nomade.
+var _tesseractLib = null;
+async function _ensureTesseract(){
+  if(_tesseractLib) return _tesseractLib;
+  return new Promise(function(resolve,reject){
+    var s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.0/dist/tesseract.min.js';
+    s.onload=function(){
+      _tesseractLib = window.Tesseract;
+      resolve(_tesseractLib);
+    };
+    s.onerror=reject;
+    document.head.appendChild(s);
+  });
+}
+
 // ── jsPDF loader (export de grille en PDF) ──
 var _jsPdfLib = null;
 async function _ensureJsPdf(){
@@ -765,7 +787,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.135.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.136.0</span></h1>
 </div>
 
 <div id="pages">
@@ -1647,6 +1669,7 @@ J&#39;ai voulu planter un oranger">    </textarea>
     <button class="btn-g" id="notext-pdf-usegrid-btn" style="display:none" onclick="pdfUseDetectedGrid()">✓ Créer la grille (recommandé)<br><span style="font-size:11px;font-weight:400;opacity:.85">Accords et mesures repérés directement dans le PDF — la plus fiable</span></button>
     <button onclick="notextPdfOnline()">🤖 Lire avec l'IA <span id="notext-pdf-ai-caveat" style="display:none">(en secours seulement)</span><br><span style="font-size:11px;font-weight:400;opacity:.85">À utiliser seulement si la grille ci-dessus semble fausse une fois créée — connexion internet requise</span></button>
     <button onclick="notextPdfOffline()">📷 Garder en partition-photo<br><span style="font-size:11px;font-weight:400;opacity:.85">Fonctionne 100% hors connexion, pas de grille interactive</span></button>
+    <button onclick="notextPdfViaOCR()">📖 Lire par OCR (hors connexion)<br><span style="font-size:11px;font-weight:400;opacity:.85">Grille interactive, fonctionne sans internet une fois utilisé une première fois — un peu moins précis que l'IA</span></button>
     <button id="notext-pdf-audiveris-btn" style="display:none" onclick="notextPdfViaAudiveris()">🎼 Notation complète avec curseur (via Audiveris)<br><span style="font-size:11px;font-weight:400;opacity:.85">La vraie partition (notes, portée) suivie par le curseur pendant la lecture — pont local requis</span></button>
   </div>
   <button onclick="notextPdfCancel()" style="margin-top:14px;width:100%;background:transparent;border:1px solid var(--R);color:var(--R);font-weight:600;padding:10px;border-radius:8px">Annuler</button>
@@ -11273,6 +11296,48 @@ function notextPdfOffline() {
   pdfReset();
   imgLoadFiles([_0x226ec3]);
 }
+// Lit le texte (accords + paroles) directement depuis les pixels de la
+// page, par reconnaissance optique de caractères (OCR) -- fonctionne pour
+// n'importe quel PDF/photo sans texte extractible (capture d'ecran,
+// export "Imprimer en PDF" sans encodage de caracteres, vraie photo
+// papier...), CONTRAIREMENT au texte-layer de pdf.js qui exige un vrai
+// texte numerique deja present dans le fichier. Moins precis que l'IA
+// (peut confondre des caracteres proches, ex. "Am" / "Arn"), mais tourne
+// ENTIEREMENT SUR L'APPAREIL, sans connexion internet une fois la
+// bibliotheque Tesseract.js mise en cache (voir _ensureTesseract) -- la
+// seule des trois methodes automatiques qui fonctionne vraiment en mode
+// nomade (sans reseau) pour ce cas de figure.
+async function notextPdfViaOCR() {
+  var _0xfile = _pendingImagePdfFile;
+  hideModal("notext-pdf-modal");
+  _pendingImagePdfFile = null;
+  _pendingTextGridFound = false;
+  if (!_0xfile) return;
+  pdfStatus("⏳ Chargement du moteur OCR…", "var(--G)");
+  try {
+    var _0xtess = await _ensureTesseract();
+    pdfStatus("⏳ Conversion des pages…", "var(--G)");
+    var _0xpages = await imgRasterizePdf(_0xfile);
+    var _0xmaxPages = Math.min(_0xpages.length, 4); // meme plafond que la lecture IA -- au-dela, temps de traitement excessif sur un telephone
+    var _0xtextParts = [];
+    for (var _0xp = 0; _0xp < _0xmaxPages; _0xp++) {
+      pdfStatus("⏳ Lecture OCR page " + (_0xp + 1) + "/" + _0xmaxPages + "…", "var(--G)");
+      var _0xresult = await _0xtess.recognize(_0xpages[_0xp], "fra+eng");
+      _0xtextParts.push(_0xresult.data.text);
+    }
+    var _0xfullText = _0xtextParts.join("\n\n");
+    if (!_0xfullText.trim()) throw new Error("Aucun texte reconnu sur cette image.");
+    pdfStatus("✓ Texte reconnu — création du morceau…", "var(--G)");
+    // Reutilise le parseur "paroles + accords" deja existant et deja
+    // fiable (accords au-dessus des paroles) -- l'OCR restitue le texte
+    // ligne par ligne sans repere de position fin, ce format tolerant
+    // s'en accommode bien mieux qu'une reconstruction stricte de grille
+    // mesure par mesure.
+    lycProcessRaw(_0xfullText, pdfFileName);
+  } catch (_0xerr) {
+    pdfStatus("❌ OCR : " + _0xerr.message, "var(--R)");
+  }
+}
 async function notextPdfOnline() {
   var _0x15a631 = _pendingImagePdfFile;
   if (!_0x15a631) {
@@ -13732,7 +13797,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.135.0 · 31/08/2026<span id="license-watermark"></span>
+  v2.136.0 · 31/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
