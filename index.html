@@ -787,7 +787,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.136.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.137.0</span></h1>
 </div>
 
 <div id="pages">
@@ -1661,6 +1661,17 @@ J&#39;ai voulu planter un oranger">    </textarea>
   </div>
 </div>
 </div>
+<div class="modal-bg" id="img-photo-choice-modal">
+<div class="modal">
+  <h2>Comment lire cette photo ?</h2>
+  <p style="font-size:13px;color:var(--tx2);line-height:1.5;margin-top:-4px">Si c'est une grille d'accords (papier, écran, cahier), MVR peut essayer d'en faire une grille interactive. Si c'est une vraie partition (notes, portée), garde-la en image.</p>
+  <div class="row" style="margin-top:16px;flex-direction:column;gap:8px;align-items:stretch">
+    <button class="btn-g" onclick="imgPhotoChoiceOCR()">📖 Lire les accords par OCR<br><span style="font-size:11px;font-weight:400;opacity:.85">Grille interactive, fonctionne hors connexion (après un premier usage en ligne) — pour une grille/texte photographié</span></button>
+    <button onclick="imgPhotoChoiceKeep()">📷 Garder en partition-photo<br><span style="font-size:11px;font-weight:400;opacity:.85">Fonctionne 100% hors connexion — pour une vraie partition (portée, notes) ou si l'OCR se trompe</span></button>
+  </div>
+  <button onclick="imgPhotoChoiceCancel()" style="margin-top:14px;width:100%;background:transparent;border:1px solid var(--R);color:var(--R);font-weight:600;padding:10px;border-radius:8px">Annuler</button>
+</div></div>
+
 <div class="modal-bg" id="notext-pdf-modal">
 <div class="modal">
   <h2 id="notext-pdf-title">Ce PDF ne contient pas de texte</h2>
@@ -12424,11 +12435,66 @@ function imgRenderThumbs() {
   });
 }
 var imgPendingScoreMeasures = [];
-async function imgLoadFiles(_0x399474) {
+function imgPhotoChoiceKeep() {
+  hideModal("img-photo-choice-modal");
+  var _0xf = _pendingSinglePhotoFile;
+  _pendingSinglePhotoFile = null;
+  if (!_0xf) return;
+  imgLoadFiles([_0xf], true); // true = ne pas reproposer le choix, traiter directement comme avant
+}
+function imgPhotoChoiceCancel() {
+  hideModal("img-photo-choice-modal");
+  _pendingSinglePhotoFile = null;
+}
+// Meme principe que notextPdfViaOCR (voir plus haut), mais directement sur
+// le fichier image d'origine -- pas besoin de rasteriser un PDF, la photo
+// EST deja l'image a lire. Fonctionne hors connexion une fois Tesseract.js
+// mis en cache par le service worker.
+async function imgPhotoChoiceOCR() {
+  var _0xf = _pendingSinglePhotoFile;
+  hideModal("img-photo-choice-modal");
+  _pendingSinglePhotoFile = null;
+  if (!_0xf) return;
+  var _0xname = _0xf.name.replace(/\.[^.]+$/, "").trim();
+  imgStatus("⏳ Chargement du moteur OCR…");
+  try {
+    var _0xtess = await _ensureTesseract();
+    imgStatus("⏳ Lecture OCR de la photo…");
+    var _0xdataUrl = await new Promise(function (_0xres, _0xrej) {
+      var _0xreader = new FileReader();
+      _0xreader.onload = function (_0xe) { _0xres(_0xe.target.result); };
+      _0xreader.onerror = _0xrej;
+      _0xreader.readAsDataURL(_0xf);
+    });
+    var _0xresult = await _0xtess.recognize(_0xdataUrl, "fra+eng");
+    var _0xtext = _0xresult.data.text;
+    if (!_0xtext.trim()) throw new Error("Aucun texte reconnu sur cette photo.");
+    imgStatus("✓ Texte reconnu — création du morceau…", "var(--G)");
+    lycProcessRaw(_0xtext, _0xname);
+  } catch (_0xerr) {
+    imgStatus("❌ OCR : " + _0xerr.message + " — tu peux réessayer en \"Garder en partition-photo\".", "var(--R)");
+  }
+}
+var _pendingSinglePhotoFile = null;
+async function imgLoadFiles(_0x399474, _0xskipChoice) {
   var _0x469934 = _0x552966;
   var _0x13c0ad = _0x4bc6f9;
   var _0x1efc9e = Array.prototype.slice.call(_0x399474 || []);
   if (!_0x1efc9e.length) {
+    return;
+  }
+  // Une SEULE photo (pas plusieurs pages, pas un PDF) est le cas le plus
+  // frequent en mode nomade : une grille photographiee au pupitre pendant
+  // une repetition. Avant de la figer en image statique, on propose
+  // d'abord une lecture OCR (hors connexion, voir imgPhotoChoiceOCR) pour
+  // obtenir une grille interactive -- plusieurs photos a la fois restent
+  // traitees directement comme avant (cas d'une vraie partition sur
+  // plusieurs pages, ou l'OCR ligne-par-ligne n'a pas de sens).
+  if (!_0xskipChoice && _0x1efc9e.length === 1 && !_0x1efc9e[0].name.match(/\.pdf$/i)) {
+    _pendingSinglePhotoFile = _0x1efc9e[0];
+    document.getElementById("img-input").value = "";
+    imgDzLeave();
+    showModal("img-photo-choice-modal");
     return;
   }
   document.getElementById("img-input").value = "";
@@ -13797,7 +13863,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.136.0 · 31/08/2026<span id="license-watermark"></span>
+  v2.137.0 · 31/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
