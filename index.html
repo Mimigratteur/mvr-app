@@ -71,6 +71,46 @@ async function _ensureTesseract(){
   });
 }
 
+// Reconstruit un texte "monospace" a partir des POSITIONS des mots reconnus
+// par Tesseract (data.lines[].words[].bbox), au lieu du texte brut
+// (data.text) qui ecrase les espaces : sans les positions, un accord perd
+// le mot au-dessus duquel il etait ecrit, et le parseur "paroles + accords"
+// ne peut plus le rattacher. Largeur de caractere estimee par la mediane
+// (largeur du mot / nb de lettres) sur les mots de 4 lettres ou plus --
+// teste sur un vrai PDF e-chords : l'alignement des accords est restitue
+// quasi a l'identique de l'original.
+function _ocrToLayoutText(_data) {
+  var lines = (_data && _data.lines) || [];
+  var ratios = [];
+  lines.forEach(function (l) {
+    (l.words || []).forEach(function (w) {
+      var t = (w.text || "").trim();
+      if (t.length >= 4 && w.bbox) ratios.push((w.bbox.x1 - w.bbox.x0) / t.length);
+    });
+  });
+  if (!ratios.length) return (_data && _data.text) || "";
+  ratios.sort(function (a, b) { return a - b; });
+  var cw = ratios[Math.floor(ratios.length / 2)] || 10;
+  var out = [];
+  lines.forEach(function (l) {
+    var words = (l.words || []).filter(function (w) { return (w.text || "").trim() && w.bbox; });
+    words.sort(function (a, b) { return a.bbox.x0 - b.bbox.x0; });
+    var s = "";
+    words.forEach(function (w) {
+      var col = Math.round(w.bbox.x0 / cw);
+      if (s.length < col) s += new Array(col - s.length + 1).join(" ");
+      else if (s) s += " ";
+      s += w.text.trim();
+    });
+    if (s.trim()) out.push(s.replace(/\s+$/, ""));
+  });
+  // Retire la marge gauche commune (toutes les lignes commencent au meme
+  // retrait) pour que le premier accord/mot reste en colonne 0.
+  var minIndent = Math.min.apply(null, out.map(function (s) { return s.length - s.replace(/^\s+/, "").length; }));
+  if (minIndent > 0 && isFinite(minIndent)) out = out.map(function (s) { return s.slice(minIndent); });
+  return out.join("\n");
+}
+
 // ── jsPDF loader (export de grille en PDF) ──
 var _jsPdfLib = null;
 async function _ensureJsPdf(){
@@ -787,7 +827,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.137.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.138.0</span></h1>
 </div>
 
 <div id="pages">
@@ -11334,7 +11374,7 @@ async function notextPdfViaOCR() {
     for (var _0xp = 0; _0xp < _0xmaxPages; _0xp++) {
       pdfStatus("⏳ Lecture OCR page " + (_0xp + 1) + "/" + _0xmaxPages + "…", "var(--G)");
       var _0xresult = await _0xtess.recognize(_0xpages[_0xp], "fra+eng");
-      _0xtextParts.push(_0xresult.data.text);
+      _0xtextParts.push(_ocrToLayoutText(_0xresult.data));
     }
     var _0xfullText = _0xtextParts.join("\n\n");
     if (!_0xfullText.trim()) throw new Error("Aucun texte reconnu sur cette image.");
@@ -12467,7 +12507,7 @@ async function imgPhotoChoiceOCR() {
       _0xreader.readAsDataURL(_0xf);
     });
     var _0xresult = await _0xtess.recognize(_0xdataUrl, "fra+eng");
-    var _0xtext = _0xresult.data.text;
+    var _0xtext = _ocrToLayoutText(_0xresult.data);
     if (!_0xtext.trim()) throw new Error("Aucun texte reconnu sur cette photo.");
     imgStatus("✓ Texte reconnu — création du morceau…", "var(--G)");
     lycProcessRaw(_0xtext, _0xname);
@@ -13863,7 +13903,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.137.0 · 31/08/2026<span id="license-watermark"></span>
+  v2.138.0 · 31/08/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
