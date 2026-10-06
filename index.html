@@ -108,7 +108,38 @@ function _ocrToLayoutText(_data) {
   // retrait) pour que le premier accord/mot reste en colonne 0.
   var minIndent = Math.min.apply(null, out.map(function (s) { return s.length - s.replace(/^\s+/, "").length; }));
   if (minIndent > 0 && isFinite(minIndent)) out = out.map(function (s) { return s.slice(minIndent); });
-  return out.join("\n");
+  return _ocrCleanLines(out).join("\n");
+}
+// Nettoyage post-OCR : (1) retire les lignes parasites (pied de page "Page 1
+// of 2", marque e-chords, en-tete Key/Tuning/Written by) ; (2) sur les lignes
+// d'accords (>= 60 % de jetons reconnus apres correction), repare les erreurs
+// OCR classiques : lettre minuscule doublee en tete ("cCmaj7" -> "Cmaj7"),
+// "S" lu a la place de "5" apres une fondamentale ("ES" -> "E5"), barres
+// verticales parasites. Les lignes de paroles ne sont jamais touchees.
+function _ocrCleanLines(lines) {
+  var junk = /^\s*(page\s+\d+\s*(of|\/|sur)\s*\d+|(key|tuning|artist|album|genre)\s*[:\-]|written\s+by\b|.*e[\s\-]?chords?\b.*|gs;?\s.*|of\s+[A-Z][a-z]+\s+[A-Z][a-z]+\s*$)/i;
+  var out = [];
+  lines.forEach(function (ln, i) {
+    var t = ln.trim();
+    if (!t) { out.push(ln); return; }
+    if (i < 8 && junk.test(t) && !/^intro\b/i.test(t)) return;
+    if (/^page\s+\d+\s*(of|\/|sur)\s*\d+$/i.test(t)) return;
+    var toks = t.split(/\s+/);
+    var re = (typeof LYC_CHORD_TOKEN_RE !== "undefined") ? LYC_CHORD_TOKEN_RE : null;
+    if (!re) { out.push(ln); return; }
+    function fix(tok) {
+      var f = tok.replace(/^[|!\[\(]+|[|!\]\)]+$/g, "");
+      f = f.replace(/^[a-g](?=[A-G][#b]?(?:maj|min|dim|aug|sus|add|m)?\d?)/, "");
+      f = f.replace(/^([A-G][#b]?)S$/, "$15");
+      return f;
+    }
+    var ok = 0;
+    toks.forEach(function (tk) { if (re.test(fix(tk))) ok++; });
+    if (ok / toks.length < 0.6 || ok < 1) { out.push(ln); return; }
+    // reconstruit la ligne en gardant les colonnes (remplacement sur place)
+    out.push(ln.replace(/\S+/g, function (tk) { var f = fix(tk); return re.test(f) ? f : tk; }));
+  });
+  return out;
 }
 
 // ── jsPDF loader (export de grille en PDF) ──
@@ -827,7 +858,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.138.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.139.0</span></h1>
 </div>
 
 <div id="pages">
@@ -11656,7 +11687,7 @@ async function unifiedLoadSingleFile(_0x366909) {
 var lycRawText = "";
 var lycFileName = "";
 var lycParsed = null;
-var LYC_CHORD_TOKEN_RE = /^(do|ré|re|mi|fa|sol|la|si|[a-g])(#|b)?(maj7|maj|min7|min|m7|m6|m|dim7|dim|aug|sus4|sus2|sus|add9|add|6|7|9|11|13)?(\/(do|ré|re|mi|fa|sol|la|si|[a-g])(#|b)?)?$/i;
+var LYC_CHORD_TOKEN_RE = /^(do|ré|re|mi|fa|sol|la|si|[a-g])(#|b)?(?:maj|min|dim|aug|sus|add|m|ø|°|\+|-)?(?:(?:sus|add|maj|alt)?[#b+\-\/]*\d{1,2}[+\-]?)*(\/(do|ré|re|mi|fa|sol|la|si|[a-g])(#|b)?)?$/i;
 var LYC_STRUCTURE_KEYWORDS = /^(intro|outro|pont|bridge|couplet|refrain|verse|chorus|coda|interlude|break|fin|final)\b/i;
 function lycIsCommentLine(_0x4bc0ce) {
   var _0x25bce4 = _0x552966;
@@ -13903,7 +13934,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.138.0 · 31/08/2026<span id="license-watermark"></span>
+  v2.139.0 · 06/10/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
