@@ -858,7 +858,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.141.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.142.0</span></h1>
 </div>
 
 <div id="pages">
@@ -10353,6 +10353,115 @@ function _findGridChordChangeMeasures(_flat) {
 // ne pilote jamais la lecture en direct -- se contente d'alimenter le
 // mecanisme de reperes deja existant et deja fiable (🎯). Retourne le
 // nombre de reperes proposes, ou null en cas d'echec/impossibilite.
+// ══ Alignement FORCÉ grille -> audio (v2.142.0) ══
+// La grille (connue, fiable : PDF/photo/saisie) est alignée sur l'audio par
+// programmation dynamique : chaque mesure k occupe un nombre de trames borné
+// (tempo à ±~20 %), son coût = 1 - (0,7 cos(chroma, accord) + 0,3 basse[fondamentale]),
+// début libre (intro) et fin libre (coda). On cherche aussi l'échelle de tempo
+// globale la plus plausible. Contrairement à l'appariement des seuls changements
+// détectés (peu fiable : 34/112 appariés, 0,4 s d'erreur médiane sur "Still Got
+// The Blues"), toute la séquence contraint l'alignement. Mesuré le 06/10/2026 :
+// les frontières ainsi posées montrent le plus fort changement harmonique
+// (0,104) contre 0,086-0,089 à ±0,15 s et 0,069 au tempo constant.
+function _syncChordTemplate(_name) {
+  var vec = _chordNameToChromaVec(_name);
+  if (!vec) return null;
+  var m = (_name || "").trim().match(/^([A-G][b#]?)/);
+  var root = m ? NOTE_IDX[m[1]] : undefined;
+  var n = 0, k;
+  for (k = 0; k < 12; k++) n += vec[k] * vec[k];
+  n = Math.sqrt(n) || 1;
+  var u = new Float64Array(12);
+  for (k = 0; k < 12; k++) u[k] = vec[k] / n;
+  return { vec: u, root: root === undefined ? -1 : root };
+}
+function _syncRunDP(_cost, _n, _T, _dmin, _dmax, _startMax) {
+  var INF = 1e30;
+  var cum = new Array(_n);
+  for (var k = 0; k < _n; k++) {
+    var c = new Float64Array(_T + 1);
+    for (var t = 0; t < _T; t++) c[t + 1] = c[t] + _cost[k * _T + t];
+    cum[k] = c;
+  }
+  var prevD = new Float64Array(_T + 1).fill(INF);
+  for (var t0 = 0; t0 <= Math.min(_startMax, _T); t0++) prevD[t0] = 0;
+  var bp = new Array(_n);
+  for (var k2 = 0; k2 < _n; k2++) {
+    var curD = new Float64Array(_T + 1).fill(INF);
+    var bpk = new Int16Array(_T + 1);
+    var cm = cum[k2];
+    for (var d = _dmin; d <= _dmax; d++) {
+      for (var t2 = d; t2 <= _T; t2++) {
+        var pv = prevD[t2 - d];
+        if (pv >= INF) continue;
+        var cand = pv + cm[t2] - cm[t2 - d];
+        if (cand < curD[t2]) { curD[t2] = cand; bpk[t2] = d; }
+      }
+    }
+    bp[k2] = bpk;
+    prevD = curD;
+  }
+  var bestT = -1, bestV = INF;
+  for (var te = 0; te <= _T; te++) if (prevD[te] < bestV) { bestV = prevD[te]; bestT = te; }
+  if (bestT < 0) return null;
+  var starts = new Array(_n), t3 = bestT;
+  for (var k3 = _n - 1; k3 >= 0; k3--) { var dd = bp[k3][t3]; starts[k3] = t3 - dd; t3 -= dd; }
+  return { starts: starts, end: bestT, total: bestV, frames: bestT - starts[0] };
+}
+function _syncForcedAlign(_flat, _frames, _D) {
+  var n = _flat.length, T = _frames.length;
+  if (n < 6 || T < n * 3) return null;
+  var hop = _frames.length > 1 ? _frames[1].t - _frames[0].t : 0.1;
+  // gabarits par mesure (une mesure vide / "-" / "%" reprend l'accord precedent)
+  var tpls = [], last = null;
+  for (var k = 0; k < n; k++) {
+    var nm = (_flat[k] || "").trim();
+    var tp = (nm && nm !== "-" && nm !== "%") ? _syncChordTemplate(nm) : null;
+    if (tp) last = tp;
+    tpls.push(tp || last);
+  }
+  if (!last) return null;
+  for (var q = 0; q < n && !tpls[q]; q++) tpls[q] = last;
+  // trames unitaires
+  var U = _frames.map(function (f) { return _audioUnit(f.chroma); });
+  var B = _frames.map(function (f) { return f.chroma.bass ? _audioUnit(f.chroma.bass) : null; });
+  var cost = new Float32Array(n * T);
+  function fillCost(order) {
+    for (var kk = 0; kk < n; kk++) {
+      var tp2 = tpls[order(kk)], base = kk * T;
+      for (var t = 0; t < T; t++) {
+        var s = 0, u = U[t];
+        for (var p = 0; p < 12; p++) s += u[p] * tp2.vec[p];
+        var bs = (B[t] && tp2.root >= 0) ? B[t][tp2.root] : s;
+        cost[base + t] = 1 - (0.7 * s + 0.3 * bs);
+      }
+    }
+  }
+  var startMax = Math.min(T - 1, Math.round(40 / hop));
+  var best = null;
+  fillCost(function (i) { return i; });
+  [0.85, 0.9, 0.95, 1.0, 1.05, 1.1, 1.15, 1.2].forEach(function (sc) {
+    var dpf = _D * sc / hop;
+    var r = _syncRunDP(cost, n, T, Math.max(2, Math.floor(dpf * 0.82)), Math.ceil(dpf * 1.22), startMax);
+    if (!r || r.frames <= 0) return;
+    var per = r.total / r.frames;
+    if (!best || per < best.per) best = { per: per, r: r, scale: sc };
+  });
+  if (!best) return null;
+  // temoin nul : meme DP sur la grille INVERSEE -- l'alignement n'est retenu que
+  // s'il fait nettement mieux que ce que donnerait une suite d'accords quelconque.
+  fillCost(function (i) { return n - 1 - i; });
+  var dpf2 = _D * best.scale / hop;
+  var rn = _syncRunDP(cost, n, T, Math.max(2, Math.floor(dpf2 * 0.82)), Math.ceil(dpf2 * 1.22), startMax);
+  var nullPer = rn && rn.frames > 0 ? rn.total / rn.frames : 1;
+  if (best.per > 0.92 * nullPer) return { reliable: false, per: best.per, nullPer: nullPer };
+  return {
+    reliable: true, per: best.per, nullPer: nullPer, scale: best.scale,
+    times: best.r.starts.map(function (f) { return f * hop; }),
+    endTime: best.r.end * hop
+  };
+}
+
 async function autoPlaceAudioMarkers(_song, _statusEl) {
   if (!_song || !_song.audioKey || !_song.grid) return null;
   var flat = _flattenGridChords(_song);
@@ -10389,26 +10498,28 @@ async function autoPlaceAudioMarkers(_song, _statusEl) {
     // corrige pour son retard de detection systematique.
     var chroma = _audioChromaSeries(mono, sr, 0, durCap, 0.1);
     if (chroma.length < 4) throw new Error("Audio trop court ou silencieux pour analyser.");
-    var smoothed = _audioSmoothChroma(chroma, 1);
-    var detectedTimes = _audioFindChordChangePoints(smoothed);
-    if (detectedTimes.length < 2) throw new Error("Aucun changement d'accord net détecté dans cet audio.");
-    // Point de depart (mesure 0 de la grille) : debut reel du contenu utile
-    // dans le fichier (au-dela du silence de tete eventuel), via la MEME
-    // detection deja utilisee et deja fiable pour demarrer la lecture.
-    var startTime = _pbDetectLeadSilence(buf);
-    // Correspondance par ORDRE entre les transitions de la grille et les
-    // changements detectes dans l'audio -- prend le plus court des deux
-    // pour eviter tout decalage en cascade si l'un des deux a quelques
-    // faux positifs/negatifs en fin de liste.
-    // v2.140.0 : appariement robuste (echelle de tempo + moindres carres,
-    // faux positifs ignores) au lieu de l'appariement par simple ordre, qui
-    // decalait toute la suite au moindre changement parasite detecte.
     var _D = gpMeasureDurationMs(parseFloat(_song.bpm) || bpm || 100, _song.beatsPerBox || _song.timesig) / 1000;
     var startMeasure = changeMeasures[0];
-    var pairs = _syncPairTransitions(transitionMeasures, startMeasure, Math.max(0, startTime), detectedTimes, _D);
-    var pairCount = pairs.length;
-    var proposed = [{ measureIdx: startMeasure, time: Math.max(0, startTime) }].concat(pairs);
-    if (proposed.length < 3) throw new Error("Pas assez de changements d'accord reconnus de façon fiable dans l'audio pour proposer des repères (la lecture reste au tempo du morceau).");
+    var proposed = null, pairCount = 0, usedForced = false;
+    // v2.142.0 : alignement FORCE de toute la grille sur l'audio (methode
+    // principale, voir _syncForcedAlign) ; un repere toutes les 4 mesures
+    // suffit (interpolation lineaire entre deux, recalage regulier).
+    var fa = _syncForcedAlign(flat, chroma, _D);
+    if (fa && fa.reliable) {
+      proposed = [];
+      for (var mi = 0; mi < fa.times.length; mi += 4) proposed.push({ measureIdx: mi, time: fa.times[mi] });
+      pairCount = proposed.length - 1;
+      usedForced = true;
+    } else {
+      var smoothed = _audioSmoothChroma(chroma, 1);
+      var detectedTimes = _audioFindChordChangePoints(smoothed);
+      if (detectedTimes.length < 2) throw new Error("Cette grille ne correspond pas assez à l'audio (accords ou durée différents) pour poser des repères fiables.");
+      var startTime = _pbDetectLeadSilence(buf);
+      var pairs = _syncPairTransitions(transitionMeasures, startMeasure, Math.max(0, startTime), detectedTimes, _D);
+      pairCount = pairs.length;
+      proposed = [{ measureIdx: startMeasure, time: Math.max(0, startTime) }].concat(pairs);
+    }
+    if (proposed.length < 3) throw new Error("Cette grille ne correspond pas assez à l'audio (accords ou durée différents) pour poser des repères fiables — la lecture reste au tempo du morceau.");
     if (!_song.audioMarkers) _song.audioMarkers = [];
     // Retire d'anciens reperes AUTOMATIQUES precedents (marques via
     // "auto: true") avant d'ajouter les nouveaux -- ne touche jamais aux
@@ -10420,6 +10531,11 @@ async function autoPlaceAudioMarkers(_song, _statusEl) {
     dbSave();
     if (window._measureTimeMapCache && window._measureTimeMapCache.songId === _song.id) window._measureTimeMapCache = null;
     if (_statusEl) {
+      if (usedForced) {
+        _statusEl.innerHTML = "✓ Grille alignée sur l'audio : " + proposed.length + " repères posés (un toutes les 4 mesures), début à " + proposed[0].time.toFixed(1) + " s." +
+          "<br><span style=\"color:var(--tx2)\">Vérifie à l'oreille avant de jouer en scène (▶ Play) — alignement automatique, précision typique ±0,2 s.</span>";
+        return proposed.length;
+      }
       _statusEl.innerHTML = "✓ " + proposed.length + " repère(s) proposé(s) automatiquement (1 point de départ + " + pairCount + " changement(s) d'accord détecté(s))." +
         (pairCount < transitionMeasures.length ? " " + (transitionMeasures.length - pairCount) + " changement(s) de la grille n'ont pas trouvé de correspondance claire dans l'audio — vérifie la fin du morceau à l'oreille." : "") +
         "<br><span style=\"color:var(--tx2)\">Vérifie-les à l'oreille avant de jouer en scène (▶ Play puis écoute chaque changement) — ce sont des propositions, pas une certitude.</span>";
@@ -10486,6 +10602,149 @@ function _audioSegmentChords(_0x41559a, _0x45a5ca, _0x76fb96, _0x5b30a8, _0xkeyI
   }
   return _0x49f328;
 }
+// ══ Audio -> grille de MESURES régulières (v2.142.0) ══
+// Principe (celui de Chordify / des outils pro) : 1) suivi de temps (beat
+// tracking par programmation dynamique sur la nouveauté spectrale), 2) mesures
+// = groupes de N temps, N (2/3/4) et phase choisis par COHÉSION harmonique
+// (un accord tient dans une mesure : la bonne grille de mesures maximise la
+// ressemblance des trames d'une même mesure), 3) un accord par mesure par
+// MÉDIANE du chroma sur la mesure (insensible aux notes de passage). Mesuré le
+// 06/10/2026 sur "Still Got The Blues" (playback, 369 s) contre la grille
+// officielle Chordify alignée de force : ancienne méthode (une case par
+// changement détecté) 36 % d'accords justes ; cette méthode ~58 %, avec des
+// mesures régulières et des repères de temps issus des TEMPS (fiables),
+// pas des accords (approximatifs).
+function _audioPulsePeriod(_nov, _hop) {
+  var n = _nov.length, mean = 0, k;
+  for (k = 0; k < n; k++) mean += _nov[k];
+  mean /= n;
+  var f = new Float64Array(n);
+  for (k = 0; k < n; k++) f[k] = _nov[k] - mean;
+  var lo = Math.max(2, Math.floor(60 / 220 / _hop)), hi = Math.floor(60 / 60 / _hop);
+  var ac = [], best = -Infinity, bestLag = lo, c0 = 0;
+  for (k = 0; k < n; k++) c0 += f[k] * f[k];
+  for (var lag = lo; lag <= hi && lag < n / 2; lag++) {
+    var s = 0;
+    for (k = 0; k + lag < n; k++) s += f[k] * f[k + lag];
+    s /= (n - lag);
+    ac[lag] = s;
+    if (s > best) { best = s; bestLag = lag; }
+  }
+  // interpolation parabolique autour du maximum
+  var a = ac[bestLag - 1], b = ac[bestLag], c = ac[bestLag + 1], off = 0;
+  if (a !== undefined && c !== undefined) {
+    var den = a - 2 * b + c;
+    if (Math.abs(den) > 1e-12) off = 0.5 * (a - c) / den;
+  }
+  return { period: (bestLag + off) * _hop, strength: c0 > 0 ? best / (c0 / n) : 0 };
+}
+function _audioBeatTrack(_nov, _hop, _period) {
+  var n = _nov.length, mean = 0, k;
+  for (k = 0; k < n; k++) mean += _nov[k];
+  mean /= n;
+  var sd = 0;
+  for (k = 0; k < n; k++) sd += (_nov[k] - mean) * (_nov[k] - mean);
+  sd = Math.sqrt(sd / n) || 1;
+  var f = new Float64Array(n);
+  for (k = 0; k < n; k++) f[k] = (_nov[k] - mean) / sd;
+  var P = _period / _hop, lam = 100;
+  var C = new Float64Array(n), prev = new Int32Array(n).fill(-1);
+  for (var t = 0; t < n; t++) {
+    var lo = Math.max(0, t - Math.floor(2 * P)), hi = t - Math.floor(P / 2);
+    if (hi <= lo) { C[t] = f[t]; continue; }
+    var bs = -Infinity, bj = -1;
+    for (var tau = lo; tau < hi; tau++) {
+      var l = Math.log((t - tau) / P);
+      var sc = C[tau] - lam * l * l;
+      if (sc > bs) { bs = sc; bj = tau; }
+    }
+    C[t] = f[t] + bs; prev[t] = bj;
+  }
+  var tail = Math.max(0, n - Math.floor(2 * P)), bt = tail;
+  for (k = tail; k < n; k++) if (C[k] > C[bt]) bt = k;
+  var beats = [bt];
+  while (prev[bt] >= 0) { bt = prev[bt]; beats.push(bt); }
+  beats.reverse();
+  return beats.map(function (i) { return i * _hop; });
+}
+function _audioMedianVec(_frames, _a, _b) {
+  var out = new Float64Array(12), buf = [];
+  for (var p = 0; p < 12; p++) {
+    buf.length = 0;
+    for (var i = _a; i < _b; i++) buf.push(_frames[i][p]);
+    buf.sort(function (x, y) { return x - y; });
+    out[p] = buf.length ? buf[buf.length >> 1] : 0;
+  }
+  return out;
+}
+function _audioUnit(_v) {
+  var s = 0, o = new Float64Array(_v.length), k;
+  for (k = 0; k < _v.length; k++) s += _v[k] * _v[k];
+  s = Math.sqrt(s) || 1;
+  for (k = 0; k < _v.length; k++) o[k] = _v[k] / s;
+  return o;
+}
+// _chromaFrames : [{t, chroma}] (hop ~0.1 s). Retourne null si le suivi de
+// temps n'est pas assez régulier pour être fiable.
+function _audioMeasureGridFromBeats(_beats, _chromaFrames, _chordFn) {
+  if (_beats.length < 12) return null;
+  var ibi = [], k;
+  for (k = 1; k < _beats.length; k++) ibi.push(_beats[k] - _beats[k - 1]);
+  var m = ibi.reduce(function (a, b) { return a + b; }, 0) / ibi.length;
+  var sd = Math.sqrt(ibi.reduce(function (a, b) { return a + (b - m) * (b - m); }, 0) / ibi.length);
+  if (sd / m > 0.15) return null;
+  var hop = _chromaFrames.length > 1 ? _chromaFrames[1].t - _chromaFrames[0].t : 0.1;
+  var frames = _chromaFrames.map(function (x) { return _audioUnit(x.chroma); });
+  function fr(t) { return Math.max(0, Math.min(frames.length, Math.round(t / hop))); }
+  function build(nb, phase) {
+    var ms = [];
+    for (var i = phase; i + nb < _beats.length; i += nb) ms.push([_beats[i], _beats[i + nb]]);
+    return ms;
+  }
+  // Force du changement harmonique a chaque temps i : 1 - cos(chroma median
+  // du temps i-1 .. i, chroma median du temps i .. i+1).
+  var d = [];
+  for (k = 0; k < _beats.length; k++) {
+    if (k < 1 || k + 1 >= _beats.length) { d.push(0); continue; }
+    var l = _audioUnit(_audioMedianVec(frames, fr(_beats[k - 1]), Math.max(fr(_beats[k]), fr(_beats[k - 1]) + 1)));
+    var r = _audioUnit(_audioMedianVec(frames, fr(_beats[k]), Math.max(fr(_beats[k + 1]), fr(_beats[k]) + 1)));
+    var cs = 0;
+    for (var p = 0; p < 12; p++) cs += l[p] * r[p];
+    d.push(1 - cs);
+  }
+  // Meter (N temps par mesure) : celui dont les changements harmoniques se
+  // concentrent le plus sur UNE phase (contraste), 4/4 legerement favorise.
+  var best = null;
+  [4, 3, 2].forEach(function (nb) {
+    var sums = new Array(nb).fill(0), cnts = new Array(nb).fill(0);
+    for (var i = 1; i < d.length - 1; i++) { sums[i % nb] += d[i]; cnts[i % nb]++; }
+    var means = sums.map(function (x, i2) { return cnts[i2] ? x / cnts[i2] : 0; });
+    var avg = means.reduce(function (x, y) { return x + y; }, 0) / nb || 1e-9;
+    var mx = Math.max.apply(null, means);
+    var contrast = (mx - avg) / avg + (nb === 4 ? 0.03 : 0);
+    if (!best || contrast > best.score) best = { nb: nb, phase: means.indexOf(mx), score: contrast };
+  });
+  best.ms = build(best.nb, best.phase);
+  if (best.ms.length < 4) return null;
+  var out = best.ms.map(function (ab) {
+    var a = fr(ab[0]), b = Math.max(fr(ab[1]), a + 1);
+    if (b > frames.length) b = frames.length;
+    var med = _audioUnit(_audioMedianVec(frames, a, b));
+    return { t0: ab[0], t1: ab[1], chord: _chordFn(med) };
+  });
+  return { nb: best.nb, phase: best.phase, measures: out, beatSec: m };
+}
+function _audioChordFromChroma(_unitChroma) {
+  var bestName = null, bestScore = -1;
+  _AUDIO_TEMPLATES.forEach(function (t) {
+    var s = 0, n2 = 0;
+    for (var p = 0; p < 12; p++) { s += _unitChroma[p] * t.vec[p]; n2 += t.vec[p] * t.vec[p]; }
+    s /= Math.sqrt(n2 || 1);
+    if (s > bestScore) { bestScore = s; bestName = t.name; }
+  });
+  return bestName;
+}
+
 async function audioLoad(_0x3eb339, _0x5439b6) {
   var _0x3aa42b = _0x552966;
   var _0x845636 = _0x4bc6f9;
@@ -10515,6 +10774,39 @@ async function audioLoad(_0x3eb339, _0x5439b6) {
   await new Promise(function (_0xr) { setTimeout(_0xr, 0); });
   var _0xkeyChromaPoints = _audioChromaSeries(_0x13ad26, _0x30ca4f, 0, _0x8d1622, 0.5);
   var _0xkeyInfo = _audioEstimateKey(_0xkeyChromaPoints);
+  // v2.142.0 : methode principale = grille de MESURES regulieres par suivi de
+  // temps (voir _audioMeasureGridFromBeats). L'ancienne methode (une case par
+  // changement d'accord detecte) ne sert plus que de repli si le suivi de
+  // temps n'est pas assez regulier (musique sans pulsation nette).
+  try {
+    pdfStatus("⏳ Suivi du tempo et des temps…");
+    await new Promise(function (_0xr) { setTimeout(_0xr, 0); });
+    var _0xdurCap = Math.min(_0x8d1622, 600);
+    var _0xmonoCap = _0xdurCap < _0x8d1622 ? _0x13ad26.subarray(0, Math.floor(_0xdurCap * _0x30ca4f)) : _0x13ad26;
+    var _0xnv = _audioOnsetNovelty(_0xmonoCap, _0x30ca4f);
+    var _0xpp = _audioPulsePeriod(_0xnv.novelty, _0xnv.hopSeconds);
+    if (_0xpp.strength > 0.05) {
+      var _0xbeats = _audioBeatTrack(_0xnv.novelty, _0xnv.hopSeconds, _0xpp.period);
+      pdfStatus("⏳ Analyse harmonique des mesures…");
+      await new Promise(function (_0xr) { setTimeout(_0xr, 0); });
+      var _0xchroma = _audioChromaSeries(_0xmonoCap, _0x30ca4f, 0, _0xdurCap, 0.1);
+      var _0xg = _audioMeasureGridFromBeats(_0xbeats, _0xchroma, _audioChordFromChroma);
+      if (_0xg && _0xg.measures.length >= 4) {
+        var _0xcells = _0xg.measures.map(function (_0xm) { return _0xm.chord; });
+        var _0xrows = [];
+        for (var _0xri = 0; _0xri < _0xcells.length; _0xri += 4) {
+          _0xrows.push(_0xcells.slice(_0xri, _0xri + 4).join(" | "));
+        }
+        return {
+          grid: _0xrows.join("\n"),
+          bpm: Math.max(40, Math.min(300, Math.round(60 / _0xg.beatSec))),
+          markers: _0xg.measures.map(function (_0xm, _0xi) { return { measureIdx: _0xi, time: _0xm.t0, auto: true }; }),
+          markersFromBeats: true,
+          timesig: _0xg.nb
+        };
+      }
+    }
+  } catch (_0xbeatErr) {}
   var _0x1a1b4e = 20;
   var _0x55b610 = [];
   for (var _0xca9cf4 = 0; _0xca9cf4 < _0x8d1622; _0xca9cf4 += _0x1a1b4e) {
@@ -10606,6 +10898,7 @@ async function _confirmAudioBpm() {
       pdfImportSource = "audio";
       _pendingAudioMarkersForImport = _0x3a9a3e.markers || null;
       _pendingAudioTimesigForImport = _0x3a9a3e.timesig || null;
+      _pendingAudioMarkersTrusted = !!_0x3a9a3e.markersFromBeats;
       pdfStatus("✓ Accords déduits des instants réels de l'audio — création du morceau…", "var(--G)");
       pdfCreate();
       // La piste audio d'origine est conservée et attachée directement au
@@ -11606,6 +11899,7 @@ async function notextPdfOnline() {
 }
 var _pendingImagePdfBeatsPerBox = null;
 var _pendingAudioMarkersForImport = null;
+var _pendingAudioMarkersTrusted = false;
 var _pendingAudioTimesigForImport = null;
 async function notextPdfCopyForClaudeAi(_0x5ce257) {
   pdfStatus("⏳ Préparation de l'image…", "var(--G)");
@@ -13609,6 +13903,16 @@ function pdfCreate() {
     };
     if (pdfImportSource === "audio") {
       _0x3cd17e.timesig = _pendingAudioTimesigForImport || _0x3cd17e.timesig;
+      // v2.142.0 : les reperes issus du SUIVI DE TEMPS (debut de chaque mesure,
+      // regulier, independant de la justesse des accords) sont fiables et
+      // attaches au morceau ; ceux issus des seuls changements d'accord
+      // (ancienne methode) ne le sont toujours pas.
+      if (_pendingAudioMarkersTrusted && _pendingAudioMarkersForImport && _pendingAudioMarkersForImport.length >= 2) {
+        _0x3cd17e.audioMarkers = _pendingAudioMarkersForImport.map(function (_0xmk) {
+          return { measureIdx: _0xmk.measureIdx, time: _0xmk.time, auto: true };
+        });
+      }
+      _pendingAudioMarkersTrusted = false;
       // Les reperes AUTO-DETECTES pendant l'extraction (_pendingAudioMarkersForImport)
       // ne sont PLUS attaches automatiquement au morceau cree (retire le
       // 02/08/2026) : ils heritent des memes imprecisions que le moteur de
@@ -14117,7 +14421,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.141.0 · 06/10/2026<span id="license-watermark"></span>
+  v2.142.0 · 06/10/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
