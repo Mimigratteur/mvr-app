@@ -858,7 +858,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.140.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.141.0</span></h1>
 </div>
 
 <div id="pages">
@@ -13140,6 +13140,62 @@ async function _extractChords(_0x55298e) {
     }
     return _0x152a30;
   }
+  // v2.141.0 : detection des PORTEES (5 lignes horizontales longues) puis des
+  // barres de mesure = traits verticaux qui couvrent EXACTEMENT la hauteur de
+  // la portee (une hampe de note ne couvre jamais toute la portee). L'ancienne
+  // methode prenait le groupe de traits verticaux dont le milieu etait le plus
+  // proche de la ligne d'accords, ce qui pouvait melanger hampes et barres et
+  // faire perdre une mesure (ex. systeme 7 de "Still Got The Blues" : 221
+  // mesures au lieu de 222) -- fatal pour la synchro audio.
+  async function _0xstaffCollector(_0xpg) {
+    var _0xol = await _0xpg.getOperatorList();
+    var _0xO = _pdfjsLib.OPS;
+    var _0xtm = [1, 0, 0, 1, 0, 0], _0xH = [], _0xV = [], _0xcur = null, _0xstart = null;
+    function _0xP(x, y) { return [(_0xtm[0] * x + _0xtm[2] * y + _0xtm[4]) / 100, (_0xtm[1] * x + _0xtm[3] * y + _0xtm[5]) / 100]; }
+    function _0xseg(a, b) {
+      if (!a || !b) return;
+      if (Math.abs(a[0] - b[0]) < 0.5 && Math.abs(a[1] - b[1]) > 8) _0xV.push({ x: (a[0] + b[0]) / 2, y1: Math.min(a[1], b[1]), y2: Math.max(a[1], b[1]) });
+      else if (Math.abs(a[1] - b[1]) < 0.5 && Math.abs(a[0] - b[0]) > 150) _0xH.push({ y: (a[1] + b[1]) / 2 });
+    }
+    for (var _0xi = 0; _0xi < _0xol.fnArray.length; _0xi++) {
+      var _0xfn = _0xol.fnArray[_0xi], _0xar = _0xol.argsArray[_0xi];
+      if (_0xfn === _0xO.transform) { _0xtm = _0xar; continue; }
+      if (_0xfn !== _0xO.constructPath) continue;
+      var _0xops = _0xar[0], _0xc = _0xar[1], _0xk = 0;
+      for (var _0xj = 0; _0xj < _0xops.length; _0xj++) {
+        var _0xo = _0xops[_0xj];
+        if (_0xo === _0xO.moveTo) { _0xcur = _0xP(_0xc[_0xk], _0xc[_0xk + 1]); _0xstart = _0xcur; _0xk += 2; }
+        else if (_0xo === _0xO.lineTo) { var _0xn = _0xP(_0xc[_0xk], _0xc[_0xk + 1]); _0xseg(_0xcur, _0xn); _0xcur = _0xn; _0xk += 2; }
+        else if (_0xo === _0xO.curveTo) { _0xcur = _0xP(_0xc[_0xk + 4], _0xc[_0xk + 5]); _0xk += 6; }
+        else if (_0xo === _0xO.curveTo2 || _0xo === _0xO.curveTo3) { _0xcur = _0xP(_0xc[_0xk + 2], _0xc[_0xk + 3]); _0xk += 4; }
+        else if (_0xo === _0xO.closePath) { _0xseg(_0xcur, _0xstart); _0xcur = _0xstart; }
+        else if (_0xo === _0xO.rectangle) {
+          var _0xp1 = _0xP(_0xc[_0xk], _0xc[_0xk + 1]), _0xp2 = _0xP(_0xc[_0xk] + _0xc[_0xk + 2], _0xc[_0xk + 1] + _0xc[_0xk + 3]);
+          if (Math.abs(_0xp1[0] - _0xp2[0]) < 1.2) _0xseg([(_0xp1[0] + _0xp2[0]) / 2, _0xp1[1]], [(_0xp1[0] + _0xp2[0]) / 2, _0xp2[1]]);
+          else if (Math.abs(_0xp1[1] - _0xp2[1]) < 1.2) _0xseg([_0xp1[0], (_0xp1[1] + _0xp2[1]) / 2], [_0xp2[0], (_0xp1[1] + _0xp2[1]) / 2]);
+          _0xk += 4;
+        }
+      }
+    }
+    var _0xys = _0xH.map(function (h) { return h.y; }).sort(function (a, b) { return b - a; });
+    var _0xstaves = [], _0xgrp = [];
+    _0xys.forEach(function (y) {
+      if (_0xgrp.length && _0xgrp[_0xgrp.length - 1] - y > 12) { _0xstaves.push(_0xgrp); _0xgrp = []; }
+      if (!_0xgrp.length || _0xgrp[_0xgrp.length - 1] - y > 1) _0xgrp.push(y);
+    });
+    if (_0xgrp.length) _0xstaves.push(_0xgrp);
+    return _0xstaves.filter(function (g) { return g.length === 5; }).map(function (g) {
+      var top = g[0], bot = g[4];
+      var xs = _0xV.filter(function (v) { return Math.abs(v.y2 - top) < 1.6 && Math.abs(v.y1 - bot) < 1.6; }).map(function (v) { return v.x; }).sort(function (a, b) { return a - b; });
+      var uniq = [];
+      xs.forEach(function (x) { if (!uniq.length || x - uniq[uniq.length - 1] > 3) uniq.push(x); });
+      return { top: top, bot: bot, bars: uniq };
+    }).filter(function (st) { return st.bars.length >= 2; });
+  }
+  var _0xstavesByPage = {};
+  for (var _0xsp = 1; _0xsp <= _0x55298e.numPages; _0xsp++) {
+    try { _0xstavesByPage[_0xsp] = await _0xstaffCollector(await _0x55298e.getPage(_0xsp)); } catch (_0xe) { _0xstavesByPage[_0xsp] = []; }
+  }
   var _0x499c54 = {};
   var _0x4c29f7 = {};
   for (var _0x387393 = 1; _0x387393 <= _0x55298e.numPages; _0x387393++) {
@@ -13229,6 +13285,25 @@ async function _extractChords(_0x55298e) {
     for (var _0x19f999 = 0; _0x19f999 < _0x266794.length; _0x19f999++) {
       var _0x258d6b = _0x266794[_0x19f999];
       if (!_0x258d6b.str || _0x258d6b.str.charCodeAt(0) < 32) {
+        continue;
+      }
+      // v2.141.0 : accord mineur a extension en exposant ("Dm" + "7" ecrit en
+      // petit au-dessus, comme dans les exports Chordify) -- le "7" etait perdu
+      // car seule une lettre isolee declenchait la recherche d'exposant ci-dessous.
+      if (/^[A-G][b#]?m$/.test(_0x258d6b.str.trim())) {
+        for (var _0xsup = _0x19f999 + 1; _0xsup < Math.min(_0x19f999 + 4, _0x266794.length); _0xsup++) {
+          var _0xsi = _0x266794[_0xsup];
+          if (!_0xsi.str || !_0xsi.str.trim() || _0xsi.str.charCodeAt(0) < 32) {
+            continue;
+          }
+          var _0xsdx = _0xsi.transform[4] - _0x258d6b.transform[4] - _0x258d6b.str.length * 6;
+          var _0xsdy = _0xsi.transform[5] - _0x258d6b.transform[5];
+          if (/^(5|6|7|9|11|13)$/.test(_0xsi.str.trim()) && _0xsdx >= -2 && _0xsdx <= 14 && _0xsdy >= 1 && _0xsdy <= 8) {
+            _0x258d6b.str = _0x258d6b.str.trim() + _0xsi.str.trim();
+            _0xsi.str = "";
+          }
+          break;
+        }
         continue;
       }
       if (!/^[A-G]$/.test(_0x258d6b.str.trim())) {
@@ -13417,6 +13492,15 @@ async function _extractChords(_0x55298e) {
     var _0x440609 = (_0x5b1c2e !== null ? _0x2acd26[_0x5b1c2e] : []).slice().sort(function (_0x45ad0b, _0x48470b) {
       return _0x45ad0b - _0x48470b;
     });
+    // Portee situee juste sous cette ligne d'accords (y PDF : vers le haut)
+    var _0xstaffBelow = null, _0xbestGap = Infinity;
+    (_0xstavesByPage[_0x248751.page] || []).forEach(function (_0xst) {
+      var _0xgap = _0x248751.y - _0xst.top;
+      if (_0xgap > -4 && _0xgap < 70 && _0xgap < _0xbestGap) { _0xbestGap = _0xgap; _0xstaffBelow = _0xst; }
+    });
+    if (_0xstaffBelow) {
+      _0x440609 = _0xstaffBelow.bars.slice();
+    }
     var _0x55ddaa = [];
     if (_0x440609.length < 2) {
       _0x34ce4f(_0x43b704).forEach(function (_0xa95085) {
@@ -14033,7 +14117,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.140.0 · 06/10/2026<span id="license-watermark"></span>
+  v2.141.0 · 06/10/2026<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
