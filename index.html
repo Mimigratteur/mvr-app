@@ -858,7 +858,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.142.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.143.0</span></h1>
 </div>
 
 <div id="pages">
@@ -10792,7 +10792,7 @@ async function audioLoad(_0x3eb339, _0x5439b6) {
       var _0xchroma = _audioChromaSeries(_0xmonoCap, _0x30ca4f, 0, _0xdurCap, 0.1);
       var _0xg = _audioMeasureGridFromBeats(_0xbeats, _0xchroma, _audioChordFromChroma);
       if (_0xg && _0xg.measures.length >= 4) {
-        var _0xcells = _0xg.measures.map(function (_0xm) { return _0xm.chord; });
+        var _0xcells = _0xg.measures.map(function (_0xm, _0xci, _0xarr) { return (_0xci > 0 && _0xm.chord === _0xarr[_0xci - 1].chord) ? "-" : _0xm.chord; });
         var _0xrows = [];
         for (var _0xri = 0; _0xri < _0xcells.length; _0xri += 4) {
           _0xrows.push(_0xcells.slice(_0xri, _0xri + 4).join(" | "));
