@@ -858,7 +858,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.143.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.144.0</span></h1>
 </div>
 
 <div id="pages">
@@ -1634,7 +1634,7 @@ J&#39;ai voulu planter un oranger">    </textarea>
   <div class="row" style="margin-top:12px">
     <button class="btn-g" onclick="saveSong()">Enregistrer</button>
     <button onclick="hideModal(&#39;song-modal&#39;)">Annuler</button>
-    <button id="sm-export-pdf" style="display:none" onclick="exportSongToPdf(editingSong)">📄 Exporter en PDF</button>
+    <button id="sm-export-pdf" style="display:none" onclick="openExport('song',editingSong)">📤 Exporter…</button>
     <button class="btn-r" id="sm-del" style="display:none" onclick="deleteSong()">Supprimer</button>
   </div>
 </div></div>
@@ -3315,6 +3315,503 @@ async function exportSongToPdf(_0xsongId) {
   _0xdoc.save(_0xfilename + ".pdf");
 }
 
+// ══ Module d'EXPORT (v2.144.0) ══════════════════════════════════════════
+// Fiche ou setlist -> PDF / texte / ChordPro / presse-papiers, avec
+// transposition, notation (A B C / Do Ré Mi / chiffrage Nashville),
+// "tenir sur une page", paroles et notes. Tout est calculé localement
+// (hors-ligne ; seule la bibliothèque jsPDF est chargée à la demande).
+var _EX_FR = { "do": 0, "ré": 2, "re": 2, "mi": 4, "fa": 5, "sol": 7, "la": 9, "si": 11 };
+var _EX_LET = { c: 0, d: 2, e: 4, f: 5, g: 7, a: 9, b: 11 };
+var _EX_SHARP = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+var _EX_FLAT = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
+var _EX_FRN_S = ["Do", "Do#", "Ré", "Ré#", "Mi", "Fa", "Fa#", "Sol", "Sol#", "La", "La#", "Si"];
+var _EX_FRN_F = ["Do", "Réb", "Ré", "Mib", "Mi", "Fa", "Solb", "Sol", "Lab", "La", "Sib", "Si"];
+var _EX_NASH = ["1", "b2", "2", "b3", "3", "4", "b5", "5", "b6", "6", "b7", "7"];
+var _EX_FLAT_KEYS = { "F": 1, "Bb": 1, "Eb": 1, "Ab": 1, "Db": 1, "Gb": 1, "Dm": 1, "Gm": 1, "Cm": 1, "Fm": 1, "Bbm": 1, "Ebm": 1 };
+
+// Décompose un jeton d'accord : { root(0-11), flatHint, frSrc, rest, bass }
+function _exParseChord(tok) {
+  if (typeof LYC_CHORD_TOKEN_RE !== "undefined" && !LYC_CHORD_TOKEN_RE.test(tok)) return null;
+  var m = /^(do|ré|re|mi|fa|sol|la|si|[a-g])(#|b)?(.*)$/i.exec(tok);
+  if (!m) return null;
+  var nm = m[1].toLowerCase();
+  var fr = _EX_FR[nm] !== undefined && nm !== "b";
+  var base = fr ? _EX_FR[nm] : _EX_LET[nm];
+  if (base === undefined) return null;
+  var idx = (base + (m[2] === "#" ? 1 : m[2] === "b" ? -1 : 0) + 12) % 12;
+  var rest = m[3], bass = null;
+  var sl = rest.lastIndexOf("/");
+  if (sl >= 0) {
+    var b = _exParseChord(rest.slice(sl + 1));
+    if (b) { bass = b; rest = rest.slice(0, sl); }
+  }
+  return { root: idx, flat: m[2] === "b", fr: fr, rest: rest, bass: bass, minorish: /^(m(?!aj)|min|-)/i.test(rest) };
+}
+function _exNote(idx, o) {
+  if (o.notation === "fr") return (o.flats ? _EX_FRN_F : _EX_FRN_S)[idx];
+  return (o.flats ? _EX_FLAT : _EX_SHARP)[idx];
+}
+// o = { semis, notation:'keep'|'int'|'fr'|'nash', flats, keyRoot }
+function _exChordStr(tok, o) {
+  var p = _exParseChord(tok);
+  if (!p) return tok;
+  if (o.semis === 0 && o.notation === "keep") return tok;
+  function one(c, isBass) {
+    var idx = (c.root + o.semis + 12) % 12;
+    if (o.notation === "nash") {
+      var d = _EX_NASH[(idx - o.keyRoot + 12) % 12];
+      return isBass ? d : d + (/^\d/.test(c.rest) ? "(" + c.rest + ")" : c.rest);
+    }
+    var oo = { notation: o.notation === "keep" ? (c.fr ? "fr" : "int") : o.notation, flats: o.flats };
+    var n = _exNote(idx, oo);
+    return isBass ? n : n + c.rest;
+  }
+  var s = one(p, false);
+  if (p.bass) s += "/" + one(p.bass, true);
+  return s;
+}
+// Suggestion de capo : score = part d'accords "ouverts" (sans barré)
+var _EX_OPEN_MAJ = { 0: 1, 2: 1, 4: 1, 7: 1, 9: 1 };   // C D E G A
+var _EX_OPEN_MIN = { 2: 1, 4: 1, 9: 1 };               // Dm Em Am
+function exSuggestCapo(song) {
+  var chords = [];
+  parseGridPaper(song.grid || "").rows.forEach(function (r) {
+    r.measures.forEach(function (m) {
+      String(m).split("/").forEach(function (p) {
+        var c = _exParseChord(p.trim());
+        if (c) chords.push(c);
+      });
+    });
+  });
+  if (!chords.length) return null;
+  var res = [];
+  for (var capo = 0; capo <= 7; capo++) {
+    var open = 0;
+    chords.forEach(function (c) {
+      var r = (c.root - capo + 12) % 12;
+      if (c.minorish ? _EX_OPEN_MIN[r] : _EX_OPEN_MAJ[r]) open++;
+    });
+    res.push({ capo: capo, score: open / chords.length - capo * 0.012 });
+  }
+  res.sort(function (a, b) { return b.score - a.score; });
+  var best = res[0];
+  var base0 = res.filter(function (x) { return x.capo === 0; })[0];
+  var shapes = {};
+  chords.forEach(function (c) { shapes[_exChordStr(c.rest ? (_EX_SHARP[c.root] + c.rest) : _EX_SHARP[c.root], { semis: -best.capo, notation: "int", flats: false, keyRoot: 0 })] = 1; });
+  return { capo: best.capo, open: Math.round(best.score * 100), open0: Math.round(base0.score * 100), shapes: Object.keys(shapes).slice(0, 8) };
+}
+function _exOpts(song, base) {
+  var semis = base.semis || 0;
+  var key = song.key || "";
+  var km = /^([A-G][b#]?)(m?)/.exec(key);
+  var keyIdx = km ? NOTE_IDX[km[1]] : null;
+  var tKey = key;
+  if (km && keyIdx !== undefined) {
+    var ti = (keyIdx + semis + 12) % 12;
+    var cand = _EX_SHARP[ti] + km[2], candF = _EX_FLAT[ti] + km[2];
+    tKey = semis === 0 ? key : (_EX_FLAT_KEYS[candF] ? candF : cand);
+  }
+  var tkm = /^([A-G][b#]?)(m?)/.exec(tKey || "");
+  var flats = !!(tKey && (_EX_FLAT_KEYS[tKey] || (tkm && tkm[1].indexOf("b") >= 0)));
+  // Nashville : la tonique sert de repère ; à défaut, 1er accord de la grille.
+  var keyRoot = 0;
+  if (tkm) keyRoot = NOTE_IDX[tkm[1]] || 0;
+  else {
+    var f = /([A-G][b#]?)/.exec(song.grid || "");
+    if (f) keyRoot = (NOTE_IDX[f[1]] + semis + 12) % 12;
+  }
+  return { semis: semis, notation: base.notation || "keep", flats: flats, keyRoot: keyRoot, tKey: tKey };
+}
+function _exKeyLabel(song, o) {
+  if (!song.key) return "";
+  if (o.notation === "nash") return "";
+  var km = /^([A-G][b#]?)(m?)$/.exec(o.tKey || "");
+  if (!km) return o.tKey || "";
+  var idx = NOTE_IDX[km[1]];
+  return _exNote(idx, { notation: o.notation === "fr" ? "fr" : "int", flats: o.flats }) + km[2];
+}
+function _exMeasureStr(cell, o) {
+  return String(cell || "").split("/").map(function (p) {
+    p = p.trim();
+    return _exChordStr(p, o);
+  }).join("/");
+}
+// Ligne d'accords (paroles) : tous les jetons sont des accords ?
+function _exIsChordLine(line) {
+  var t = line.trim().split(/\s+/).filter(Boolean);
+  if (!t.length) return false;
+  if (typeof LYC_CHORD_TOKEN_RE === "undefined") return false;
+  return t.every(function (x) { return LYC_CHORD_TOKEN_RE.test(x.replace(/[()]/g, "")); });
+}
+// Paroles -> [{chords:[{col,text}], text}] (texte brut = lignes sans accords)
+function _exLyricsModel(lyrics, o) {
+  var lines = String(lyrics || "").replace(/\r/g, "").split("\n"), out = [];
+  for (var i = 0; i < lines.length; i++) {
+    var ln = lines[i];
+    if (_exIsChordLine(ln)) {
+      var chords = [], re = /\S+/g, m;
+      while ((m = re.exec(ln))) chords.push({ col: m.index, text: _exChordStr(m[0], o) });
+      var next = lines[i + 1];
+      if (next !== undefined && next.trim() && !_exIsChordLine(next) && !/^\s*\[/.test(next)) {
+        out.push({ chords: chords, text: next }); i++;
+      } else out.push({ chords: chords, text: "" });
+    } else out.push({ chords: [], text: ln });
+  }
+  return out;
+}
+function _exLyricsAsText(model) {
+  return model.map(function (L) {
+    if (!L.chords.length) return L.text;
+    var cl = "";
+    L.chords.forEach(function (c) {
+      while (cl.length < c.col) cl += " ";
+      if (cl.length && cl.charAt(cl.length - 1) !== " ") cl += " ";
+      cl += c.text;
+    });
+    return cl + (L.text ? "\n" + L.text : "");
+  }).join("\n");
+}
+function _exLyricsAsCho(model) {
+  return model.map(function (L) {
+    if (!L.chords.length) return L.text;
+    if (!L.text) return L.chords.map(function (c) { return "[" + c.text + "]"; }).join(" ");
+    var res = "", last = 0, t = L.text;
+    L.chords.forEach(function (c) {
+      var col = Math.min(c.col, t.length);
+      if (col < last) col = last;
+      res += t.slice(last, col) + "[" + c.text + "]";
+      last = col;
+    });
+    return res + t.slice(last);
+  }).join("\n");
+}
+function _exTimesigLabel(song) {
+  var ts = parseInt(song.timesig, 10) || 4;
+  return ts === 6 ? "6/8" : ts + "/4";
+}
+// Modèle unique d'une fiche transposée, partagé par tous les formats.
+function _exSongModel(song, base0) {
+  var base = Object.assign({}, base0);
+  var capoSel = parseInt(base.capo, 10) || 0;
+  base.semis = (base0.semis || 0) - capoSel;
+  var o = _exOpts(song, base);
+  var parsed = parseGridPaper(song.grid || "");
+  var rows = parsed.rows.map(function (r) {
+    return { annotation: r.annotation, measures: r.measures.map(function (m) { return _exMeasureStr(m, o); }) };
+  });
+  var sub = [];
+  var kl = _exKeyLabel(song, o);
+  if (kl) sub.push("Tonalité " + kl);
+  if (base0.semis) sub.push((base0.semis > 0 ? "+" : "") + base0.semis + " demi-ton" + (Math.abs(base0.semis) > 1 ? "s" : ""));
+  if (capoSel) sub.push("Capo " + capoSel + " (formes jouées)");
+  sub.push(_exTimesigLabel(song));
+  if (song.bpm) sub.push(Math.round(parseFloat(song.bpm)) + " BPM");
+  if (!capoSel && song.capo && song.capo !== "0") sub.push("Capo " + song.capo);
+  if (song.dur) sub.push(song.dur);
+  return {
+    title: song.name || "Sans titre", sub: sub, rows: rows, o: o,
+    key: kl, bpm: song.bpm ? Math.round(parseFloat(song.bpm)) : 0, ts: _exTimesigLabel(song),
+    capo: song.capo && song.capo !== "0" ? song.capo : "",
+    notes: base.notes === false ? "" : (song.notes || ""),
+    lyrics: base.lyrics === false || !song.lyrics ? null : _exLyricsModel(song.lyrics, o)
+  };
+}
+function _exAbbrRepeat(c) { c = (c || "").trim(); return (c === "" || c === "-" || c === "%") ? "%" : c; }
+
+function exportSongText(song, base) {
+  var M = _exSongModel(song, base), L = [];
+  L.push(M.title.toUpperCase()); L.push(M.sub.join(" · "));
+  if (M.notes) L.push("Notes : " + M.notes);
+  L.push("");
+  M.rows.forEach(function (r) {
+    if (r.annotation) L.push("[" + r.annotation + "]");
+    L.push("| " + r.measures.map(function (m) { return m || "%"; }).join(" | ") + " |");
+  });
+  if (M.lyrics) { L.push(""); L.push("— Paroles & accords —"); L.push(_exLyricsAsText(M.lyrics)); }
+  return L.join("\n") + "\n";
+}
+function _exChoMeasure(cell, ts) {
+  var parts = String(cell || "").split("/").map(function (p) { return p.trim(); });
+  if (parts.length === 1) return parts[0] === "-" || parts[0] === "" ? "%" : parts[0];
+  var t = parseInt(ts, 10) || 4;
+  if (t === 6) t = 2;
+  return parts.map(function (p) { return p === "-" || p === "" ? "." : p; }).join(" ");
+}
+function exportSongChordPro(song, base) {
+  var M = _exSongModel(song, base), L = [];
+  L.push("{title: " + M.title + "}");
+  if (M.key) L.push("{key: " + M.key + "}");
+  if (M.bpm) L.push("{tempo: " + M.bpm + "}");
+  L.push("{time: " + M.ts + "}");
+  if (M.capo) L.push("{capo: " + M.capo + "}");
+  if (M.notes) L.push("{comment: " + M.notes + "}");
+  L.push("");
+  L.push("{start_of_grid}");
+  M.rows.forEach(function (r) {
+    if (r.annotation) L.push("{comment: " + r.annotation + "}");
+    L.push("| " + r.measures.map(function (m) { return _exChoMeasure(m, song.timesig); }).join(" | ") + " |");
+  });
+  L.push("{end_of_grid}");
+  if (M.lyrics) { L.push(""); L.push("{start_of_verse}"); L.push(_exLyricsAsCho(M.lyrics)); L.push("{end_of_verse}"); }
+  return L.join("\n") + "\n";
+}
+
+// ── PDF ────────────────────────────────────────────────────────────────
+// Dessine UNE fiche à partir de la page courante. Retourne le nb de pages.
+function _exDrawSong(doc, M, opts, labels) {
+  var PW = 210, PH = 297, MG = 14, W = PW - MG * 2, y = MG;
+  var firstPage = doc.internal.getNumberOfPages();
+  function label() { labels[doc.internal.getNumberOfPages()] = M.title; }
+  label();
+  function room(h) { if (y + h > PH - MG - 6) { doc.addPage(); label(); y = MG; return true; } return false; }
+  doc.setTextColor(0, 0, 0);
+  doc.setFont("helvetica", "bold"); doc.setFontSize(22);
+  doc.text(M.title, MG, y + 8); y += 14;
+  doc.setFont("helvetica", "normal"); doc.setFontSize(11); doc.setTextColor(90, 90, 90);
+  doc.text(M.sub.join("   ·   "), MG, y); y += 6;
+  if (M.notes) { doc.setFont("helvetica", "italic"); doc.setFontSize(10); doc.text("Notes : " + M.notes, MG, y, { maxWidth: W }); y += 6; }
+  doc.setTextColor(0, 0, 0); doc.setDrawColor(180, 180, 180); doc.setLineWidth(0.3); doc.line(MG, y, PW - MG, y); y += 6;
+
+  var maxLen = 4;
+  M.rows.forEach(function (r) { if (r.measures.length > maxLen) maxLen = r.measures.length; });
+  var perRow = opts.big ? 4 : Math.min(8, maxLen <= 4 ? 4 : maxLen <= 6 ? 6 : 8);
+  var gap = 2, boxW = (W - gap * (perRow - 1)) / perRow;
+  var boxH = perRow <= 4 ? 17 : perRow <= 6 ? 14 : 12;
+  // Hauteur totale pour l'option "une page"
+  var lines = 0, ann = 0;
+  M.rows.forEach(function (r) { lines += Math.ceil(Math.max(1, r.measures.length) / perRow); if (r.annotation) ann++; });
+  var need = lines * (boxH + gap) + ann * 6;
+  var scale = 1;
+  if (opts.onepage) { var avail = PH - MG - 6 - y - (M.lyrics ? 0 : 0); scale = Math.min(1, avail / Math.max(need, 1)); if (scale < 0.45) scale = 0.45; }
+  var bh = boxH * scale;
+  var gnum = 1;
+  M.rows.forEach(function (r) {
+    room(bh + (r.annotation ? 8 : 2));
+    if (r.annotation) {
+      doc.setFont("helvetica", "bold"); doc.setFontSize(9 * Math.max(scale, 0.8)); doc.setTextColor(30, 90, 160);
+      doc.text(String(r.annotation).toUpperCase(), MG, y + 3); doc.setTextColor(0, 0, 0); y += 5 * Math.max(scale, 0.8);
+    }
+    for (var i = 0; i < r.measures.length || (i === 0 && !r.measures.length); i += perRow) {
+      room(bh + gap);
+      var chunk = r.measures.slice(i, i + perRow), x = MG;
+      chunk.forEach(function (cell) {
+        doc.setDrawColor(0, 0, 0); doc.setLineWidth(0.3); doc.rect(x, y, boxW, bh);
+        doc.setFont("helvetica", "normal"); doc.setFontSize(6.5); doc.setTextColor(150, 150, 150);
+        doc.text(String(gnum++), x + 1.2, y + 3.2); doc.setTextColor(0, 0, 0);
+        var parts = String(cell || "").split("/").map(function (p) { return p.trim(); });
+        var isRep = parts.length === 1 && _exAbbrRepeat(parts[0]) === "%";
+        var txt = isRep ? "%" : (parts.length > 1 ? parts.filter(function (p) { return p && p !== "-" && p !== "%"; }).join("  ") : parts[0]);
+        var fs = (txt.length > 8 ? 11 : txt.length > 5 ? 14 : 17) * (perRow > 4 ? 0.8 : 1) * Math.max(scale, 0.7);
+        doc.setFont("helvetica", isRep ? "normal" : "bold");
+        if (isRep) doc.setTextColor(140, 140, 140);
+        doc.setFontSize(fs);
+        doc.text(txt, x + boxW / 2, y + bh / 2 + fs * 0.14, { align: "center" });
+        doc.setTextColor(0, 0, 0);
+        x += boxW + gap;
+      });
+      y += bh + gap;
+    }
+    y += 1.5 * scale;
+  });
+
+  if (M.lyrics && M.lyrics.length) {
+    y += 4; room(20);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.text("Paroles & accords", MG, y); y += 6;
+    doc.setFontSize(9.5);
+    M.lyrics.forEach(function (L2) {
+      var lh = 4.4;
+      if (L2.chords.length) {
+        room(lh * 2);
+        doc.setFont("courier", "bold"); doc.setTextColor(30, 90, 160);
+        var cl = "";
+        L2.chords.forEach(function (c) { while (cl.length < c.col) cl += " "; if (cl.length && cl.charAt(cl.length - 1) !== " ") cl += " "; cl += c.text; });
+        doc.text(cl, MG, y); y += lh; doc.setTextColor(0, 0, 0);
+      } else room(lh);
+      doc.setFont("courier", "normal");
+      if (L2.text) { doc.text(L2.text, MG, y); y += lh; } else if (!L2.chords.length) y += lh * 0.6;
+    });
+  }
+  return doc.internal.getNumberOfPages() - firstPage + 1;
+}
+function _exFooters(doc, labels, footer) {
+  var n = doc.internal.getNumberOfPages(), d = new Date().toLocaleDateString("fr-FR");
+  for (var p = 1; p <= n; p++) {
+    doc.setPage(p); doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(160, 160, 160);
+    doc.text((labels[p] ? labels[p] + " · " : "") + (footer ? footer + " · " : "") + "MVR · " + d, 14, 291);
+    doc.text(p + " / " + n, 196, 291, { align: "right" });
+  }
+}
+async function exportSongPdfEx(song, base) {
+  var J = await _ensureJsPdf();
+  var doc = new J({ orientation: "portrait", unit: "mm", format: "a4" }), labels = {};
+  _exDrawSong(doc, _exSongModel(song, base), base, labels);
+  _exFooters(doc, labels, "");
+  return doc;
+}
+async function exportSetPdfEx(set, base) {
+  var J = await _ensureJsPdf();
+  var doc = new J({ orientation: "portrait", unit: "mm", format: "a4" }), labels = {};
+  var list = (set.songIds || []).map(function (id) { return songs.find(function (s) { return s.id === id; }); }).filter(Boolean);
+  // Page de garde / sommaire
+  var y = 20;
+  doc.setFont("helvetica", "bold"); doc.setFontSize(26); doc.text(set.name || "Setlist", 14, y); y += 10;
+  doc.setFont("helvetica", "normal"); doc.setFontSize(12); doc.setTextColor(90, 90, 90);
+  var meta = [];
+  if (set.date) meta.push(set.date);
+  if (set.venue) meta.push(set.venue);
+  var tot = setDuration(set);
+  meta.push(list.length + " morceau" + (list.length > 1 ? "x" : ""));
+  if (tot) meta.push(tot);
+  doc.text(meta.join("   ·   "), 14, y); y += 7;
+  if (set.notes) { doc.setFont("helvetica", "italic"); doc.text(set.notes, 14, y, { maxWidth: 182 }); y += 8; }
+  doc.setTextColor(0, 0, 0); doc.setDrawColor(180, 180, 180); doc.line(14, y, 196, y); y += 9;
+  var pageOf = {}; // numéro de page de chaque morceau (calculé après)
+  var tocY0 = y, tocRows = [];
+  list.forEach(function (s, i) {
+    var M = _exSongModel(s, base);
+    tocRows.push({ n: i + 1, M: M, y: y });
+    y += 9.5;
+  });
+  labels[1] = "";
+  var tocPage = 1;
+  // Morceaux
+  var starts = [];
+  list.forEach(function (s, i) {
+    doc.addPage();
+    starts.push(doc.internal.getNumberOfPages());
+    _exDrawSong(doc, tocRows[i].M, base, labels);
+  });
+  doc.setPage(tocPage);
+  tocRows.forEach(function (r, i) {
+    doc.setFont("helvetica", "bold"); doc.setFontSize(14); doc.setTextColor(30, 90, 160);
+    doc.text(String(r.n).padStart(2, " ") + ".", 14, r.y);
+    doc.setTextColor(0, 0, 0); doc.text(r.M.title, 28, r.y, { maxWidth: 110 });
+    doc.setFont("helvetica", "normal"); doc.setFontSize(11); doc.setTextColor(100, 100, 100);
+    var info = [r.M.key, r.M.bpm ? r.M.bpm + " BPM" : "", r.M.ts].filter(Boolean).join(" · ");
+    doc.text(info, 150, r.y, { align: "right" });
+    doc.text("p. " + starts[i], 196, r.y, { align: "right" });
+    doc.setTextColor(0, 0, 0);
+  });
+  _exFooters(doc, labels, set.name || "Setlist");
+  return doc;
+}
+function _exSlug(s) { return (s || "export").replace(/[^a-z0-9\-_ àâéèêëîïôùûç]/gi, "").trim().replace(/\s+/g, "_") || "export"; }
+function _exDownload(name, content, mime) {
+  var blob = content instanceof Blob ? content : new Blob([content], { type: mime || "text/plain;charset=utf-8" });
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click();
+  setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+}
+async function _exShareOrCopy(title, text) {
+  try {
+    if (navigator.share) { await navigator.share({ title: title, text: text }); return "partagé"; }
+  } catch (e) { if (e && e.name === "AbortError") return "annulé"; }
+  try { await navigator.clipboard.writeText(text); return "copié dans le presse-papiers"; }
+  catch (e2) {
+    var ta = document.createElement("textarea"); ta.value = text; document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); } catch (e3) {}
+    ta.remove(); return "copié";
+  }
+}
+
+// ── Interface ──────────────────────────────────────────────────────────
+var _exCtx = null;
+function _exEnsureModal() {
+  if (document.getElementById("ex-modal")) return;
+  var d = document.createElement("div");
+  d.className = "modal-bg"; d.id = "ex-modal";
+  d.setAttribute("onclick", "closeModal('ex-modal',event)");
+  var semis = "";
+  for (var s = -6; s <= 6; s++) semis += "<option value=\"" + s + "\"" + (s === 0 ? " selected" : "") + ">" + (s > 0 ? "+" : "") + s + (s === 0 ? " (original)" : "") + "</option>";
+  d.innerHTML = "<div class=\"modal\"><h2 id=\"ex-title\">Exporter</h2>" +
+    "<div class=\"mrow\"><label>Format</label><select id=\"ex-fmt\">" +
+    "<option value=\"pdf\">📄 PDF (imprimable)</option><option value=\"txt\">📝 Texte (.txt)</option>" +
+    "<option value=\"cho\">🎸 ChordPro (.cho)</option><option value=\"copy\">📋 Copier / partager le texte</option></select></div>" +
+    "<div class=\"mrow\"><label>Transposition</label><select id=\"ex-semis\">" + semis + "</select></div>" +
+    "<div class=\"mrow\"><label>Notation</label><select id=\"ex-nota\">" +
+    "<option value=\"keep\">Comme dans la fiche</option><option value=\"int\">A B C</option>" +
+    "<option value=\"fr\">Do Ré Mi</option><option value=\"nash\">Chiffrage Nashville (1 4 5)</option></select></div>" +
+    "<div class=\"mrow\"><label>Capo (formes jouées)</label><select id=\"ex-capo\"><option value=\"0\">Aucun</option>" + [1,2,3,4,5,6,7].map(function (n) { return "<option value=\"" + n + "\">Case " + n + "</option>"; }).join("") + "</select>" +
+    "<button class=\"btn-sm\" id=\"ex-capo-sug\" onclick=\"exCapoHint()\" style=\"margin-top:6px\">💡 Suggérer le meilleur capo</button><div id=\"ex-capo-hint\" style=\"font-size:12px;color:var(--tx2);margin-top:4px\"></div></div>" +
+    "<div style=\"display:flex;flex-direction:column;gap:6px;margin:8px 0;font-size:13px\">" +
+    "<label><input type=\"checkbox\" id=\"ex-lyr\" checked> Inclure les paroles</label>" +
+    "<label><input type=\"checkbox\" id=\"ex-notes\" checked> Inclure les notes</label>" +
+    "<label id=\"ex-big-l\"><input type=\"checkbox\" id=\"ex-big\"> Grosses cases (4 mesures par ligne)</label>" +
+    "<label id=\"ex-one-l\"><input type=\"checkbox\" id=\"ex-one\"> Grille sur une seule page (PDF)</label></div>" +
+    "<div id=\"ex-status\" style=\"font-size:12px;color:var(--tx2);min-height:16px\"></div>" +
+    "<div class=\"row\" style=\"margin-top:12px\"><button class=\"btn-g\" onclick=\"runExport()\">Exporter</button>" +
+    "<button onclick=\"hideModal('ex-modal')\">Fermer</button></div></div>";
+  document.body.appendChild(d);
+}
+function openExport(kind, id) {
+  _exEnsureModal();
+  var item = kind === "set" ? sets.find(function (s) { return s.id === id; }) : songs.find(function (s) { return s.id === id; });
+  if (!item) return;
+  _exCtx = { kind: kind, id: id };
+  document.getElementById("ex-title").textContent = "Exporter : " + (item.name || "");
+  document.getElementById("ex-status").textContent = "";
+  document.getElementById("ex-nota").value = "keep";
+  document.getElementById("ex-one-l").style.display = kind === "set" ? "none" : "";
+  document.getElementById("ex-capo").value = "0";
+  document.getElementById("ex-capo-sug").style.display = kind === "set" ? "none" : "";
+  document.getElementById("ex-capo-hint").textContent = "";
+  showModal("ex-modal");
+}
+function exCapoHint() {
+  var song = songs.find(function (s) { return _exCtx && s.id === _exCtx.id; });
+  var el = document.getElementById("ex-capo-hint");
+  var sg = song && exSuggestCapo(song);
+  if (!sg) { el.textContent = "Pas assez d'accords reconnus dans la grille."; return; }
+  document.getElementById("ex-capo").value = String(sg.capo);
+  el.textContent = sg.capo === 0
+    ? "Sans capo : " + sg.open + " % d'accords ouverts, c'est déjà le plus simple."
+    : "Capo case " + sg.capo + " : " + sg.open + " % d'accords ouverts (au lieu de " + sg.open0 + " %). Formes : " + sg.shapes.join(" ") + ".";
+}
+function _exBase() {
+  return {
+    semis: parseInt(document.getElementById("ex-semis").value, 10) || 0,
+    notation: document.getElementById("ex-nota").value,
+    lyrics: document.getElementById("ex-lyr").checked,
+    notes: document.getElementById("ex-notes").checked,
+    capo: parseInt(document.getElementById("ex-capo").value, 10) || 0,
+    big: document.getElementById("ex-big").checked,
+    onepage: document.getElementById("ex-one").checked && _exCtx.kind === "song"
+  };
+}
+async function runExport() {
+  if (!_exCtx) return;
+  var st = document.getElementById("ex-status"), base = _exBase();
+  var fmt = document.getElementById("ex-fmt").value;
+  var isSet = _exCtx.kind === "set";
+  var item = isSet ? sets.find(function (s) { return s.id === _exCtx.id; }) : songs.find(function (s) { return s.id === _exCtx.id; });
+  if (!item) return;
+  var list = isSet ? (item.songIds || []).map(function (id) { return songs.find(function (s) { return s.id === id; }); }).filter(Boolean) : [item];
+  if (!list.length) { st.textContent = "Cette setlist est vide."; return; }
+  var name = _exSlug(item.name);
+  try {
+    if (fmt === "pdf") {
+      st.textContent = "⏳ Création du PDF…";
+      var doc = isSet ? await exportSetPdfEx(item, base) : await exportSongPdfEx(item, base);
+      doc.save(name + ".pdf");
+      st.textContent = "✓ PDF créé : " + name + ".pdf";
+      return;
+    }
+    var texts = list.map(function (s) { return fmt === "cho" ? exportSongChordPro(s, base) : exportSongText(s, base); });
+    var out;
+    if (fmt === "cho") out = texts.join("\n{new_song}\n\n");
+    else {
+      var head = isSet ? (item.name || "Setlist").toUpperCase() + "\n" + [item.date, item.venue, list.length + " morceaux", setDuration(item)].filter(Boolean).join(" · ") + "\n" + list.map(function (s, i) { return (i + 1) + ". " + s.name; }).join("\n") + "\n\n" + "=".repeat(30) + "\n\n" : "";
+      out = head + texts.join("\n" + "=".repeat(30) + "\n\n");
+    }
+    if (fmt === "copy") { st.textContent = "✓ " + (await _exShareOrCopy(item.name || "MVR", out)); return; }
+    _exDownload(name + (fmt === "cho" ? ".cho" : ".txt"), out, "text/plain;charset=utf-8");
+    st.textContent = "✓ Fichier créé : " + name + (fmt === "cho" ? ".cho" : ".txt");
+  } catch (e) {
+    st.textContent = "❌ Échec de l'export : " + (e && e.message ? e.message : e) + " (le PDF demande une connexion la 1re fois)";
+  }
+}
+
 function renderSongs() {
   var _0x5271ca = _0x552966;
   var _0x5edfaa = _0x4bc6f9;
@@ -4261,7 +4758,7 @@ function renderSets() {
       });
       return "<div class=\"song-row\" data-slid=\"" + _0x57b54e.id + "\" data-idx=\"" + _0xe5607f + "\" draggable=\"true\" ondragstart=\"slDragStart(event)\" ondragover=\"slDragOver(event)\" ondrop=\"slDrop(event,'" + _0x57b54e.id + "')\" ondragleave=\"slDragLeave(event)\"><span class=\"num\">" + (_0xe5607f + 1) + "</span><span class=\"drag-h\">⠿</span><span style=\"flex:1;font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap\">" + esc(_0x2a3fc3) + "</span>" + (_0x3c3882 && _0x3c3882.bpm ? "<span class=\"dur\">" + _0x3c3882.bpm + " BPM</span>" : "") + "<button class=\"btn-sm\" onclick=\"event.stopPropagation();launchSetAt('" + _0x57b54e.id + "'," + _0xe5607f + ")\">▶</button></div>";
     }).join("") : "<p style=\"font-size:12px;color:var(--tx3)\">Aucun morceau.</p>";
-    _0x32bc96.innerHTML = "<div class=\"sl-head\" onclick=\"toggleSlBody('" + _0x57b54e.id + "')\"><div style=\"flex:1;min-width:0\"><div style=\"font-weight:500;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap\">" + esc(_0x57b54e.name) + "</div><div style=\"font-size:11px;color:var(--tx3)\">" + (_0x57b54e.date ? esc(_0x57b54e.date) + " · " : "") + (_0x57b54e.venue ? esc(_0x57b54e.venue) + " · " : "") + (_0x57b54e.songIds || []).length + " morceau" + (_0x57b54e.songIds.length !== 1 ? "x" : "") + (_0x4e0936 ? " · ⏱ " + _0x4e0936 : "") + "</div></div><button class=\"btn-sm btn-g\" onclick=\"event.stopPropagation();launchSet('" + _0x57b54e.id + "')\">▶ Scène</button><button class=\"btn-sm\" onclick=\"event.stopPropagation();syncPublishSetlist('" + _0x57b54e.id + "')\">📤</button><button class=\"btn-sm\" onclick=\"event.stopPropagation();openSetModal('" + _0x57b54e.id + "')\">✎</button><span style=\"color:var(--tx2);margin-left:4px\" id=\"arr-" + _0x57b54e.id + "\">▾</span></div><div class=\"sl-body\" id=\"slb-" + _0x57b54e.id + "\" style=\"display:none\">" + _0x1f6c1f + (_0x57b54e.notes ? "<div style=\"font-size:11px;color:var(--tx3);padding:4px 0\">📝 " + esc(_0x57b54e.notes) + "</div>" : "") + "</div>";
+    _0x32bc96.innerHTML = "<div class=\"sl-head\" onclick=\"toggleSlBody('" + _0x57b54e.id + "')\"><div style=\"flex:1;min-width:0\"><div style=\"font-weight:500;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap\">" + esc(_0x57b54e.name) + "</div><div style=\"font-size:11px;color:var(--tx3)\">" + (_0x57b54e.date ? esc(_0x57b54e.date) + " · " : "") + (_0x57b54e.venue ? esc(_0x57b54e.venue) + " · " : "") + (_0x57b54e.songIds || []).length + " morceau" + (_0x57b54e.songIds.length !== 1 ? "x" : "") + (_0x4e0936 ? " · ⏱ " + _0x4e0936 : "") + "</div></div><button class=\"btn-sm btn-g\" onclick=\"event.stopPropagation();launchSet('" + _0x57b54e.id + "')\">▶ Scène</button><button class=\"btn-sm\" title=\"Exporter (PDF, texte, ChordPro)\" onclick=\"event.stopPropagation();openExport('set','" + _0x57b54e.id + "')\">📄</button><button class=\"btn-sm\" onclick=\"event.stopPropagation();syncPublishSetlist('" + _0x57b54e.id + "')\">📤</button><button class=\"btn-sm\" onclick=\"event.stopPropagation();openSetModal('" + _0x57b54e.id + "')\">✎</button><span style=\"color:var(--tx2);margin-left:4px\" id=\"arr-" + _0x57b54e.id + "\">▾</span></div><div class=\"sl-body\" id=\"slb-" + _0x57b54e.id + "\" style=\"display:none\">" + _0x1f6c1f + (_0x57b54e.notes ? "<div style=\"font-size:11px;color:var(--tx3);padding:4px 0\">📝 " + esc(_0x57b54e.notes) + "</div>" : "") + "</div>";
     _0x7e2f2c.appendChild(_0x32bc96);
   });
 }
