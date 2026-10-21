@@ -858,7 +858,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.144.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.145.0</span></h1>
 </div>
 
 <div id="pages">
@@ -1178,7 +1178,7 @@ J&#39;ai voulu planter un oranger…"></textarea>
        coup — les garder évite de dupliquer ou fragiliser cette logique. -->
   <div class="import-section" style="display:none">
     <div id="drop-zone" class="import-card" onclick="document.getElementById(&#39;pdf-input&#39;).click()" ondragover="dzOver(event)" ondragleave="dzLeave()" ondrop="dzDrop(event)">
-      <input type="file" id="pdf-input" accept=".pdf,.mxl,.xml,application/pdf" onchange="pdfLoad(this.files[0])">
+      <input type="file" id="pdf-input" multiple accept=".pdf,.mxl,.xml,application/pdf,audio/*,.mp3,.wav,.m4a,.ogg,.flac,.aac" onchange="pdfLoadMulti(this.files)">
       <div class="import-card-inner">
         <div class="import-card-icon">📄</div>
         <div>
@@ -9634,9 +9634,8 @@ function dzDrop(_0x1442db) {
   var _0x122a20 = _0x4bc6f9;
   _0x1442db.preventDefault();
   dzLeave();
-  var _0x177d27 = _0x1442db.dataTransfer.files[0];
-  if (_0x177d27) {
-    pdfLoad(_0x177d27);
+  if (_0x1442db.dataTransfer.files.length) {
+    pdfLoadMulti(_0x1442db.dataTransfer.files);
   }
 }
 function pdfStatus(_0x357e32, _0x1ebd15) {
@@ -12117,7 +12116,10 @@ async function pdfLoad(_0x482068) {
   if (!_0x482068) {
     return;
   }
-  pdfFileName = _0x482068.name.replace(/\.[^.]+$/, "").trim();
+  pdfFileName = _0x482068.name.replace(/\.[^.]+$/, "").replace(/^[0-9a-f]{8}-(\d+_)?/i, "").trim();
+  if (pdfFileName.indexOf(" ") < 0) {
+    pdfFileName = pdfFileName.replace(/[-_]+/g, " ").trim();
+  }
   document.getElementById("pdf-input").value = "";
   dzLeave();
   if (_0x482068.name.match(/\.(mxl|xml)$/i)) {
@@ -12496,6 +12498,15 @@ async function unifiedLoadFiles(_0x2702cd) {
   if (_0x259964.length === 1) {
     await unifiedLoadSingleFile(_0x259964[0]);
     return;
+  }
+  // Une grille (PDF / MusicXML) + un audio choisis ensemble = UN morceau.
+  if (_0x259964.length === 2) {
+    var _isAud = function (f) { return _AUDIO_EXT_RE.test(f.name); };
+    var _isGrid = function (f) { return /\.(pdf|mxl|xml|musicxml)$/i.test(f.name); };
+    if ((_isAud(_0x259964[0]) && _isGrid(_0x259964[1])) || (_isAud(_0x259964[1]) && _isGrid(_0x259964[0]))) {
+      pdfLoadMulti(_0x259964);
+      return;
+    }
   }
   var _0x1e2f0c = 0;
   var _0xd448be = 0;
@@ -14361,6 +14372,24 @@ async function _extractChords(_0x55298e) {
     timesig: _0x536ecb
   };
 }
+var _pendingAttachAudio = null;
+var _AUDIO_EXT_RE = /\.(mp3|wav|m4a|ogg|flac|aac|webm)$/i;
+// Plusieurs fichiers d'un coup : grille (PDF/MusicXML) + audio -> un seul
+// morceau avec la grille importee ET l'audio aligne dessus.
+function pdfLoadMulti(files) {
+  files = Array.prototype.slice.call(files || []);
+  if (!files.length) return;
+  var audio = files.filter(function (f) { return _AUDIO_EXT_RE.test(f.name) || /^audio\//.test(f.type); })[0];
+  var grid = files.filter(function (f) { return f !== audio; })[0];
+  if (audio && grid) {
+    _pendingAttachAudio = audio;
+    pdfStatus("⏳ Import de la grille puis alignement sur l'audio…");
+    pdfLoad(grid);
+  } else {
+    _pendingAttachAudio = null;
+    pdfLoad(files[0]);
+  }
+}
 function pdfCreate() {
   var _0x369524 = document.getElementById("pdf-grid").value.trim();
   var _0x9ba597 = document.getElementById("pdf-name").value.trim() || pdfFileName || "Morceau importé";
@@ -14429,6 +14458,13 @@ function pdfCreate() {
     renderSongs();
     setTimeout(function () {
       openSongModal(_0x3cd17e.id);
+      // Import combine (grille + audio choisis ensemble) : l'audio est
+      // rattache tout de suite, ce qui declenche l'alignement automatique.
+      if (_pendingAttachAudio) {
+        var _af = _pendingAttachAudio;
+        _pendingAttachAudio = null;
+        setTimeout(function () { smAttachAudio(_af); }, 400);
+      }
     }, 150);
   }
   if (!_0x369524) {
