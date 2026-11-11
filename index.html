@@ -859,7 +859,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.155.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.156.0</span></h1>
 </div>
 
 <div id="pages">
@@ -1467,6 +1467,12 @@ Am | F | C | G"></textarea>
       <button class="btn-sm" id="cfg-update-btn" style="display:none" onclick="applyPendingUpdate()">Mettre à jour</button>
     </div>
   </div>
+  <div class="row" style="margin-top:10px">
+    <button onclick="backupAll()" title="Morceaux, setlists, tablatures et partitions — sans les fichiers audio">💾 Sauvegarde complète</button>
+    <button onclick="document.getElementById(&#39;imp-backup&#39;).click()">♻ Restaurer une sauvegarde</button>
+    <input type="file" id="imp-backup" accept=".zip" style="display:none" onchange="restoreBackup(this)">
+  </div>
+  <div id="backup-status" style="font-size:12px;color:var(--tx2);margin-top:6px"></div>
   <div class="row" style="margin-top:10px">
     <button onclick="exportData()">⬆ Export JSON</button>
     <button onclick="document.getElementById(&#39;imp2&#39;).click()">⬇ Import JSON</button>
@@ -14812,6 +14818,105 @@ function deleteHistory(_0x160b5a) {
   dbSave();
   renderHistory();
 }
+// ══ Sauvegarde complète en UN seul fichier .zip (morceaux, setlists, tablatures, partitions, audio) ══
+async function bkEnsureJSZip() {
+  if (window.JSZip) return;
+  await new Promise(function (_res, _rej) {
+    var _s = document.createElement("script");
+    _s.src = "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";
+    _s.onload = _res; _s.onerror = function () { _rej(new Error("Bibliothèque de compression indisponible (connexion nécessaire une première fois)")); };
+    document.head.appendChild(_s);
+  });
+}
+async function bkAllMedia() {
+  var _db = await imgDbOpen();
+  return new Promise(function (_res, _rej) {
+    var _out = [];
+    var _req = _db.transaction(IMG_DB_STORE, "readonly").objectStore(IMG_DB_STORE).openCursor();
+    _req.onsuccess = function () {
+      var _c = _req.result;
+      if (_c) { _out.push({ key: _c.key, value: _c.value }); _c.continue(); } else { _res(_out); }
+    };
+    _req.onerror = function () { _rej(_req.error); };
+  });
+}
+function bkStatus(_msg, _color) {
+  var _el = document.getElementById("backup-status");
+  if (_el) { _el.textContent = _msg; _el.style.color = _color || "var(--tx2)"; }
+}
+function bkRefreshStatus() {
+  var _d = prefs.lastBackup ? new Date(prefs.lastBackup) : null;
+  bkStatus(_d ? "Dernière sauvegarde : " + _d.toLocaleDateString("fr-FR") + " à " + _d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) : "Aucune sauvegarde faite sur cet appareil.");
+}
+async function backupAll() {
+  try {
+    bkStatus("⏳ Préparation de la sauvegarde…");
+    await bkEnsureJSZip();
+    var _zip = new JSZip();
+    _zip.file("data.json", JSON.stringify({ songs: songs, sets: sets, hist: hist, prefs: prefs, v: 8, app: "MVR", date: new Date().toISOString() }));
+    // Sans l'audio (lourd) : tablatures, partitions et images sont incluses, pas les pistes audio.
+    var _audioKeys = {};
+    songs.forEach(function (_sg) { if (_sg.audioKey) _audioKeys[_sg.audioKey] = true; });
+    var _media = (await bkAllMedia()).filter(function (_m) { return !_audioKeys[_m.key]; });
+    var _index = [];
+    _media.forEach(function (_m, _i) {
+      var _name = "media/" + _i;
+      var _v = _m.value;
+      if (typeof _v === "string") { _zip.file(_name, _v); _index.push({ key: _m.key, file: _name, kind: "text" }); }
+      else { _zip.file(_name, _v); _index.push({ key: _m.key, file: _name, kind: "binary", type: _v && _v.type ? _v.type : "" }); }
+    });
+    _zip.file("media-index.json", JSON.stringify(_index));
+    bkStatus("⏳ Compression de " + _media.length + " fichier(s)…");
+    var _blob = await _zip.generateAsync({ type: "blob", compression: "DEFLATE", compressionOptions: { level: 3 } });
+    var _name = "MVR-sauvegarde-" + new Date().toISOString().slice(0, 10) + ".zip";
+    var _a = document.createElement("a");
+    _a.href = URL.createObjectURL(_blob);
+    _a.download = _name;
+    document.body.appendChild(_a); _a.click(); document.body.removeChild(_a);
+    setTimeout(function () { URL.revokeObjectURL(_a.href); }, 10000);
+    prefs.lastBackup = Date.now();
+    dbSave();
+    bkStatus("✓ Sauvegarde enregistrée : « " + _name + " » (" + songs.length + " morceaux, " + sets.length + " setlists, " + _media.length + " fichier(s) joints, sans audio, " + (_blob.size / 1048576).toFixed(1) + " Mo). Cherche-la dans le dossier Téléchargements.", "var(--G)");
+  } catch (_e) {
+    bkStatus("❌ Sauvegarde impossible : " + (_e && _e.message ? _e.message : _e), "var(--R)");
+  }
+}
+async function restoreBackup(_input) {
+  var _f = _input.files && _input.files[0];
+  _input.value = "";
+  if (!_f) return;
+  try {
+    bkStatus("⏳ Lecture de la sauvegarde…");
+    await bkEnsureJSZip();
+    var _zip = await JSZip.loadAsync(_f);
+    var _dj = _zip.file("data.json");
+    if (!_dj) throw new Error("ce fichier n'est pas une sauvegarde MVR");
+    var _data = JSON.parse(await _dj.async("string"));
+    if (!_data.songs && !_data.sets) throw new Error("sauvegarde vide ou invalide");
+    var _idxFile = _zip.file("media-index.json");
+    var _index = _idxFile ? JSON.parse(await _idxFile.async("string")) : [];
+    showConfirm("Remplacer toutes les données de cet appareil par cette sauvegarde (" + (_data.songs || []).length + " morceaux, " + (_data.sets || []).length + " setlists, " + _index.length + " fichier(s) joints) ?", async function () {
+      try {
+        bkStatus("⏳ Restauration…");
+        for (var _i = 0; _i < _index.length; _i++) {
+          var _e = _index[_i], _zf = _zip.file(_e.file);
+          if (!_zf) continue;
+          var _val = _e.kind === "text" ? await _zf.async("string") : await _zf.async("blob");
+          if (_e.kind !== "text" && _e.type) _val = new Blob([_val], { type: _e.type });
+          await imgDbPut(_e.key, _val);
+        }
+        songs = _data.songs || []; sets = _data.sets || []; hist = _data.hist || []; prefs = _data.prefs || {};
+        dbSave(); applyPrefs(); renderSongs(); renderSets();
+        bkStatus("✓ Sauvegarde restaurée : " + songs.length + " morceaux, " + sets.length + " setlists.", "var(--G)");
+      } catch (_e2) {
+        bkStatus("❌ Restauration interrompue : " + (_e2 && _e2.message ? _e2.message : _e2), "var(--R)");
+      }
+    }, true);
+    bkRefreshStatus();
+  } catch (_e) {
+    bkStatus("❌ Fichier illisible : " + (_e && _e.message ? _e.message : _e), "var(--R)");
+  }
+}
 async function exportData() {
   try {
     showAlert("Préparation de l'export…");
@@ -14999,6 +15104,7 @@ function applyPrefs() {
   document.getElementById("notation").value = prefs.notation || "int";
   updatePrecountBtn();
   updateCountdownBtn();
+  try { bkRefreshStatus(); } catch (_e) {}
   try {
     var _0x48025f = localStorage.getItem("mvr_anthropic_api_key");
     var _0x46413d = document.getElementById("pref-api-key");
@@ -15211,7 +15317,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.155.0 · 11/11/2026 17:00<span id="license-watermark"></span>
+  v2.156.0 · 11/11/2026 18:00<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
