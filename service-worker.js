@@ -4,8 +4,10 @@
 // IMPORTANT : incrémenter ce numéro à chaque déploiement d'une nouvelle version.
 // C'est ce qui permet au navigateur de détecter qu'un nouveau Service Worker
 // existe (le fichier service-worker.js a changé) et de proposer la mise à jour.
-const APP_VERSION = '125';
+const APP_VERSION = '126';
 const CACHE_NAME = 'mvr-cache-v' + APP_VERSION;
+// Cache séparé pour la banque de sons (gros fichier) : conservé d'une version à l'autre
+const SF_CACHE = 'mvr-soundfont-v1';
 // Un seul fichier à mettre en cache : manifest + icônes sont encodés en
 // base64 DIRECTEMENT dans index.html (voir le commentaire en tête de ce
 // fichier) — il n'existe PAS de manifest.json ni de icon-*.png séparés sur
@@ -36,7 +38,7 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(
-        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
+        keys.filter((key) => key !== CACHE_NAME && key !== SF_CACHE).map((key) => caches.delete(key))
       )
     )
   );
@@ -46,6 +48,24 @@ self.addEventListener('activate', (event) => {
 // Stratégie : cache d'abord, puis réseau (et mise à jour silencieuse du cache)
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+
+  // Banque de sons (.sf2) : cache persistant, jamais re-téléchargée à chaque mise à jour.
+  // Une requête Range ne remplit pas le cache (réponse partielle) mais profite du cache s'il existe.
+  if (event.request.url.indexOf('/soundfonts/') !== -1) {
+    event.respondWith(
+      caches.open(SF_CACHE).then((cache) =>
+        cache.match(event.request.url).then((cached) => {
+          if (cached) return cached;
+          const isRange = event.request.headers.has('range');
+          return fetch(isRange ? event.request : event.request.url).then((response) => {
+            if (!isRange && response && response.status === 200) cache.put(event.request.url, response.clone());
+            return response;
+          });
+        })
+      )
+    );
+    return;
+  }
 
   event.respondWith(
     caches.match(event.request).then((cached) => {

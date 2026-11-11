@@ -859,7 +859,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.153.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.154.0</span></h1>
 </div>
 
 <div id="pages">
@@ -7801,7 +7801,31 @@ function imgUpdatePlayBtn() {
   }
 }
 var tabApi = null;
-var TAB_SOUNDFONT_URL = "https://cdn.jsdelivr.net/npm/@coderline/alphatab@1.8.4/dist/soundfont/sonivox.sf2";
+var TAB_SOUNDFONT_CDN = "https://cdn.jsdelivr.net/npm/@coderline/alphatab@1.8.4/dist/soundfont/sonivox.sf2";
+// Banque de sons de qualité (GeneralUser GS, libre d'usage même commercial) hébergée avec l'appli
+// et mise en cache par le service worker pour le hors-ligne. Repli sur la petite banque du CDN
+// si le fichier n'est pas disponible (ex. fichier MVR ouvert en local).
+var TAB_SOUNDFONT_LOCAL = "soundfonts/GeneralUser-GS.sf2";
+var TAB_SOUNDFONT_URL = TAB_SOUNDFONT_CDN;
+async function tabPickSoundfont() {
+  try {
+    var _u = new URL(TAB_SOUNDFONT_LOCAL, location.href).href;
+    var _r = await fetch(_u, { headers: { Range: "bytes=0-0" } });
+    if (_r.ok || _r.status === 206) { TAB_SOUNDFONT_URL = _u; return _u; }
+  } catch (_e) {}
+  TAB_SOUNDFONT_URL = TAB_SOUNDFONT_CDN;
+  return TAB_SOUNDFONT_CDN;
+}
+// Pré-chargement discret (hors réseau mobile) pour avoir les sons sans réseau le jour du concert
+window.addEventListener("load", function () {
+  setTimeout(function () {
+    try {
+      var _c = navigator.connection;
+      if (!navigator.onLine || (_c && (_c.saveData || _c.type === "cellular"))) return;
+      fetch(new URL(TAB_SOUNDFONT_LOCAL, location.href).href).then(function (_r) { return _r.ok ? _r.arrayBuffer() : null; }).catch(function () {});
+    } catch (_e) {}
+  }, 8000);
+});
 
 // ── Choix de la piste (instrument) à afficher pour un fichier Guitar Pro multi-pistes ──
 function tabTrackIsFretted(_t) {
@@ -7940,6 +7964,7 @@ async function renderSceneTab(_0x1905ab) {
   try {
     var _0x307d3a = await _ensureAlphaTab();
     _0x186bb2.innerHTML = "";
+    var _0xsf = await tabPickSoundfont();
     var _0x401296 = new _0x307d3a.Settings();
     _0x401296.core.fontDirectory = "https://cdn.jsdelivr.net/npm/@coderline/alphatab@1.8.4/dist/font/";
     _0x401296.core.useWorkers = false;
@@ -7947,7 +7972,7 @@ async function renderSceneTab(_0x1905ab) {
     _0x401296.player.enablePlayer = true;
     _0x401296.player.enableCursor = true;
     _0x401296.player.enableAnimatedBeatCursor = true;
-    _0x401296.player.soundFont = TAB_SOUNDFONT_URL;
+    _0x401296.player.soundFont = _0xsf;
     _0x401296.player.scrollElement = _0x2a97f5;
     tabApi = new _0x307d3a.AlphaTabApi(_0x186bb2, _0x401296);
     tabApi.masterVolume = 1;
@@ -15161,7 +15186,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.153.0 · 11/11/2026 12:30<span id="license-watermark"></span>
+  v2.154.0 · 11/11/2026 13:00<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
