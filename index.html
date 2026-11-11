@@ -858,7 +858,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.145.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.146.0</span></h1>
 </div>
 
 <div id="pages">
@@ -7790,6 +7790,47 @@ function imgUpdatePlayBtn() {
 }
 var tabApi = null;
 var TAB_SOUNDFONT_URL = "https://cdn.jsdelivr.net/npm/@coderline/alphatab@1.8.4/dist/soundfont/sonivox.sf2";
+
+// ── Choix de la piste (instrument) à afficher pour un fichier Guitar Pro multi-pistes ──
+function tabTrackIsFretted(_t) {
+  var _st = _t && _t.staves && _t.staves[0];
+  return !!(_t && !_t.isPercussion && _st && _st.stringTuning && _st.stringTuning.tunings && _st.stringTuning.tunings.length > 0);
+}
+function tabSelectTrack(_idx, _score, _song, _at) {
+  var _t = _score.tracks[_idx];
+  if (!_t || !tabApi) return;
+  // tablature pour les instruments à cordes, portée classique pour piano/batterie/etc.
+  tabApi.settings.display.staveProfile = tabTrackIsFretted(_t) ? _at.StaveProfile.Tab : _at.StaveProfile.Score;
+  try { tabApi.updateSettings(); } catch (_e) {}
+  tabApi.renderTracks([_t]);
+  _song.tabTrack = _idx;
+  try { dbSave(); } catch (_e) {}
+}
+function tabBuildTrackBar(_score, _song, _at) {
+  var _old = document.getElementById("tab-track-bar");
+  if (_old) _old.remove();
+  if (!_score || !_score.tracks || _score.tracks.length < 2) return;
+  var _stage = document.getElementById("tab-stage");
+  var _bar = document.createElement("div");
+  _bar.id = "tab-track-bar";
+  _bar.style.cssText = "position:sticky;top:0;z-index:5;display:flex;gap:8px;align-items:center;justify-content:center;padding:8px 10px;background:#242B38;border-bottom:1px solid #3E4757;color:#E8ECF2;font-size:13px";
+  var _lab = document.createElement("span");
+  _lab.textContent = "Instrument :";
+  var _sel = document.createElement("select");
+  _sel.style.cssText = "background:#2E3645;color:#E8ECF2;border:1px solid #4A5468;border-radius:8px;padding:6px 10px;font-size:14px;max-width:70%";
+  _score.tracks.forEach(function (_t, _i) {
+    var _o = document.createElement("option");
+    _o.value = _i;
+    _o.textContent = (_t.name || _t.shortName || ("Piste " + (_i + 1))).trim() || ("Piste " + (_i + 1));
+    _sel.appendChild(_o);
+  });
+  var _saved = (typeof _song.tabTrack === "number" && _song.tabTrack < _score.tracks.length) ? _song.tabTrack : 0;
+  _sel.value = _saved;
+  _sel.onchange = function () { tabSelectTrack(parseInt(_sel.value, 10), _score, _song, _at); };
+  _bar.appendChild(_lab); _bar.appendChild(_sel);
+  _stage.insertBefore(_bar, _stage.firstChild);
+  if (_saved !== 0 || !tabTrackIsFretted(_score.tracks[0])) setTimeout(function () { tabSelectTrack(_saved, _score, _song, _at); }, 0);
+}
 async function renderSceneTab(_0x1905ab) {
   var _0x1649a5 = _0x552966;
   var _0x1574f3 = _0x4bc6f9;
@@ -7801,6 +7842,7 @@ async function renderSceneTab(_0x1905ab) {
     } catch (_0x255e66) {}
     tabApi = null;
   }
+  var _0xtb0 = document.getElementById("tab-track-bar"); if (_0xtb0) _0xtb0.remove();
   var _0x2a97f5 = document.getElementById("tab-stage");
   var _0x186bb2 = document.getElementById("tab-stage-inner");
   _0x186bb2.innerHTML = "<div class=\"img-loading\">⏳ Chargement de la tablature…</div>";
@@ -7842,6 +7884,7 @@ async function renderSceneTab(_0x1905ab) {
       var _0x380d85 = _0x5d83fb / tabFileTempo;
       tabApi.playbackSpeed = Math.max(0.25, Math.min(2, _0x380d85));
       setBPM(_0x5d83fb);
+      tabBuildTrackBar(_0x35d0f6, _0x1905ab, _0x307d3a);
     });
     tabApi.playerReady.on(function () {
       var _0x52cc11 = _0x1649a5;
@@ -14954,7 +14997,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.142.0 · 06/10/2026<span id="license-watermark"></span>
+  v2.146.0 · 11/11/2026 09:10<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
