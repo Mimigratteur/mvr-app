@@ -859,7 +859,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.157.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.158.0</span></h1>
 </div>
 
 <div id="pages">
@@ -1129,7 +1129,7 @@ body.fullscreen #topbar{display:none}
     <div class="import-section-hint">Dépose un ou plusieurs fichiers — MVR détecte automatiquement quoi en faire (PDF, Word, texte, photo, Guitar Pro, MusicXML, Capella, MIDI, audio).</div>
 
     <div id="unified-drop-zone" class="import-card" onclick="document.getElementById(&#39;unified-input&#39;).click()" ondragover="unifiedDzOver(event)" ondragleave="unifiedDzLeave()" ondrop="unifiedDzDrop(event)">
-      <input type="file" id="unified-input" multiple="" accept=".pdf,.docx,.txt,.mxl,.xml,.musicxml,.gp3,.gp4,.gp5,.gpx,.gp,.cap,.capx,.mid,.midi,.mp3,.wav,.m4a,.ogg,.flac,.aac,.webm,image/*,application/pdf" onchange="unifiedLoadFiles(this.files)">
+      <input type="file" id="unified-input" multiple="" onchange="unifiedLoadFiles(this.files)">
       <div class="import-card-inner">
         <div class="import-card-icon">📥</div>
         <div>
@@ -1266,7 +1266,7 @@ Am | F | C | G"></textarea>
   <div class="import-section" style="display:none">
     <div id="lyc-input-zone" style="display:flex;flex-direction:column;gap:12px">
       <div id="lyc-drop-zone" class="import-card" onclick="document.getElementById(&#39;lyc-input&#39;).click()" ondragover="lycDzOver(event)" ondragleave="lycDzLeave()" ondrop="lycDzDrop(event)">
-        <input type="file" id="lyc-input" accept=".docx,.pdf,.txt,.gp3,.gp4,.gp5,.gpx,.gp,.musicxml,.mxl,.xml,.cap,.capx,application/pdf" onchange="lycLoadFile(this.files[0])">
+        <input type="file" id="lyc-input" onchange="lycLoadFile(this.files[0])">
         <div class="import-card-inner">
           <div class="import-card-icon">🎤</div>
           <div>
@@ -1375,7 +1375,7 @@ Am | F | C | G"></textarea>
 
   <div class="import-section" style="display:none">
     <div id="tab-drop-zone" class="import-card" onclick="document.getElementById(&#39;tab-input&#39;).click()" ondragover="tabDzOver(event)" ondragleave="tabDzLeave()" ondrop="tabDzDrop(event)">
-      <input type="file" id="tab-input" accept=".gp3,.gp4,.gp5,.gpx,.gp,.musicxml,.mxl,.xml,.cap,.capx" onchange="tabLoadFile(this.files[0])">
+      <input type="file" id="tab-input" onchange="tabLoadFile(this.files[0])">
       <div class="import-card-inner">
         <div class="import-card-icon">🎼</div>
         <div>
@@ -15380,7 +15380,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.157.0 · 11/11/2026 19:00<span id="license-watermark"></span>
+  v2.158.0 · 11/11/2026 20:00<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
