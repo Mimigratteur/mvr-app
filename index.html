@@ -395,8 +395,8 @@ input[type=range]{accent-color:var(--G);touch-action:pan-y}
 .img-mode-only{display:none}
 .img-mode-only-flex{display:none}
 .gp-mode-active{background:var(--Gd)!important;border-color:var(--Gd)!important;color:#0B0D12!important}
-#gp-precount-btn.pc-on{background:var(--A);border-color:var(--A);color:#0B0D12}
-#gp-precount-btn.pc-off{opacity:.55}
+#gp-precount-btn.pc-on,#tab-precount-btn.pc-on{background:var(--A);border-color:var(--A);color:#0B0D12}
+#gp-precount-btn.pc-off,#tab-precount-btn.pc-off{opacity:.55}
 
 /* ── Mode "partition image" — photo(s) ou PDF scanné affiché tel quel ──
    Aucune interprétation du contenu : l'app affiche l'image et la fait
@@ -858,7 +858,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.146.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.147.0</span></h1>
 </div>
 
 <div id="pages">
@@ -1065,6 +1065,7 @@ body.fullscreen #topbar{display:none}
       <div class="tab-mode-only" style="gap:5px;flex-wrap:nowrap">
         <button class="btn-g" id="tab-play-btn" onclick="tabTogglePlay()">▶ Play</button>
         <button class="btn-r" onclick="tabRestart()">↺ Début</button>
+        <button class="btn-sm pc-off" id="tab-precount-btn" onclick="togglePrecountBtn()" style="flex-shrink:0" title="Précompte d'une mesure avant lecture">⏱️</button>
       </div>
       <!-- Contrôles du mode "partition MusicXML" (OSMD) -->
       <div class="osmd-mode-only" style="gap:5px;flex-wrap:nowrap">
@@ -7921,6 +7922,8 @@ function tabTogglePlay() {
   if (!tabApi) {
     return;
   }
+  // Précompte d'une mesure (métronome) avant le début de la lecture, si l'option est active
+  try { tabApi.countInVolume = wantPrecount() ? 1 : 0; } catch (_e) {}
   tabApi.playPause();
 }
 function tabRestart() {
@@ -14833,6 +14836,12 @@ function togglePrecountBtn() {
 function updatePrecountBtn() {
   var _0x2b1b20 = _0x552966;
   var _0x10e04f = _0x4bc6f9;
+  var _tpb = document.getElementById("tab-precount-btn");
+  if (_tpb) {
+    var _tpon = prefs.precount !== false;
+    _tpb.classList.toggle("pc-on", _tpon);
+    _tpb.classList.toggle("pc-off", !_tpon);
+  }
   var _0x1ed21e = document.getElementById("gp-precount-btn");
   if (!_0x1ed21e) {
     return;
@@ -14997,7 +15006,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.146.0 · 11/11/2026 09:10<span id="license-watermark"></span>
+  v2.147.0 · 11/11/2026 09:30<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
