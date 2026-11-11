@@ -859,7 +859,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.151.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.152.0</span></h1>
 </div>
 
 <div id="pages">
@@ -7821,11 +7821,17 @@ function tabSelectTrack(_idx, _score, _song, _at) {
 function tabBuildTrackBar(_score, _song, _at) {
   var _old = document.getElementById("tab-track-bar");
   if (_old) _old.remove();
-  if (!_score || !_score.tracks || _score.tracks.length < 2) return;
+  if (!_score || !_score.tracks) return;
+  var _multi = _score.tracks.length >= 2;
   var _stage = document.getElementById("tab-stage");
   var _bar = document.createElement("div");
   _bar.id = "tab-track-bar";
   _bar.style.cssText = "position:sticky;top:0;z-index:5;display:flex;gap:8px;align-items:center;justify-content:center;padding:8px 10px;background:#242B38;border-bottom:1px solid #3E4757;color:#E8ECF2;font-size:13px";
+  var _cd = document.createElement("button");
+  _cd.className = "cd-btn btn-sm pc-off";
+  _cd.textContent = "3·2·1";
+  _cd.style.flexShrink = "0";
+  _cd.onclick = toggleCountdown;
   var _lab = document.createElement("span");
   _lab.textContent = "Instrument :";
   var _sel = document.createElement("select");
@@ -7839,8 +7845,11 @@ function tabBuildTrackBar(_score, _song, _at) {
   var _saved = (typeof _song.tabTrack === "number" && _song.tabTrack < _score.tracks.length) ? _song.tabTrack : 0;
   _sel.value = _saved;
   _sel.onchange = function () { tabSelectTrack(parseInt(_sel.value, 10), _score, _song, _at); };
-  _bar.appendChild(_lab); _bar.appendChild(_sel);
+  if (_multi) { _bar.appendChild(_lab); _bar.appendChild(_sel); }
+  _bar.appendChild(_cd);
   _stage.insertBefore(_bar, _stage.firstChild);
+  updateCountdownBtn();
+  if (!_multi) return;
   if (_saved !== 0 || !tabTrackIsFretted(_score.tracks[0])) setTimeout(function () { tabSelectTrack(_saved, _score, _song, _at); }, 0);
 }
 async function renderSceneTab(_0x1905ab) {
@@ -15097,7 +15106,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.151.0 · 11/11/2026 11:30<span id="license-watermark"></span>
+  v2.152.0 · 11/11/2026 12:00<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
