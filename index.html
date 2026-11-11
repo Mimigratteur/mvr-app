@@ -858,7 +858,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.149.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.150.0</span></h1>
 </div>
 
 <div id="pages">
@@ -7929,9 +7929,9 @@ function tabTogglePlay() {
   if (cdCancel()) { tabSetPlayBtnState("ready"); return; }
   var _isPlaying = tabApi.playerState === 1;
   if (!_isPlaying && prefs.countdown) {
-    var _bpmEff = (tabFileTempo || 120) * (tabApi.playbackSpeed || 1);
     tabSetPlayBtnState("loading");
-    cdRun(_bpmEff, tabBeatsPerBar, function () {
+    // tempo réellement joué par la tablature (= tempo affiché du morceau)
+    cdRun(function () { return tabApi ? (tabFileTempo || 120) * (tabApi.playbackSpeed || 1) : bpm; }, tabBeatsPerBar, function () {
       if (tabApi) { tabSetPlayBtnState("ready"); tabApi.play(); }
     });
     return;
@@ -9072,7 +9072,7 @@ function startPlay(_0x1c05b0) {
   }
   if (prefs.countdown && allChords.length) {
     var _cdBeats = document.getElementById("timesig") ? document.getElementById("timesig").value : 4;
-    cdRun(bpm, _cdBeats, _0x232863);
+    cdRun(function () { return bpm; }, _cdBeats, _0x232863);
   } else if (wantPrecount() && allChords.length) {
     var _0xcd6f80 = document.getElementById("timesig") ? document.getElementById("timesig").value : 4;
     doPrecount(bpm, _0xcd6f80, _0x232863);
@@ -9473,22 +9473,29 @@ function updateCountdownBtn() {
   });
 }
 var cdRunning = false, cdRaf = null;
-function cdRun(_bpm, _beats, _onDone) {
+function cdRun(_bpmSrc, _beats, _onDone) {
+  // Le tempo est relu à chaque image (nombre ou fonction) : le décompte suit le tempo
+  // affiché du morceau, même s'il est modifié pendant la mesure.
   var _nb = parseInt(_beats, 10) || 4;
-  var _beatMs = 60000 / (_bpm || 100);
-  var _anchor = null, _last = -1;
+  var _lastTs = null, _beatPos = 0, _last = -1;
+  function _curBpm() {
+    var _v = typeof _bpmSrc === "function" ? _bpmSrc() : _bpmSrc;
+    _v = parseFloat(_v);
+    return _v > 0 ? _v : 100;
+  }
   cdRunning = true;
   function _tick(_ts) {
     if (!cdRunning) return;
-    if (_anchor === null) _anchor = _ts;
-    var _el = _ts - _anchor;
-    var _i = Math.min(_nb - 1, Math.floor(_el / _beatMs));
+    if (_lastTs === null) _lastTs = _ts;
+    _beatPos += Math.max(0, _ts - _lastTs) * _curBpm() / 60000;
+    _lastTs = _ts;
+    var _i = Math.min(_nb - 1, Math.floor(_beatPos));
     if (_i !== _last) {
       _last = _i;
       cdShow(_nb - _i, _i === 0);
       try { clickSound(_i === 0); } catch (_e) {}
     }
-    if (_el >= _nb * _beatMs) {
+    if (_beatPos >= _nb) {
       cdRunning = false; cdHide(); _onDone(); return;
     }
     cdRaf = requestAnimationFrame(_tick);
@@ -15081,7 +15088,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.149.0 · 11/11/2026 10:30<span id="license-watermark"></span>
+  v2.150.0 · 11/11/2026 11:00<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
