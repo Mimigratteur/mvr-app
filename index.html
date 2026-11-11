@@ -859,7 +859,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.159.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.160.0</span></h1>
 </div>
 
 <div id="pages">
@@ -14950,7 +14950,11 @@ async function importPackage(_input) {
     }
     if (!_data.songs && !_data.sets) throw new Error("fichier vide ou invalide");
     var _inSongs = _data.songs || [], _inSets = _data.sets || [];
-    showConfirm("Ajouter à cet appareil " + _inSongs.length + " morceau(x) et " + _inSets.length + " setlist(s) ? (Rien n'est supprimé : un morceau déjà présent est mis à jour.)", async function () {
+    var _what, _exp = "exportés";
+    if (_inSets.length === 1) { _what = "la setlist « " + (_inSets[0].name || "sans titre") + " » (" + _inSongs.length + " morceau" + (_inSongs.length > 1 ? "x" : "") + ")"; _exp = "exportée"; }
+    else if (!_inSets.length && _inSongs.length === 1) { _what = "le morceau « " + (_inSongs[0].name || "sans titre") + " »"; _exp = "exporté"; }
+    else _what = _inSongs.length + " morceau(x) et " + _inSets.length + " setlist(s)";
+    showConfirm("Importer " + _what + " " + _exp + " depuis un autre appareil ? Rien n'est supprimé ici : ce qui existe déjà est mis à jour.", async function () {
       try {
         bkStatus("⏳ Import…");
         for (var _i = 0; _i < _index.length; _i++) {
@@ -14981,7 +14985,7 @@ async function importPackage(_input) {
       } catch (_e2) {
         bkStatus("❌ Import interrompu : " + (_e2 && _e2.message ? _e2.message : _e2), "var(--R)");
       }
-    }, true);
+    }, false);
     bkRefreshStatus();
   } catch (_e) {
     bkStatus("❌ Fichier illisible : " + (_e && _e.message ? _e.message : _e), "var(--R)");
@@ -15387,7 +15391,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.159.0 · 11/11/2026 21:00<span id="license-watermark"></span>
+  v2.160.0 · 11/11/2026 21:30<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
