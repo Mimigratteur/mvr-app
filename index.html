@@ -858,7 +858,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.147.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.148.0</span></h1>
 </div>
 
 <div id="pages">
@@ -7881,6 +7881,7 @@ async function renderSceneTab(_0x1905ab) {
       var _0x2262e9 = _0x1649a5;
       var _0x5e6aaa = _0x1574f3;
       tabFileTempo = _0x35d0f6.tempo || 120;
+      try { tabBeatsPerBar = _0x35d0f6.masterBars[0].timeSignatureNumerator || 4; } catch (_e) { tabBeatsPerBar = 4; }
       var _0x5d83fb = parseFloat(_0x1905ab.bpm) || tabFileTempo;
       var _0x380d85 = _0x5d83fb / tabFileTempo;
       tabApi.playbackSpeed = Math.max(0.25, Math.min(2, _0x380d85));
@@ -7922,11 +7923,21 @@ function tabTogglePlay() {
   if (!tabApi) {
     return;
   }
-  // Précompte d'une mesure (métronome) avant le début de la lecture, si l'option est active
-  try { tabApi.countInVolume = wantPrecount() ? 1 : 0; } catch (_e) {}
+  try { tabApi.countInVolume = 0; } catch (_e) {}
+  if (cdCancel()) { tabSetPlayBtnState("ready"); return; }
+  var _isPlaying = tabApi.playerState === 1;
+  if (!_isPlaying && wantPrecount()) {
+    var _bpmEff = (tabFileTempo || 120) * (tabApi.playbackSpeed || 1);
+    tabSetPlayBtnState("loading");
+    cdRun(_bpmEff, tabBeatsPerBar, function () {
+      if (tabApi) { tabSetPlayBtnState("ready"); tabApi.play(); }
+    });
+    return;
+  }
   tabApi.playPause();
 }
 function tabRestart() {
+  cdCancel();
   var _0x407a57 = _0x552966;
   var _0x76f780 = _0x4bc6f9;
   if (!tabApi) {
@@ -7935,6 +7946,7 @@ function tabRestart() {
   tabApi.stop();
 }
 function tabStopAutoScroll() {
+  cdCancel();
   var _0x3133a1 = _0x552966;
   var _0x36ff03 = _0x4bc6f9;
   if (tabApi) {
@@ -8992,6 +9004,7 @@ function doPrecount(_0x36edd5, _0x491f2a, _0x424723) {
       _0xlastClick = _0xclickIdx;
       var _0x109429 = _0xclickIdx === 0;
       clickSound(_0x109429);
+      cdShow(_0x29e7b4 - _0xclickIdx, _0x109429);
       document.querySelectorAll(".dot").forEach(function (_0x3f78b2, _0x5f378c) {
         _0x3f78b2.className = "dot";
         if (_0x5f378c === _0xclickIdx) {
@@ -9004,6 +9017,7 @@ function doPrecount(_0x36edd5, _0x491f2a, _0x424723) {
         _0x20a32e.className = "dot";
       });
       precounting = false;
+      cdHide();
       _0x424723();
       return;
     }
@@ -9018,6 +9032,7 @@ function cancelPrecount() {
     return false;
   }
   precounting = false;
+  cdHide();
   cancelAnimationFrame(precountTimer);
   document.querySelectorAll(".dot").forEach(function (_0x5bd1ed) {
     var _0x453f06 = _0x4b9df2;
@@ -9338,6 +9353,7 @@ var metroIv = null;
 var AC = null;
 var tapTimes = [];
 var tabFileTempo = null;
+var tabBeatsPerBar = 4;
 function buildDots() {
   var _0x1b91b8 = _0x552966;
   var _0x5132fa = _0x4bc6f9;
@@ -9423,6 +9439,52 @@ function getAC() {
   }
   return AC;
 }
+// ── Décompte d'une mesure : gros chiffres à l'écran (4-3-2-1) + petit clic discret ──
+var cdOverlayEl = null;
+function cdShow(_n, _first) {
+  if (!cdOverlayEl) {
+    cdOverlayEl = document.createElement("div");
+    cdOverlayEl.id = "countdown-overlay";
+    cdOverlayEl.style.cssText = "position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;pointer-events:none;font:800 38vmin/1 var(--font-ui,system-ui,sans-serif);color:#F4B740;text-shadow:0 0 40px rgba(0,0,0,.65);background:rgba(6,7,10,.35)";
+    document.body.appendChild(cdOverlayEl);
+  }
+  cdOverlayEl.textContent = _n;
+  cdOverlayEl.style.color = _first ? "#F4B740" : "#E8ECF2";
+  cdOverlayEl.style.display = "flex";
+}
+function cdHide() { if (cdOverlayEl) cdOverlayEl.style.display = "none"; }
+
+var cdRunning = false, cdRaf = null;
+function cdRun(_bpm, _beats, _onDone) {
+  var _nb = parseInt(_beats, 10) || 4;
+  var _beatMs = 60000 / (_bpm || 100);
+  var _anchor = null, _last = -1;
+  cdRunning = true;
+  function _tick(_ts) {
+    if (!cdRunning) return;
+    if (_anchor === null) _anchor = _ts;
+    var _el = _ts - _anchor;
+    var _i = Math.min(_nb - 1, Math.floor(_el / _beatMs));
+    if (_i !== _last) {
+      _last = _i;
+      cdShow(_nb - _i, _i === 0);
+      try { clickSound(_i === 0); } catch (_e) {}
+    }
+    if (_el >= _nb * _beatMs) {
+      cdRunning = false; cdHide(); _onDone(); return;
+    }
+    cdRaf = requestAnimationFrame(_tick);
+  }
+  cdRaf = requestAnimationFrame(_tick);
+}
+function cdCancel() {
+  if (!cdRunning) return false;
+  cdRunning = false;
+  cancelAnimationFrame(cdRaf);
+  cdHide();
+  return true;
+}
+
 function clickSound(_0x5deae9) {
   var _0x170730 = _0x552966;
   var _0x4beadc = _0x4bc6f9;
@@ -15006,7 +15068,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.147.0 · 11/11/2026 09:30<span id="license-watermark"></span>
+  v2.148.0 · 11/11/2026 10:00<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
