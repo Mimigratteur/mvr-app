@@ -859,7 +859,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.156.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.157.0</span></h1>
 </div>
 
 <div id="pages">
@@ -1468,16 +1468,11 @@ Am | F | C | G"></textarea>
     </div>
   </div>
   <div class="row" style="margin-top:10px">
-    <button onclick="backupAll()" title="Morceaux, setlists, tablatures et partitions — sans les fichiers audio">💾 Sauvegarde complète</button>
-    <button onclick="document.getElementById(&#39;imp-backup&#39;).click()">♻ Restaurer une sauvegarde</button>
-    <input type="file" id="imp-backup" accept=".zip" style="display:none" onchange="restoreBackup(this)">
+    <button onclick="exportDialog()" title="Tout, une setlist ou un morceau — sans l'audio">⬆ Exporter</button>
+    <button onclick="document.getElementById(&#39;imp-backup&#39;).click()" title="Un fichier exporté (.zip) : morceau, setlist ou tout">⬇ Importer</button>
+    <input type="file" id="imp-backup" accept=".zip,.json" style="display:none" onchange="importPackage(this)">
   </div>
   <div id="backup-status" style="font-size:12px;color:var(--tx2);margin-top:6px"></div>
-  <div class="row" style="margin-top:10px">
-    <button onclick="exportData()">⬆ Export JSON</button>
-    <button onclick="document.getElementById(&#39;imp2&#39;).click()">⬇ Import JSON</button>
-    <input type="file" id="imp2" accept=".json" style="display:none" onchange="importData(this)">
-  </div>
   <div class="row" style="margin-top:10px">
     <button onclick="document.getElementById(&#39;imp-audio-batch&#39;).click()">🎵 Rattacher tous les fichiers audio</button>
     <input type="file" id="imp-audio-batch" multiple style="display:none" onchange="batchAttachAudio(this)">
@@ -14848,68 +14843,136 @@ function bkRefreshStatus() {
   var _d = prefs.lastBackup ? new Date(prefs.lastBackup) : null;
   bkStatus(_d ? "Dernière sauvegarde : " + _d.toLocaleDateString("fr-FR") + " à " + _d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) : "Aucune sauvegarde faite sur cet appareil.");
 }
-async function backupAll() {
+// Export : tout, une setlist (avec ses morceaux) ou un seul morceau — toujours SANS l'audio.
+function exportDialog() {
+  var _old = document.getElementById("export-dialog"); if (_old) _old.remove();
+  var _ov = document.createElement("div");
+  _ov.id = "export-dialog";
+  _ov.style.cssText = "position:fixed;inset:0;z-index:9500;background:rgba(6,7,10,.7);display:flex;align-items:center;justify-content:center;padding:16px";
+  var _p = document.createElement("div");
+  _p.style.cssText = "background:var(--bg2);border:1px solid var(--bd2);border-radius:14px;padding:18px;max-width:420px;width:100%;color:var(--tx1,#E8ECF2);font-size:14px";
+  var _selCss = "width:100%;margin:6px 0 0;padding:9px;border-radius:8px;background:var(--bg3);color:inherit;border:1px solid var(--bd2);font-size:14px";
+  var _setOpts = sets.map(function (_s) { return '<option value="' + esc(_s.id) + '">' + esc(_s.name || "(sans titre)") + " (" + (_s.songIds || []).length + ")</option>"; }).join("");
+  var _songOpts = songs.slice().sort(function (_x, _y) { return (_x.name || "").localeCompare(_y.name || ""); }).map(function (_g) { return '<option value="' + esc(_g.id) + '">' + esc(_g.name || "(sans titre)") + "</option>"; }).join("");
+  _p.innerHTML =
+    '<div style="font-size:17px;font-weight:700;margin-bottom:12px">⬆ Exporter</div>' +
+    '<label style="display:block;padding:8px 0"><input type="radio" name="exp-scope" value="all" checked> Toute la bibliothèque (' + songs.length + ' morceaux, ' + sets.length + ' setlists)</label>' +
+    '<label style="display:block;padding:8px 0"><input type="radio" name="exp-scope" value="set"' + (sets.length ? "" : " disabled") + '> Une setlist (avec ses morceaux)</label>' +
+    '<select id="exp-set" style="' + _selCss + '"' + (sets.length ? "" : " disabled") + ">" + _setOpts + "</select>" +
+    '<label style="display:block;padding:12px 0 8px"><input type="radio" name="exp-scope" value="song"' + (songs.length ? "" : " disabled") + '> Un seul morceau</label>' +
+    '<select id="exp-song" style="' + _selCss + '"' + (songs.length ? "" : " disabled") + ">" + _songOpts + "</select>" +
+    '<div style="font-size:12px;opacity:.7;margin-top:12px">Un seul fichier .zip : morceaux, tablatures et partitions. Sans les fichiers audio.</div>' +
+    '<div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end"><button class="btn-sm" id="exp-cancel">Annuler</button><button class="btn-sm btn-g" id="exp-go">Exporter</button></div>';
+  _ov.appendChild(_p); document.body.appendChild(_ov);
+  _p.querySelector("#exp-set").onfocus = function () { _p.querySelector('input[value="set"]').checked = true; };
+  _p.querySelector("#exp-song").onfocus = function () { _p.querySelector('input[value="song"]').checked = true; };
+  _p.querySelector("#exp-cancel").onclick = function () { _ov.remove(); };
+  _p.querySelector("#exp-go").onclick = function () {
+    var _scope = _p.querySelector('input[name="exp-scope"]:checked').value;
+    var _id = _scope === "set" ? _p.querySelector("#exp-set").value : _scope === "song" ? _p.querySelector("#exp-song").value : null;
+    _ov.remove();
+    exportPackage(_scope, _id);
+  };
+}
+async function exportPackage(_scope, _id) {
   try {
-    bkStatus("⏳ Préparation de la sauvegarde…");
+    bkStatus("⏳ Préparation de l'export…");
     await bkEnsureJSZip();
+    var _songsOut, _setsOut, _label;
+    if (_scope === "set") {
+      var _st = sets.find(function (_x) { return _x.id === _id; });
+      if (!_st) throw new Error("setlist introuvable");
+      var _ids = _st.songIds || [];
+      _songsOut = songs.filter(function (_g) { return _ids.indexOf(_g.id) >= 0; });
+      _setsOut = [_st]; _label = _st.name || "setlist";
+    } else if (_scope === "song") {
+      _songsOut = songs.filter(function (_g) { return _g.id === _id; });
+      if (!_songsOut.length) throw new Error("morceau introuvable");
+      _setsOut = []; _label = _songsOut[0].name || "morceau";
+    } else {
+      _songsOut = songs; _setsOut = sets; _label = "complete";
+    }
     var _zip = new JSZip();
-    _zip.file("data.json", JSON.stringify({ songs: songs, sets: sets, hist: hist, prefs: prefs, v: 8, app: "MVR", date: new Date().toISOString() }));
-    // Sans l'audio (lourd) : tablatures, partitions et images sont incluses, pas les pistes audio.
-    var _audioKeys = {};
-    songs.forEach(function (_sg) { if (_sg.audioKey) _audioKeys[_sg.audioKey] = true; });
-    var _media = (await bkAllMedia()).filter(function (_m) { return !_audioKeys[_m.key]; });
+    _zip.file("data.json", JSON.stringify({ songs: _songsOut, sets: _setsOut, hist: _scope === "all" ? hist : [], prefs: _scope === "all" ? prefs : null, scope: _scope, v: 9, app: "MVR", date: new Date().toISOString() }));
+    // fichiers joints des morceaux exportés uniquement, sans l'audio
+    var _wanted = {};
+    _songsOut.forEach(function (_g) {
+      if (_g.tabKey) _wanted[_g.tabKey] = true;
+      if (_g.osmdKey) _wanted[_g.osmdKey] = true;
+      if (_g.imgKeyPrefix && _g.imgPageCount) for (var _k = 0; _k < _g.imgPageCount; _k++) _wanted[_g.imgKeyPrefix + "_" + _k] = true;
+    });
+    var _media = (await bkAllMedia()).filter(function (_m) { return _wanted[_m.key]; });
     var _index = [];
     _media.forEach(function (_m, _i) {
-      var _name = "media/" + _i;
-      var _v = _m.value;
-      if (typeof _v === "string") { _zip.file(_name, _v); _index.push({ key: _m.key, file: _name, kind: "text" }); }
-      else { _zip.file(_name, _v); _index.push({ key: _m.key, file: _name, kind: "binary", type: _v && _v.type ? _v.type : "" }); }
+      var _fn = "media/" + _i, _v = _m.value;
+      _zip.file(_fn, _v);
+      _index.push(typeof _v === "string" ? { key: _m.key, file: _fn, kind: "text" } : { key: _m.key, file: _fn, kind: "binary", type: _v && _v.type ? _v.type : "" });
     });
     _zip.file("media-index.json", JSON.stringify(_index));
-    bkStatus("⏳ Compression de " + _media.length + " fichier(s)…");
+    bkStatus("⏳ Compression…");
     var _blob = await _zip.generateAsync({ type: "blob", compression: "DEFLATE", compressionOptions: { level: 3 } });
-    var _name = "MVR-sauvegarde-" + new Date().toISOString().slice(0, 10) + ".zip";
+    var _safe = String(_label).replace(/[\\/:*?"<>|]/g, "_").slice(0, 50);
+    var _name = "MVR-" + _safe + "-" + new Date().toISOString().slice(0, 10) + ".zip";
     var _a = document.createElement("a");
-    _a.href = URL.createObjectURL(_blob);
-    _a.download = _name;
+    _a.href = URL.createObjectURL(_blob); _a.download = _name;
     document.body.appendChild(_a); _a.click(); document.body.removeChild(_a);
     setTimeout(function () { URL.revokeObjectURL(_a.href); }, 10000);
-    prefs.lastBackup = Date.now();
-    dbSave();
-    bkStatus("✓ Sauvegarde enregistrée : « " + _name + " » (" + songs.length + " morceaux, " + sets.length + " setlists, " + _media.length + " fichier(s) joints, sans audio, " + (_blob.size / 1048576).toFixed(1) + " Mo). Cherche-la dans le dossier Téléchargements.", "var(--G)");
+    if (_scope === "all") { prefs.lastBackup = Date.now(); dbSave(); }
+    bkStatus("✓ Exporté : « " + _name + " » (" + _songsOut.length + " morceau(x), " + _setsOut.length + " setlist(s), " + (_blob.size / 1048576).toFixed(1) + " Mo, sans audio). Cherche-le dans Téléchargements.", "var(--G)");
   } catch (_e) {
-    bkStatus("❌ Sauvegarde impossible : " + (_e && _e.message ? _e.message : _e), "var(--R)");
+    bkStatus("❌ Export impossible : " + (_e && _e.message ? _e.message : _e), "var(--R)");
   }
 }
-async function restoreBackup(_input) {
+// Import : accepte un .zip MVR (un morceau, une setlist ou tout) ou un ancien .json.
+// Fusionne avec l'existant (ne supprime jamais rien) : un morceau déjà présent est mis à jour.
+async function importPackage(_input) {
   var _f = _input.files && _input.files[0];
   _input.value = "";
   if (!_f) return;
   try {
-    bkStatus("⏳ Lecture de la sauvegarde…");
-    await bkEnsureJSZip();
-    var _zip = await JSZip.loadAsync(_f);
-    var _dj = _zip.file("data.json");
-    if (!_dj) throw new Error("ce fichier n'est pas une sauvegarde MVR");
-    var _data = JSON.parse(await _dj.async("string"));
-    if (!_data.songs && !_data.sets) throw new Error("sauvegarde vide ou invalide");
-    var _idxFile = _zip.file("media-index.json");
-    var _index = _idxFile ? JSON.parse(await _idxFile.async("string")) : [];
-    showConfirm("Remplacer toutes les données de cet appareil par cette sauvegarde (" + (_data.songs || []).length + " morceaux, " + (_data.sets || []).length + " setlists, " + _index.length + " fichier(s) joints) ?", async function () {
+    bkStatus("⏳ Lecture du fichier…");
+    var _data, _index = [], _zip = null;
+    if (/\.json$/i.test(_f.name)) {
+      _data = JSON.parse(await _f.text());
+    } else {
+      await bkEnsureJSZip();
+      _zip = await JSZip.loadAsync(_f);
+      var _dj = _zip.file("data.json");
+      if (!_dj) throw new Error("ce fichier n'est pas un export MVR");
+      _data = JSON.parse(await _dj.async("string"));
+      var _ix = _zip.file("media-index.json");
+      _index = _ix ? JSON.parse(await _ix.async("string")) : [];
+    }
+    if (!_data.songs && !_data.sets) throw new Error("fichier vide ou invalide");
+    var _inSongs = _data.songs || [], _inSets = _data.sets || [];
+    showConfirm("Ajouter à cet appareil " + _inSongs.length + " morceau(x) et " + _inSets.length + " setlist(s) ? (Rien n'est supprimé : un morceau déjà présent est mis à jour.)", async function () {
       try {
-        bkStatus("⏳ Restauration…");
+        bkStatus("⏳ Import…");
         for (var _i = 0; _i < _index.length; _i++) {
           var _e = _index[_i], _zf = _zip.file(_e.file);
           if (!_zf) continue;
-          var _val = _e.kind === "text" ? await _zf.async("string") : await _zf.async("blob");
-          if (_e.kind !== "text" && _e.type) _val = new Blob([_val], { type: _e.type });
+          var _val = _e.kind === "text" ? await _zf.async("string") : new Blob([await _zf.async("arraybuffer")], { type: _e.type || "" });
           await imgDbPut(_e.key, _val);
         }
-        songs = _data.songs || []; sets = _data.sets || []; hist = _data.hist || []; prefs = _data.prefs || {};
-        dbSave(); applyPrefs(); renderSongs(); renderSets();
-        bkStatus("✓ Sauvegarde restaurée : " + songs.length + " morceaux, " + sets.length + " setlists.", "var(--G)");
+        if (_data.audioData) for (var _ak in _data.audioData) { try { await imgDbPut(_ak, _data.audioData[_ak]); } catch (_x) {} }
+        var _idMap = {}, _added = 0, _updated = 0;
+        _inSongs.forEach(function (_g) {
+          var _ix2 = songs.findIndex(function (_o) { return _o.id === _g.id; });
+          if (_ix2 < 0) _ix2 = songs.findIndex(function (_o) { return (_o.name || "").trim().toLowerCase() === (_g.name || "").trim().toLowerCase(); });
+          if (_ix2 >= 0) { _idMap[_g.id] = songs[_ix2].id; _g.id = songs[_ix2].id; songs[_ix2] = _g; _updated++; }
+          else { _idMap[_g.id] = _g.id; songs.push(_g); _added++; }
+        });
+        var _setsAdded = 0;
+        _inSets.forEach(function (_s) {
+          _s.songIds = (_s.songIds || []).map(function (_sid) { return _idMap[_sid] || _sid; });
+          var _ix3 = sets.findIndex(function (_o) { return _o.id === _s.id; });
+          if (_ix3 < 0) _ix3 = sets.findIndex(function (_o) { return (_o.name || "").trim().toLowerCase() === (_s.name || "").trim().toLowerCase(); });
+          if (_ix3 >= 0) { _s.id = sets[_ix3].id; sets[_ix3] = _s; } else { sets.push(_s); _setsAdded++; }
+        });
+        dbSave(); renderSongs(); renderSets();
+        bkStatus("✓ Import terminé : " + _added + " morceau(x) ajouté(s), " + _updated + " mis à jour, " + _setsAdded + " setlist(s) ajoutée(s).", "var(--G)");
       } catch (_e2) {
-        bkStatus("❌ Restauration interrompue : " + (_e2 && _e2.message ? _e2.message : _e2), "var(--R)");
+        bkStatus("❌ Import interrompu : " + (_e2 && _e2.message ? _e2.message : _e2), "var(--R)");
       }
     }, true);
     bkRefreshStatus();
@@ -15317,7 +15380,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.156.0 · 11/11/2026 18:00<span id="license-watermark"></span>
+  v2.157.0 · 11/11/2026 19:00<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
