@@ -395,8 +395,8 @@ input[type=range]{accent-color:var(--G);touch-action:pan-y}
 .img-mode-only{display:none}
 .img-mode-only-flex{display:none}
 .gp-mode-active{background:var(--Gd)!important;border-color:var(--Gd)!important;color:#0B0D12!important}
-#gp-precount-btn.pc-on,#tab-precount-btn.pc-on{background:var(--A);border-color:var(--A);color:#0B0D12}
-#gp-precount-btn.pc-off,#tab-precount-btn.pc-off{opacity:.55}
+#gp-precount-btn.pc-on,.cd-btn.pc-on{background:var(--A);border-color:var(--A);color:#0B0D12}
+#gp-precount-btn.pc-off,.cd-btn.pc-off{opacity:.55}
 
 /* ── Mode "partition image" — photo(s) ou PDF scanné affiché tel quel ──
    Aucune interprétation du contenu : l'app affiche l'image et la fait
@@ -858,7 +858,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.148.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.149.0</span></h1>
 </div>
 
 <div id="pages">
@@ -984,6 +984,8 @@ body.fullscreen #topbar{display:none}
       <button class="grid-mode-only btn-sm" id="gp-mode-edit-btn" onclick="gpSetMode(&#39;edit&#39;)" style="flex-shrink:0" title="Modifier">✎</button>
       <button class="gp-edit-only btn-sm" id="gp-undo-btn" onclick="gpUndo()" style="display:none;flex-shrink:0" title="Annuler">↩</button>
       <button class="grid-mode-only btn-sm pc-off" id="gp-precount-btn" onclick="togglePrecountBtn()" style="flex-shrink:0" title="Précompte d&#39;une mesure avant lecture — désactivé">⏱️</button>
+      <button class="cd-btn grid-mode-only btn-sm pc-off" onclick="toggleCountdown()" style="flex-shrink:0" title="Décompte d'une mesure avant lecture — désactivé">🔢</button>
+      <button class="cd-btn lyr-mode-only btn-sm pc-off" onclick="toggleCountdown()" style="flex-shrink:0" title="Décompte d'une mesure avant lecture — désactivé">🔢</button>
       <button class="lyr-mode-only btn-sm" id="lyr-mode-lecture-btn" onclick="lycSetMode(&#39;lecture&#39;)" style="flex-shrink:0" title="Lecture">👁</button>
       <button class="lyr-mode-only btn-sm" id="lyr-mode-edit-btn" onclick="lycSetMode(&#39;edit&#39;)" style="flex-shrink:0" title="Modifier">✎</button>
       <button class="osmd-mode-only btn-sm" id="osmd-chords-btn" onclick="osmdOpenChordEditorFromScene()" style="display:none;flex-shrink:0" title="Corriger les accords">✎</button>
@@ -1065,7 +1067,7 @@ body.fullscreen #topbar{display:none}
       <div class="tab-mode-only" style="gap:5px;flex-wrap:nowrap">
         <button class="btn-g" id="tab-play-btn" onclick="tabTogglePlay()">▶ Play</button>
         <button class="btn-r" onclick="tabRestart()">↺ Début</button>
-        <button class="btn-sm pc-off" id="tab-precount-btn" onclick="togglePrecountBtn()" style="flex-shrink:0" title="Précompte d'une mesure avant lecture">⏱️</button>
+        <button class="cd-btn btn-sm pc-off" onclick="toggleCountdown()" style="flex-shrink:0" title="Décompte d'une mesure avant lecture — désactivé">🔢</button>
       </div>
       <!-- Contrôles du mode "partition MusicXML" (OSMD) -->
       <div class="osmd-mode-only" style="gap:5px;flex-wrap:nowrap">
@@ -7926,7 +7928,7 @@ function tabTogglePlay() {
   try { tabApi.countInVolume = 0; } catch (_e) {}
   if (cdCancel()) { tabSetPlayBtnState("ready"); return; }
   var _isPlaying = tabApi.playerState === 1;
-  if (!_isPlaying && wantPrecount()) {
+  if (!_isPlaying && prefs.countdown) {
     var _bpmEff = (tabFileTempo || 120) * (tabApi.playbackSpeed || 1);
     tabSetPlayBtnState("loading");
     cdRun(_bpmEff, tabBeatsPerBar, function () {
@@ -9004,7 +9006,6 @@ function doPrecount(_0x36edd5, _0x491f2a, _0x424723) {
       _0xlastClick = _0xclickIdx;
       var _0x109429 = _0xclickIdx === 0;
       clickSound(_0x109429);
-      cdShow(_0x29e7b4 - _0xclickIdx, _0x109429);
       document.querySelectorAll(".dot").forEach(function (_0x3f78b2, _0x5f378c) {
         _0x3f78b2.className = "dot";
         if (_0x5f378c === _0xclickIdx) {
@@ -9017,7 +9018,6 @@ function doPrecount(_0x36edd5, _0x491f2a, _0x424723) {
         _0x20a32e.className = "dot";
       });
       precounting = false;
-      cdHide();
       _0x424723();
       return;
     }
@@ -9032,7 +9032,6 @@ function cancelPrecount() {
     return false;
   }
   precounting = false;
-  cdHide();
   cancelAnimationFrame(precountTimer);
   document.querySelectorAll(".dot").forEach(function (_0x5bd1ed) {
     var _0x453f06 = _0x4b9df2;
@@ -9055,7 +9054,7 @@ function wantPrecount() {
 function startPlay(_0x1c05b0) {
   var _0x5e97a9 = _0x552966;
   var _0x1a5afc = _0x4bc6f9;
-  if (playing || precounting) {
+  if (playing || precounting || cdRunning) {
     return;
   }
   async function _0x232863() {
@@ -9071,7 +9070,10 @@ function startPlay(_0x1c05b0) {
       liveBroadcastPlayState(true);
     }
   }
-  if (wantPrecount() && allChords.length) {
+  if (prefs.countdown && allChords.length) {
+    var _cdBeats = document.getElementById("timesig") ? document.getElementById("timesig").value : 4;
+    cdRun(bpm, _cdBeats, _0x232863);
+  } else if (wantPrecount() && allChords.length) {
     var _0xcd6f80 = document.getElementById("timesig") ? document.getElementById("timesig").value : 4;
     doPrecount(bpm, _0xcd6f80, _0x232863);
   } else {
@@ -9079,6 +9081,9 @@ function startPlay(_0x1c05b0) {
   }
 }
 function stopPlay(_0x59fb2a) {
+  if (cdCancel()) {
+    return;
+  }
   if (cancelPrecount()) {
     return;
   }
@@ -9454,6 +9459,19 @@ function cdShow(_n, _first) {
 }
 function cdHide() { if (cdOverlayEl) cdOverlayEl.style.display = "none"; }
 
+function toggleCountdown() {
+  prefs.countdown = !prefs.countdown;
+  try { dbSave(); } catch (_e) {}
+  updateCountdownBtn();
+}
+function updateCountdownBtn() {
+  var _on = !!prefs.countdown;
+  document.querySelectorAll(".cd-btn").forEach(function (_b) {
+    _b.classList.toggle("pc-on", _on);
+    _b.classList.toggle("pc-off", !_on);
+    _b.title = "Décompte d'une mesure avant lecture — " + (_on ? "activé" : "désactivé");
+  });
+}
 var cdRunning = false, cdRaf = null;
 function cdRun(_bpm, _beats, _onDone) {
   var _nb = parseInt(_beats, 10) || 4;
@@ -14850,6 +14868,7 @@ function applyPrefs() {
   document.getElementById("pref-notation").value = prefs.notation || "int";
   document.getElementById("notation").value = prefs.notation || "int";
   updatePrecountBtn();
+  updateCountdownBtn();
   try {
     var _0x48025f = localStorage.getItem("mvr_anthropic_api_key");
     var _0x46413d = document.getElementById("pref-api-key");
@@ -14898,12 +14917,6 @@ function togglePrecountBtn() {
 function updatePrecountBtn() {
   var _0x2b1b20 = _0x552966;
   var _0x10e04f = _0x4bc6f9;
-  var _tpb = document.getElementById("tab-precount-btn");
-  if (_tpb) {
-    var _tpon = prefs.precount !== false;
-    _tpb.classList.toggle("pc-on", _tpon);
-    _tpb.classList.toggle("pc-off", !_tpon);
-  }
   var _0x1ed21e = document.getElementById("gp-precount-btn");
   if (!_0x1ed21e) {
     return;
@@ -15068,7 +15081,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.148.0 · 11/11/2026 10:00<span id="license-watermark"></span>
+  v2.149.0 · 11/11/2026 10:30<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
