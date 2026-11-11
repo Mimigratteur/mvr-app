@@ -859,7 +859,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.152.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.153.0</span></h1>
 </div>
 
 <div id="pages">
@@ -7818,6 +7818,58 @@ function tabSelectTrack(_idx, _score, _song, _at) {
   _song.tabTrack = _idx;
   try { dbSave(); } catch (_e) {}
 }
+// ── Mute par piste (le son de toutes les pistes est joué, même celles non affichées) ──
+var tabScoreRef = null, tabSongRef = null;
+function tabApplyMutes() {
+  if (!tabApi || !tabScoreRef || !tabSongRef) return;
+  var _m = tabSongRef.tabMuted || [];
+  tabScoreRef.tracks.forEach(function (_t, _i) {
+    try { tabApi.changeTrackMute([_t], _m.indexOf(_i) >= 0); } catch (_e) {}
+  });
+}
+function tabToggleMute(_i) {
+  if (!tabSongRef) return;
+  var _m = (tabSongRef.tabMuted || []).slice();
+  var _k = _m.indexOf(_i);
+  if (_k >= 0) _m.splice(_k, 1); else _m.push(_i);
+  tabSongRef.tabMuted = _m;
+  try { dbSave(); } catch (_e) {}
+  try { tabApi.changeTrackMute([tabScoreRef.tracks[_i]], _k < 0); } catch (_e) {}
+}
+function tabTrackName(_t, _i) {
+  return (_t.name || _t.shortName || ("Piste " + (_i + 1))).trim() || ("Piste " + (_i + 1));
+}
+function tabBuildMuteMenu(_bar) {
+  var _btn = document.createElement("button");
+  _btn.className = "btn-sm";
+  _btn.style.flexShrink = "0";
+  _btn.textContent = "🔊 Sons";
+  var _panel = document.createElement("div");
+  _panel.style.cssText = "display:none;position:absolute;top:100%;right:10px;min-width:240px;max-width:92vw;max-height:60vh;overflow:auto;background:#2E3645;border:1px solid #4A5468;border-radius:10px;padding:6px;box-shadow:0 8px 24px rgba(0,0,0,.5)";
+  function _refresh() {
+    _panel.innerHTML = "";
+    var _m = tabSongRef.tabMuted || [];
+    var _nm = 0;
+    tabScoreRef.tracks.forEach(function (_t, _i) {
+      var _muted = _m.indexOf(_i) >= 0;
+      if (_muted) _nm++;
+      var _row = document.createElement("button");
+      _row.style.cssText = "display:flex;width:100%;gap:10px;align-items:center;text-align:left;background:transparent;border:0;border-radius:8px;padding:10px 12px;color:" + (_muted ? "#8892A3" : "#E8ECF2") + ";font-size:14px;cursor:pointer";
+      _row.textContent = (_muted ? "🔇 " : "🔊 ") + tabTrackName(_t, _i) + (_muted ? "  (coupé)" : "");
+      _row.onclick = function (_ev) { _ev.stopPropagation(); tabToggleMute(_i); _refresh(); };
+      _panel.appendChild(_row);
+    });
+    _btn.textContent = _nm ? ("🔇 Sons (" + _nm + ")") : "🔊 Sons";
+  }
+  _btn.onclick = function (_ev) {
+    _ev.stopPropagation();
+    _panel.style.display = _panel.style.display === "none" ? "block" : "none";
+    if (_panel.style.display === "block") _refresh();
+  };
+  _bar.appendChild(_btn);
+  _bar.appendChild(_panel);
+  _refresh();
+}
 function tabBuildTrackBar(_score, _song, _at) {
   var _old = document.getElementById("tab-track-bar");
   if (_old) _old.remove();
@@ -7845,8 +7897,10 @@ function tabBuildTrackBar(_score, _song, _at) {
   var _saved = (typeof _song.tabTrack === "number" && _song.tabTrack < _score.tracks.length) ? _song.tabTrack : 0;
   _sel.value = _saved;
   _sel.onchange = function () { tabSelectTrack(parseInt(_sel.value, 10), _score, _song, _at); };
+  tabScoreRef = _score; tabSongRef = _song;
   if (_multi) { _bar.appendChild(_lab); _bar.appendChild(_sel); }
   _bar.appendChild(_cd);
+  if (_multi) { tabBuildMuteMenu(_bar); tabApplyMutes(); }
   _stage.insertBefore(_bar, _stage.firstChild);
   updateCountdownBtn();
   if (!_multi) return;
@@ -7914,6 +7968,7 @@ async function renderSceneTab(_0x1905ab) {
       var _0x4b1669 = curSet && curSet.songIds ? curSet.songIds[curIdx] : null;
       if (_0x4b1669 === _0x1905ab.id) {
         tabSetPlayBtnState("ready");
+        try { tabApplyMutes(); } catch (_e) {}
       }
     });
     tabApi.playerStateChanged.on(function (_0x34d9a2) {
@@ -15106,7 +15161,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.152.0 · 11/11/2026 12:00<span id="license-watermark"></span>
+  v2.153.0 · 11/11/2026 12:30<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
