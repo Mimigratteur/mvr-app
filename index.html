@@ -859,7 +859,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.158.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.159.0</span></h1>
 </div>
 
 <div id="pages">
@@ -1470,7 +1470,7 @@ Am | F | C | G"></textarea>
   <div class="row" style="margin-top:10px">
     <button onclick="exportDialog()" title="Tout, une setlist ou un morceau — sans l'audio">⬆ Exporter</button>
     <button onclick="document.getElementById(&#39;imp-backup&#39;).click()" title="Un fichier exporté (.zip) : morceau, setlist ou tout">⬇ Importer</button>
-    <input type="file" id="imp-backup" accept=".zip,.json" style="display:none" onchange="importPackage(this)">
+    <input type="file" id="imp-backup" style="display:none" onchange="importPackage(this)">
   </div>
   <div id="backup-status" style="font-size:12px;color:var(--tx2);margin-top:6px"></div>
   <div class="row" style="margin-top:10px">
@@ -12752,6 +12752,11 @@ async function unifiedLoadFiles(_0x2702cd) {
     await imgLoadFiles(_0x259964);
     return;
   }
+  if (_0x259964.length === 1 && /\.zip$/i.test(_0x259964[0].name)) {
+    // Export MVR (.zip) : un morceau, une setlist ou toute la bibliothèque
+    importPackage({ files: [_0x259964[0]], value: "" });
+    return;
+  }
   if (_0x259964.length === 1) {
     await unifiedLoadSingleFile(_0x259964[0]);
     return;
@@ -14970,7 +14975,9 @@ async function importPackage(_input) {
           if (_ix3 >= 0) { _s.id = sets[_ix3].id; sets[_ix3] = _s; } else { sets.push(_s); _setsAdded++; }
         });
         dbSave(); renderSongs(); renderSets();
-        bkStatus("✓ Import terminé : " + _added + " morceau(x) ajouté(s), " + _updated + " mis à jour, " + _setsAdded + " setlist(s) ajoutée(s).", "var(--G)");
+        var _doneMsg = "✓ Import terminé : " + _added + " morceau(x) ajouté(s), " + _updated + " mis à jour, " + _setsAdded + " setlist(s) ajoutée(s).";
+        bkStatus(_doneMsg, "var(--G)");
+        try { showAlert(_doneMsg); } catch (_x) {}
       } catch (_e2) {
         bkStatus("❌ Import interrompu : " + (_e2 && _e2.message ? _e2.message : _e2), "var(--R)");
       }
@@ -15380,7 +15387,7 @@ function showUpdateBanner(_0x3ed1d4) {
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.158.0 · 11/11/2026 20:00<span id="license-watermark"></span>
+  v2.159.0 · 11/11/2026 21:00<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
