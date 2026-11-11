@@ -4,7 +4,7 @@
 // IMPORTANT : incrémenter ce numéro à chaque déploiement d'une nouvelle version.
 // C'est ce qui permet au navigateur de détecter qu'un nouveau Service Worker
 // existe (le fichier service-worker.js a changé) et de proposer la mise à jour.
-const APP_VERSION = '126';
+const APP_VERSION = '127';
 const CACHE_NAME = 'mvr-cache-v' + APP_VERSION;
 // Cache séparé pour la banque de sons (gros fichier) : conservé d'une version à l'autre
 const SF_CACHE = 'mvr-soundfont-v1';
