@@ -929,7 +929,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.171.0</span> <button class="btn-sm" id="fs-top" onclick="browserFS()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.172.0</span> <button class="btn-sm" id="fs-top" onclick="browserFS()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
 </div>
 
 <div id="pages">
@@ -8205,6 +8205,15 @@ function tabBuildLoopControls(_bar) {
   }
   _btn.onclick = function () {
     _l.on = !_l.on;
+    if (_l.on && _l.from === 1 && _l.to === _n) {
+      try {
+        var _st0 = document.getElementById("tab-stage"), _in0 = document.getElementById("tab-stage-inner");
+        var _bh = (document.getElementById("tab-track-bar") || {}).offsetHeight || 100;
+        var _sr0 = _st0.getBoundingClientRect(), _ir0 = _in0.getBoundingClientRect();
+        var _i0 = tabBarIndexAtPos(0, (_sr0.top + _bh + 40) - _ir0.top);
+        if (_i0 >= 0) { _l.from = _i0 + 1; _l.to = Math.min(_n, _l.from + 3); }
+      } catch (_e) {}
+    }
     try { dbSave(); } catch (_e) {}
     _refresh(); tabApplyLoop();
   };
@@ -16308,7 +16317,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.171.0 · 16/11/2026 16:30<span id="license-watermark"></span>
+  v2.172.0 · 16/11/2026 16:30<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
