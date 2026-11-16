@@ -929,7 +929,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.169.0</span> <button class="btn-sm" id="fs-top" onclick="browserFS()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.170.0</span> <button class="btn-sm" id="fs-top" onclick="browserFS()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
 </div>
 
 <div id="pages">
@@ -8043,6 +8043,88 @@ function tabSetLoopRange(_f, _t) {
   if (tabLoopUI) tabLoopUI.refresh();
   tabApplyLoop();
 }
+// --- Poignees vertes de boucle (comme Songsterr) : on glisse le bord jusqu'a la mesure voulue ---
+var tabHLayer = null, tabHStart = null, tabHEnd = null, tabHDrag = null;
+function tabBarIndexAtPos(_x, _y) {
+  var _lk = tabApi && tabApi.boundsLookup, _best = -1, _bd = 1e9;
+  if (!_lk || !_lk.staffSystems) return -1;
+  _lk.staffSystems.forEach(function (_s) {
+    (_s.bars || []).forEach(function (_m) {
+      var _v = _m.visualBounds; if (!_v) return;
+      var _dy = _y < _v.y ? _v.y - _y : (_y > _v.y + _v.h ? _y - _v.y - _v.h : 0);
+      var _dx = _x < _v.x ? _v.x - _x : (_x > _v.x + _v.w ? _x - _v.x - _v.w : 0);
+      var _d = _dy * 3 + _dx;
+      if (_d < _bd) { _bd = _d; _best = _m.index; }
+    });
+  });
+  return _best;
+}
+function tabMakeHandle(_isStart) {
+  var _h = document.createElement("div");
+  _h.style.cssText = "position:absolute;width:46px;margin-left:-23px;pointer-events:auto;touch-action:none;cursor:ew-resize;z-index:3;display:flex;align-items:center;justify-content:center";
+  _h.innerHTML = '<div style="position:absolute;left:21px;top:0;bottom:0;width:4px;background:#2FA84F;border-radius:2px"></div>'
+    + '<div style="position:relative;width:30px;height:30px;border-radius:50%;background:#2FA84F;color:#fff;font:700 20px/28px sans-serif;text-align:center;box-shadow:0 1px 5px rgba(0,0,0,.5)">' + (_isStart ? "›" : "‹") + '</div>';
+  _h.addEventListener("pointerdown", function (_e) {
+    _e.preventDefault(); _e.stopPropagation();
+    try { _h.setPointerCapture(_e.pointerId); } catch (_x) {}
+    tabHDrag = { start: _isStart, ev: _e, timer: setInterval(tabHandleTick, 40) };
+  });
+  _h.addEventListener("pointermove", function (_e) { if (tabHDrag) { tabHDrag.ev = _e; tabHandleTick(true); } });
+  var _end = function () {
+    if (!tabHDrag) return;
+    clearInterval(tabHDrag.timer); tabHDrag = null;
+    var _l = tabSongRef && tabSongRef.tabLoop; if (_l) tabSetLoopRange(_l.from - 1, _l.to - 1);
+  };
+  _h.addEventListener("pointerup", _end); _h.addEventListener("pointercancel", _end);
+  return _h;
+}
+function tabHandleTick(_fromMove) {
+  try {
+    if (!tabHDrag || !tabSongRef || !tabSongRef.tabLoop) return;
+    var _e = tabHDrag.ev, _st = document.getElementById("tab-stage"), _in = document.getElementById("tab-stage-inner");
+    if (!_st || !_in) return;
+    var _sr = _st.getBoundingClientRect();
+    if (_e.clientY < _sr.top + 130) _st.scrollTop -= 14; else if (_e.clientY > _sr.bottom - 50) _st.scrollTop += 14;
+    var _ir = _in.getBoundingClientRect();
+    var _i = tabBarIndexAtPos(_e.clientX - _ir.left, _e.clientY - _ir.top);
+    if (_i < 0) return;
+    var _l = tabSongRef.tabLoop;
+    if (tabHDrag.start) _l.from = Math.min(_i + 1, _l.to); else _l.to = Math.max(_i + 1, _l.from);
+    if (tabLoopUI) tabLoopUI.refresh(); else tabHandlesDraw();
+  } catch (_x) {}
+}
+function tabHandlesDraw() {
+  try {
+    var _st = document.getElementById("tab-stage"), _in = document.getElementById("tab-stage-inner");
+    var _l = tabSongRef && tabSongRef.tabLoop;
+    if (!_st || !_in || !tabApi || !tabApi.boundsLookup || !tabScoreRef) { if (tabHLayer) tabHLayer.style.display = "none"; return; }
+    if (getComputedStyle(_st).position === "static") _st.style.position = "relative";
+    if (!tabHLayer || !tabHLayer.isConnected) {
+      tabHLayer = document.createElement("div");
+      tabHLayer.style.cssText = "position:absolute;left:0;top:0;width:0;height:0;pointer-events:none;z-index:50";
+      tabHStart = tabMakeHandle(true); tabHEnd = tabMakeHandle(false);
+      _st.appendChild(tabHLayer);
+    }
+    if (!_l || !_l.on) { tabHLayer.style.display = "none"; return; }
+    tabHLayer.style.display = "block";
+    var _sr = _st.getBoundingClientRect(), _ir = _in.getBoundingClientRect();
+    var _ox = _ir.left - _sr.left + _st.scrollLeft, _oy = _ir.top - _sr.top + _st.scrollTop;
+    var _lk = tabApi.boundsLookup;
+    var _a = _lk.findMasterBarByIndex(_l.from - 1), _b = _lk.findMasterBarByIndex(_l.to - 1);
+    Array.prototype.slice.call(tabHLayer.children).forEach(function (_c) { if (_c !== tabHStart && _c !== tabHEnd) tabHLayer.removeChild(_c); });
+    if (!_a || !_b) return;
+    for (var _k = _l.from - 1; _k <= _l.to - 1; _k++) {
+      var _m = _lk.findMasterBarByIndex(_k); if (!_m) continue;
+      var _v = _m.visualBounds, _r = document.createElement("div");
+      _r.style.cssText = "position:absolute;background:rgba(47,168,79,.16);left:" + (_ox + _v.x) + "px;top:" + (_oy + _v.y) + "px;width:" + _v.w + "px;height:" + _v.h + "px";
+      tabHLayer.appendChild(_r);
+    }
+    var _va = _a.visualBounds, _vb = _b.visualBounds;
+    tabHStart.style.left = (_ox + _va.x) + "px"; tabHStart.style.top = (_oy + _va.y) + "px"; tabHStart.style.height = _va.h + "px";
+    tabHEnd.style.left = (_ox + _vb.x + _vb.w) + "px"; tabHEnd.style.top = (_oy + _vb.y) + "px"; tabHEnd.style.height = _vb.h + "px";
+    if (tabHStart.parentNode !== tabHLayer) { tabHLayer.appendChild(tabHStart); tabHLayer.appendChild(tabHEnd); }
+  } catch (_x) {}
+}
 var tabLastPickAt = 0;
 function tabTouchPick(_ev) {
   try {
@@ -8119,6 +8201,7 @@ function tabBuildLoopControls(_bar) {
     _rng.style.display = _l.on ? "inline-flex" : "none";
     _rng.querySelector("#tab-loop-from").value = _l.from;
     _rng.querySelector("#tab-loop-to").value = _l.to;
+    tabHandlesDraw();
   }
   _btn.onclick = function () {
     _l.on = !_l.on;
@@ -8259,6 +8342,7 @@ async function renderSceneTab(_0x1905ab) {
     }
     tabApi.beatMouseDown.on(function (_b) { try { tabOnBeatPick(_b); } catch (_e) {} });
     try { var _stg = document.getElementById("tab-stage"); if (_stg && !_stg._pickBound) { _stg._pickBound = 1; _stg.addEventListener("pointerup", function (_e) { if (_e.pointerType === "touch") setTimeout(function () { tabTouchPick(_e); }, 120); }); } } catch (_e) {}
+    try { tabApi.renderFinished.on(function () { tabHandlesDraw(); }); tabApi.postRenderFinished.on(function () { tabHandlesDraw(); }); } catch (_e) {}
     tabApi.playbackRangeChanged.on(function (_a) { try { tabOnRangeChanged(_a); } catch (_e) {} });
     tabApi.scoreLoaded.on(function (_0x35d0f6) {
       var _0x2262e9 = _0x1649a5;
@@ -16224,7 +16308,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.169.0 · 16/11/2026 16:30<span id="license-watermark"></span>
+  v2.170.0 · 16/11/2026 16:30<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
