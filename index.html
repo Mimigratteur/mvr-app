@@ -929,7 +929,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.174.0</span> <button class="btn-sm" id="fs-top" onclick="browserFS()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.175.0</span> <button class="btn-sm" id="fs-top" onclick="browserFS()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
 </div>
 
 <div id="pages">
@@ -8067,7 +8067,8 @@ function tabMakeHandle(_isStart) {
   _h.addEventListener("pointerdown", function (_e) {
     _e.preventDefault(); _e.stopPropagation();
     try { _h.setPointerCapture(_e.pointerId); } catch (_x) {}
-    tabHDrag = { start: _isStart, ev: _e, timer: setInterval(tabHandleTick, 40) };
+    var _hr = _h.getBoundingClientRect();
+    tabHDrag = { start: _isStart, ev: _e, gx: _e.clientX - (_hr.left + _hr.width / 2), gy: _e.clientY - (_hr.top + _hr.height / 2), timer: setInterval(tabHandleTick, 40) };
   });
   _h.addEventListener("pointermove", function (_e) { if (tabHDrag) { tabHDrag.ev = _e; tabHandleTick(true); } });
   var _end = function () {
@@ -8086,7 +8087,10 @@ function tabHandleTick(_fromMove) {
     var _sr = _st.getBoundingClientRect();
     if (_e.clientY < _sr.top + 130) _st.scrollTop -= 14; else if (_e.clientY > _sr.bottom - 50) _st.scrollTop += 14;
     var _ir = _in.getBoundingClientRect();
-    var _i = tabBarIndexAtPos(_e.clientX - _ir.left, _e.clientY - _ir.top);
+    // c'est la POIGNEE qui decide (pas le doigt) : son bord tombe dans la mesure voulue
+    var _hx = _e.clientX - tabHDrag.gx - _ir.left + (tabHDrag.start ? 4 : -4);
+    var _hy = _e.clientY - tabHDrag.gy - _ir.top;
+    var _i = tabBarIndexAtPos(_hx, _hy);
     if (_i < 0) return;
     var _l = tabSongRef.tabLoop;
     if (tabHDrag.start) _l.from = Math.min(_i + 1, _l.to); else _l.to = Math.max(_i + 1, _l.from);
@@ -16331,7 +16335,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.174.0 · 16/11/2026 16:30<span id="license-watermark"></span>
+  v2.175.0 · 16/11/2026 16:30<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
