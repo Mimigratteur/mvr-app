@@ -928,7 +928,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.162.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.163.0</span></h1>
 </div>
 
 <div id="pages">
@@ -8188,6 +8188,12 @@ function tabRestart() {
     return;
   }
   tabApi.stop();
+  // Le curseur revient au début : l'écran doit y revenir aussi (et pas rester là où on a fait Pause)
+  var _tst = document.getElementById("tab-stage");
+  if (_tst) {
+    _tst.scrollTop = 0;
+    setTimeout(function () { _tst.scrollTop = 0; }, 80);
+  }
 }
 function tabStopAutoScroll() {
   cdCancel();
@@ -8571,6 +8577,7 @@ function osmdRestart() {
     osmdApi.cursor.reset();
     osmdApi.cursor.show();
   } catch (_0xe) {}
+  try { document.getElementById("osmd-stage").scrollTop = 0; } catch (_0xe2) {}
   try {
     var _0xleadInSec = (gpLeadInBeats || 0) * (60 / (bpm || 100));
     _pbStartOffset = _0xleadInSec;
@@ -16065,7 +16072,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.162.0 · 16/11/2026 09:30<span id="license-watermark"></span>
+  v2.163.0 · 16/11/2026 10:30<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
