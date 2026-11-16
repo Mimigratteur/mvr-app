@@ -929,7 +929,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.173.0</span> <button class="btn-sm" id="fs-top" onclick="browserFS()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.174.0</span> <button class="btn-sm" id="fs-top" onclick="browserFS()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
 </div>
 
 <div id="pages">
@@ -8424,8 +8424,22 @@ function tabRestart() {
   // Le curseur revient au début : l'écran doit y revenir aussi (et pas rester là où on a fait Pause)
   var _tst = document.getElementById("tab-stage");
   if (_tst) {
-    _tst.scrollTop = 0;
-    setTimeout(function () { _tst.scrollTop = 0; }, 80);
+    var _goTop = function () {
+      var _y = 0;
+      try {
+        var _lp = tabSongRef && tabSongRef.tabLoop;
+        if (_lp && _lp.on && !(_lp.from <= 1 && _lp.to >= tabScoreRef.masterBars.length)) {
+          var _v = tabApi.boundsLookup.findMasterBarByIndex(_lp.from - 1).visualBounds;
+          var _in = document.getElementById("tab-stage-inner");
+          var _bh = (document.getElementById("tab-track-bar") || {}).offsetHeight || 100;
+          var _oy = _in.getBoundingClientRect().top - _tst.getBoundingClientRect().top + _tst.scrollTop;
+          _y = Math.max(0, _oy + _v.y - _bh - 40);
+        }
+      } catch (_e) { _y = 0; }
+      _tst.scrollTop = _y;
+    };
+    _goTop();
+    setTimeout(_goTop, 80);
   }
 }
 function tabStopAutoScroll() {
@@ -16317,7 +16331,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.173.0 · 16/11/2026 16:30<span id="license-watermark"></span>
+  v2.174.0 · 16/11/2026 16:30<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
