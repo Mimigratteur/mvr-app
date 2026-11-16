@@ -929,7 +929,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.167.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.168.0</span> <button class="btn-sm" id="fs-top" onclick="browserFS()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
 </div>
 
 <div id="pages">
@@ -9706,6 +9706,18 @@ function toggleSceneTools(_0x52072a) {
     _0x10dc60.textContent = _0x3aaa14 ? "▴" : "▾";
   }
 }
+function browserFS() {
+  var _d = document, _e = _d.documentElement;
+  var _on = _d.fullscreenElement || _d.webkitFullscreenElement || _d.mozFullScreenElement;
+  var _rq = _e.requestFullscreen || _e.webkitRequestFullscreen || _e.mozRequestFullScreen;
+  var _ex = _d.exitFullscreen || _d.webkitExitFullscreen || _d.mozCancelFullScreen;
+  try {
+    if (_on) { if (_ex) _ex.call(_d); return; }
+    if (!_rq) { showAlert("Plein écran non permis par ce navigateur : utilise Chrome, Brave ou Edge, puis ⋮ → Installer l'application"); return; }
+    var _p = _rq.call(_e, { navigationUI: "hide" });
+    if (_p && _p.catch) _p.catch(function () { try { showAlert("Plein écran refusé par ce navigateur"); } catch (_x) {} });
+  } catch (_x) {}
+}
 function toggleFS() {
   var _0x4de11d = _0x552966;
   var _0x531e2b = _0x4bc6f9;
@@ -16212,7 +16224,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.167.0 · 16/11/2026 15:33<span id="license-watermark"></span>
+  v2.168.0 · 16/11/2026 16:00<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
