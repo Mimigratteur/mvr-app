@@ -398,6 +398,7 @@ input[type=range]{accent-color:var(--G);touch-action:pan-y}
 #gp-precount-btn.pc-on,.cd-btn.pc-on{background:var(--A);border-color:var(--A);color:#0B0D12}
 #gp-precount-btn.pc-off,.cd-btn.pc-off{opacity:.8}
 .cd-btn{font-weight:700;letter-spacing:.5px}
+#tab-loop-btn.pc-on{background:var(--A);border-color:var(--A);color:#0B0D12}
 
 /* ── Mode "partition image" — photo(s) ou PDF scanné affiché tel quel ──
    Aucune interprétation du contenu : l'app affiche l'image et la fait
@@ -928,7 +929,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.163.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.164.0</span></h1>
 </div>
 
 <div id="pages">
@@ -8024,6 +8025,66 @@ function tabBuildMuteMenu(_bar) {
   _bar.appendChild(_panel);
   _refresh();
 }
+// ── Boucle de lecture (tout le morceau ou de la mesure A à la mesure B) ──
+function tabApplyLoop() {
+  if (!tabApi || !tabScoreRef || !tabSongRef) return;
+  var _l = tabSongRef.tabLoop || { on: false };
+  var _n = tabScoreRef.masterBars.length;
+  try { tabApi.isLooping = !!_l.on; } catch (_e) {}
+  try {
+    var _f = Math.max(1, Math.min(_n, parseInt(_l.from, 10) || 1));
+    var _t = Math.max(_f, Math.min(_n, parseInt(_l.to, 10) || _n));
+    if (_l.on && !(_f === 1 && _t === _n)) {
+      var _a = tabScoreRef.masterBars[_f - 1], _b = tabScoreRef.masterBars[_t - 1];
+      tabApi.playbackRange = { startTick: _a.start, endTick: _b.start + _b.calculateDuration() };
+    } else {
+      tabApi.playbackRange = null;
+    }
+  } catch (_e) {}
+}
+function tabBuildLoopControls(_bar) {
+  var _n = tabScoreRef.masterBars.length;
+  var _song = tabSongRef;
+  if (!_song.tabLoop) _song.tabLoop = { on: false, from: 1, to: _n };
+  var _l = _song.tabLoop;
+  _l.from = Math.max(1, Math.min(_n, parseInt(_l.from, 10) || 1));
+  _l.to = Math.max(_l.from, Math.min(_n, parseInt(_l.to, 10) || _n));
+  var _btn = document.createElement("button");
+  _btn.id = "tab-loop-btn";
+  _btn.className = "btn-sm";
+  _btn.style.flexShrink = "0";
+  var _rng = document.createElement("span");
+  _rng.style.cssText = "display:none;align-items:center;gap:4px;font-size:13px;flex-shrink:0";
+  var _inCss = "width:58px;padding:6px;border-radius:8px;background:#2E3645;color:#E8ECF2;border:1px solid #4A5468;font-size:14px;text-align:center";
+  _rng.innerHTML = 'mesures <input id="tab-loop-from" type="number" min="1" max="' + _n + '" style="' + _inCss + '"> à <input id="tab-loop-to" type="number" min="1" max="' + _n + '" style="' + _inCss + '"> <span style="opacity:.6">/ ' + _n + "</span>";
+  function _refresh() {
+    _btn.textContent = _l.on ? "🔁 Boucle activée" : "🔁 Boucle";
+    _btn.classList.toggle("pc-on", !!_l.on);
+    _rng.style.display = _l.on ? "inline-flex" : "none";
+    _rng.querySelector("#tab-loop-from").value = _l.from;
+    _rng.querySelector("#tab-loop-to").value = _l.to;
+  }
+  _btn.onclick = function () {
+    _l.on = !_l.on;
+    try { dbSave(); } catch (_e) {}
+    _refresh(); tabApplyLoop();
+  };
+  function _onNum() {
+    var _f = parseInt(_rng.querySelector("#tab-loop-from").value, 10);
+    var _t = parseInt(_rng.querySelector("#tab-loop-to").value, 10);
+    if (!(_f >= 1)) _f = 1;
+    if (!(_t >= 1)) _t = _n;
+    _f = Math.min(_f, _n); _t = Math.max(_f, Math.min(_t, _n));
+    _l.from = _f; _l.to = _t;
+    try { dbSave(); } catch (_e) {}
+    _refresh(); tabApplyLoop();
+  }
+  _rng.querySelector("#tab-loop-from").onchange = _onNum;
+  _rng.querySelector("#tab-loop-to").onchange = _onNum;
+  _bar.appendChild(_btn);
+  _bar.appendChild(_rng);
+  _refresh();
+}
 function tabBuildTrackBar(_score, _song, _at) {
   var _old = document.getElementById("tab-track-bar");
   if (_old) _old.remove();
@@ -8032,7 +8093,7 @@ function tabBuildTrackBar(_score, _song, _at) {
   var _stage = document.getElementById("tab-stage");
   var _bar = document.createElement("div");
   _bar.id = "tab-track-bar";
-  _bar.style.cssText = "position:sticky;top:0;z-index:5;display:flex;gap:8px;align-items:center;justify-content:center;padding:8px 10px;background:#242B38;border-bottom:1px solid #3E4757;color:#E8ECF2;font-size:13px";
+  _bar.style.cssText = "position:sticky;top:0;z-index:5;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;padding:8px 10px;background:#242B38;border-bottom:1px solid #3E4757;color:#E8ECF2;font-size:13px";
   var _cd = document.createElement("button");
   _cd.className = "cd-btn btn-sm pc-off";
   _cd.textContent = "3·2·1";
@@ -8055,6 +8116,8 @@ function tabBuildTrackBar(_score, _song, _at) {
   if (_multi) { _bar.appendChild(_lab); _bar.appendChild(_sel); }
   _bar.appendChild(_cd);
   if (_multi) { tabBuildMuteMenu(_bar); tabApplyMutes(); }
+  tabBuildLoopControls(_bar);
+  tabApplyLoop();
   _stage.insertBefore(_bar, _stage.firstChild);
   updateCountdownBtn();
   if (!_multi) return;
@@ -8137,7 +8200,7 @@ async function renderSceneTab(_0x1905ab) {
       var _0x4b1669 = curSet && curSet.songIds ? curSet.songIds[curIdx] : null;
       if (_0x4b1669 === _0x1905ab.id) {
         tabSetPlayBtnState("ready");
-        try { tabApplyMutes(); } catch (_e) {}
+        try { tabApplyMutes(); tabApplyLoop(); } catch (_e) {}
       }
     });
     tabApi.playerStateChanged.on(function (_0x34d9a2) {
@@ -16072,7 +16135,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.163.0 · 16/11/2026 10:30<span id="license-watermark"></span>
+  v2.164.0 · 16/11/2026 11:30<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
