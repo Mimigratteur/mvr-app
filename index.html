@@ -8043,7 +8043,18 @@ function tabSetLoopRange(_f, _t) {
   if (tabLoopUI) tabLoopUI.refresh();
   tabApplyLoop();
 }
+var tabLastPickAt = 0;
+function tabTouchPick(_ev) {
+  try {
+    if (!tabPickStep || !tabApi || !tabApi.boundsLookup || Date.now() - tabLastPickAt < 700) return;
+    var _el = document.getElementById("tab-stage-inner"); if (!_el) return;
+    var _r = _el.getBoundingClientRect();
+    var _b = tabApi.boundsLookup.getBeatAtPos(_ev.clientX - _r.left, _ev.clientY - _r.top);
+    if (_b) tabOnBeatPick(_b);
+  } catch (_e) {}
+}
 function tabOnBeatPick(_beat) {
+  tabLastPickAt = Date.now();
   if (!tabPickStep || !tabScoreRef || !_beat || !_beat.voice || !_beat.voice.bar) return;
   var _idx = _beat.voice.bar.index;
   if (tabPickStep === 1) {
@@ -8247,6 +8258,7 @@ async function renderSceneTab(_0x1905ab) {
       }, 1200);
     }
     tabApi.beatMouseDown.on(function (_b) { try { tabOnBeatPick(_b); } catch (_e) {} });
+    try { var _stg = document.getElementById("tab-stage"); if (_stg && !_stg._pickBound) { _stg._pickBound = 1; _stg.addEventListener("pointerup", function (_e) { if (_e.pointerType === "touch") setTimeout(function () { tabTouchPick(_e); }, 120); }); } } catch (_e) {}
     tabApi.playbackRangeChanged.on(function (_a) { try { tabOnRangeChanged(_a); } catch (_e) {} });
     tabApi.scoreLoaded.on(function (_0x35d0f6) {
       var _0x2262e9 = _0x1649a5;
