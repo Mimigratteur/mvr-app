@@ -928,7 +928,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.161.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.162.0</span></h1>
 </div>
 
 <div id="pages">
@@ -8104,6 +8104,9 @@ async function renderSceneTab(_0x1905ab) {
     _0x401296.player.enableAnimatedBeatCursor = true;
     if (!_0xsfBuf) _0x401296.player.soundFont = TAB_SOUNDFONT_CDN;
     _0x401296.player.scrollElement = _0x2a97f5;
+    // La mesure en cours ne doit pas coller en haut de l'écran (cachée sous la barre Instrument) :
+    // on la place environ au quart de la hauteur, avec la ligne précédente encore visible au-dessus.
+    _0x401296.player.scrollOffsetY = -Math.max(110, Math.round((_0x2a97f5.clientHeight || 600) * 0.24));
     tabApi = new _0x307d3a.AlphaTabApi(_0x186bb2, _0x401296);
     tabApi.masterVolume = 1;
     if (_0xsfBuf) {
@@ -16062,7 +16065,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.161.0 · 15/11/2026 09:36<span id="license-watermark"></span>
+  v2.162.0 · 16/11/2026 09:30<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
