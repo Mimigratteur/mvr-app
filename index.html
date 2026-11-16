@@ -929,7 +929,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.168.0</span> <button class="btn-sm" id="fs-top" onclick="browserFS()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.169.0</span> <button class="btn-sm" id="fs-top" onclick="browserFS()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
 </div>
 
 <div id="pages">
@@ -8167,7 +8167,7 @@ function tabBuildTrackBar(_score, _song, _at) {
   var _stage = document.getElementById("tab-stage");
   var _bar = document.createElement("div");
   _bar.id = "tab-track-bar";
-  _bar.style.cssText = "position:sticky;top:0;z-index:5;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;padding:8px 10px;background:#242B38;border-bottom:1px solid #3E4757;color:#E8ECF2;font-size:13px";
+  _bar.style.cssText = "position:sticky;top:0;z-index:2000;isolation:isolate;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;padding:8px 10px;background:#242B38;border-bottom:1px solid #3E4757;color:#E8ECF2;font-size:13px";
   var _cd = document.createElement("button");
   _cd.className = "cd-btn btn-sm pc-off";
   _cd.textContent = "3·2·1";
@@ -16224,7 +16224,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.168.0 · 16/11/2026 16:00<span id="license-watermark"></span>
+  v2.169.0 · 16/11/2026 16:30<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
