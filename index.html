@@ -929,7 +929,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.164.0</span></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.165.0</span></h1>
 </div>
 
 <div id="pages">
@@ -8026,6 +8026,50 @@ function tabBuildMuteMenu(_bar) {
   _refresh();
 }
 // ── Boucle de lecture (tout le morceau ou de la mesure A à la mesure B) ──
+// ── Choix de la boucle directement sur la partition ──
+// • Souris (PC) : glisser sur la partition (alphaTab fait la sélection), la boucle se règle toute seule.
+// • Doigt (tablette/mobile) ou souris : bouton « 🎯 Choisir », puis toucher la 1re et la dernière mesure.
+var tabLoopUI = null, tabPickStep = 0, tabPickFirst = 0, tabIgnoreRangeUntil = 0;
+function tabBarIndexAt(_tick) {
+  var _mb = tabScoreRef.masterBars, _r = 0;
+  for (var _i = 0; _i < _mb.length; _i++) { if (_mb[_i].start <= _tick) _r = _i; else break; }
+  return _r;
+}
+function tabSetLoopRange(_f, _t) {
+  var _l = tabSongRef.tabLoop || (tabSongRef.tabLoop = { on: true, from: 1, to: tabScoreRef.masterBars.length });
+  _l.on = true; _l.from = Math.min(_f, _t) + 1; _l.to = Math.max(_f, _t) + 1;
+  try { dbSave(); } catch (_e) {}
+  tabIgnoreRangeUntil = Date.now() + 600;
+  if (tabLoopUI) tabLoopUI.refresh();
+  tabApplyLoop();
+}
+function tabOnBeatPick(_beat) {
+  if (!tabPickStep || !tabScoreRef || !_beat || !_beat.voice || !_beat.voice.bar) return;
+  var _idx = _beat.voice.bar.index;
+  if (tabPickStep === 1) {
+    tabPickFirst = _idx; tabPickStep = 2;
+    if (tabLoopUI) tabLoopUI.hint("Mesure " + (_idx + 1) + " : début. Touche maintenant la dernière mesure de la boucle.");
+  } else {
+    tabPickStep = 0;
+    tabSetLoopRange(tabPickFirst, _idx);
+    if (tabLoopUI) tabLoopUI.hint("");
+  }
+}
+function tabOnRangeChanged(_a) {
+  if (!tabScoreRef || !tabSongRef) return;
+  var _r = _a && _a.playbackRange;
+  var _l = tabSongRef.tabLoop;
+  if (!_r) {
+    // un simple clic sur la partition efface la sélection d'alphaTab : on remet la boucle en place
+    // (sauf si la boucle couvre tout le morceau, où il n'y a pas de plage à remettre)
+    var _n = tabScoreRef.masterBars.length;
+    if (_l && _l.on && !(_l.from <= 1 && _l.to >= _n)) { tabIgnoreRangeUntil = Date.now() + 600; tabApplyLoop(); }
+    return;
+  }
+  if (Date.now() < tabIgnoreRangeUntil) return;
+  // sélection faite à la souris : devient la boucle
+  tabSetLoopRange(tabBarIndexAt(_r.startTick), tabBarIndexAt(Math.max(_r.startTick, _r.endTick - 1)));
+}
 function tabApplyLoop() {
   if (!tabApi || !tabScoreRef || !tabSongRef) return;
   var _l = tabSongRef.tabLoop || { on: false };
@@ -8043,6 +8087,7 @@ function tabApplyLoop() {
   } catch (_e) {}
 }
 function tabBuildLoopControls(_bar) {
+  tabPickStep = 0;
   var _n = tabScoreRef.masterBars.length;
   var _song = tabSongRef;
   if (!_song.tabLoop) _song.tabLoop = { on: false, from: 1, to: _n };
@@ -8081,8 +8126,26 @@ function tabBuildLoopControls(_bar) {
   }
   _rng.querySelector("#tab-loop-from").onchange = _onNum;
   _rng.querySelector("#tab-loop-to").onchange = _onNum;
+  var _pick = document.createElement("button");
+  _pick.className = "btn-sm";
+  _pick.style.flexShrink = "0";
+  _pick.textContent = "🎯 Choisir sur la partition";
+  var _hint = document.createElement("div");
+  _hint.style.cssText = "flex-basis:100%;text-align:center;font-size:13px;color:#F4B740;display:none";
+  _pick.onclick = function () {
+    if (tabPickStep) { tabPickStep = 0; _hint.style.display = "none"; return; }
+    tabPickStep = 1;
+    _hint.textContent = "Touche la 1re mesure de la boucle.";
+    _hint.style.display = "block";
+  };
+  tabLoopUI = {
+    refresh: _refresh,
+    hint: function (_t) { _hint.textContent = _t; _hint.style.display = _t ? "block" : "none"; }
+  };
   _bar.appendChild(_btn);
+  _bar.appendChild(_pick);
   _bar.appendChild(_rng);
+  _bar.appendChild(_hint);
   _refresh();
 }
 function tabBuildTrackBar(_score, _song, _at) {
@@ -8183,6 +8246,8 @@ async function renderSceneTab(_0x1905ab) {
         setTimeout(_sfSend, 8000);
       }, 1200);
     }
+    tabApi.beatMouseDown.on(function (_b) { try { tabOnBeatPick(_b); } catch (_e) {} });
+    tabApi.playbackRangeChanged.on(function (_a) { try { tabOnRangeChanged(_a); } catch (_e) {} });
     tabApi.scoreLoaded.on(function (_0x35d0f6) {
       var _0x2262e9 = _0x1649a5;
       var _0x5e6aaa = _0x1574f3;
@@ -16135,7 +16200,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.164.0 · 16/11/2026 11:30<span id="license-watermark"></span>
+  v2.165.0 · 16/11/2026 13:00<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
