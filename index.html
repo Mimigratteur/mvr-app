@@ -929,7 +929,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.170.0</span> <button class="btn-sm" id="fs-top" onclick="browserFS()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.171.0</span> <button class="btn-sm" id="fs-top" onclick="browserFS()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
 </div>
 
 <div id="pages">
@@ -8061,9 +8061,9 @@ function tabBarIndexAtPos(_x, _y) {
 }
 function tabMakeHandle(_isStart) {
   var _h = document.createElement("div");
-  _h.style.cssText = "position:absolute;width:46px;margin-left:-23px;pointer-events:auto;touch-action:none;cursor:ew-resize;z-index:3;display:flex;align-items:center;justify-content:center";
-  _h.innerHTML = '<div style="position:absolute;left:21px;top:0;bottom:0;width:4px;background:#2FA84F;border-radius:2px"></div>'
-    + '<div style="position:relative;width:30px;height:30px;border-radius:50%;background:#2FA84F;color:#fff;font:700 20px/28px sans-serif;text-align:center;box-shadow:0 1px 5px rgba(0,0,0,.5)">' + (_isStart ? "›" : "‹") + '</div>';
+  _h.style.cssText = "position:absolute;width:48px;margin-left:-24px;pointer-events:auto;touch-action:none;cursor:ew-resize;z-index:3;display:flex;align-items:center;justify-content:center";
+  _h.innerHTML = '<div style="position:absolute;left:19px;top:0;bottom:0;width:8px;background:#FF5A00;border:2px solid #fff;border-radius:4px;box-shadow:0 0 0 2px #1B1F27"></div>'
+    + '<div style="position:relative;width:38px;height:38px;border-radius:50%;background:#FF5A00;color:#fff;font:800 26px/34px sans-serif;text-align:center;border:3px solid #fff;box-shadow:0 0 0 2px #1B1F27,0 2px 6px rgba(0,0,0,.6)">' + (_isStart ? "›" : "‹") + '</div>';
   _h.addEventListener("pointerdown", function (_e) {
     _e.preventDefault(); _e.stopPropagation();
     try { _h.setPointerCapture(_e.pointerId); } catch (_x) {}
@@ -8116,7 +8116,7 @@ function tabHandlesDraw() {
     for (var _k = _l.from - 1; _k <= _l.to - 1; _k++) {
       var _m = _lk.findMasterBarByIndex(_k); if (!_m) continue;
       var _v = _m.visualBounds, _r = document.createElement("div");
-      _r.style.cssText = "position:absolute;background:rgba(47,168,79,.16);left:" + (_ox + _v.x) + "px;top:" + (_oy + _v.y) + "px;width:" + _v.w + "px;height:" + _v.h + "px";
+      _r.style.cssText = "position:absolute;background:rgba(255,90,0,.20);left:" + (_ox + _v.x) + "px;top:" + (_oy + _v.y) + "px;width:" + _v.w + "px;height:" + _v.h + "px";
       tabHLayer.appendChild(_r);
     }
     var _va = _a.visualBounds, _vb = _b.visualBounds;
@@ -16308,7 +16308,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.170.0 · 16/11/2026 16:30<span id="license-watermark"></span>
+  v2.171.0 · 16/11/2026 16:30<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
