@@ -929,7 +929,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.175.0</span> <button class="btn-sm" id="fs-top" onclick="browserFS()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.176.0</span> <button class="btn-sm" id="fs-top" onclick="browserFS()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
 </div>
 
 <div id="pages">
@@ -1056,6 +1056,8 @@ body.fullscreen #topbar{display:none}
       <button class="gp-edit-only btn-sm" id="gp-undo-btn" onclick="gpUndo()" style="display:none;flex-shrink:0" title="Annuler">↩</button>
       <button class="grid-mode-only btn-sm pc-off" id="gp-precount-btn" onclick="togglePrecountBtn()" style="flex-shrink:0" title="Précompte d&#39;une mesure avant lecture — désactivé">⏱️</button>
       <button class="cd-btn grid-mode-only btn-sm pc-off" onclick="toggleCountdown()" style="flex-shrink:0" title="Décompte d'une mesure avant lecture — désactivé">3·2·1</button>
+      <button class="grid-mode-only btn-sm" onclick="fontStep(-2)" style="flex-shrink:0;font-weight:700" title="Zoom arrière (plus petit)">A−</button>
+      <button class="grid-mode-only btn-sm" onclick="fontStep(2)" style="flex-shrink:0;font-weight:700;font-size:17px" title="Zoom avant (plus grand)">A+</button>
       <button class="cd-btn lyr-mode-only btn-sm pc-off" onclick="toggleCountdown()" style="flex-shrink:0" title="Décompte d'une mesure avant lecture — désactivé">3·2·1</button>
       <button class="lyr-mode-only btn-sm" id="lyr-mode-lecture-btn" onclick="lycSetMode(&#39;lecture&#39;)" style="flex-shrink:0" title="Lecture">👁</button>
       <button class="lyr-mode-only btn-sm" id="lyr-mode-edit-btn" onclick="lycSetMode(&#39;edit&#39;)" style="flex-shrink:0" title="Modifier">✎</button>
@@ -9744,10 +9746,42 @@ function onTouchMove(_0x508c51) {
     _0x508c51.preventDefault();
   }
 }
+function fontStep(_d) {
+  var _s = document.getElementById("font-sz"); if (!_s) return;
+  var _v = Math.max(parseInt(_s.min, 10), Math.min(parseInt(_s.max, 10), (parseInt(_s.value, 10) || 30) + _d));
+  if (_v !== parseInt(_s.value, 10)) { _s.value = _v; onFontChange(); }
+}
+var pinchState = null, pinchAt = 0;
+function initPinchZoom() {
+  var _el = document.getElementById("page-scene") || document.getElementById("stage");
+  if (!_el || _el._pinchBound) return; _el._pinchBound = 1;
+  var _dist = function (_t) { var _dx = _t[0].clientX - _t[1].clientX, _dy = _t[0].clientY - _t[1].clientY; return Math.sqrt(_dx * _dx + _dy * _dy); };
+  var _apply = function (_ratio) {
+    var _s = document.getElementById("font-sz"); if (!_s || !pinchState) return;
+    var _v = Math.round(Math.max(parseInt(_s.min, 10), Math.min(parseInt(_s.max, 10), pinchState.v0 * _ratio)));
+    if (_v !== parseInt(_s.value, 10)) { _s.value = _v; onFontChange(); }
+  };
+  _el.addEventListener("touchstart", function (_e) {
+    if (_e.touches.length === 2) {
+      var _s = document.getElementById("font-sz");
+      pinchState = { d0: _dist(_e.touches), v0: parseInt(_s && _s.value, 10) || 30, last: 0 }; pinchAt = Date.now();
+    }
+  }, { passive: true });
+  _el.addEventListener("touchmove", function (_e) {
+    if (pinchState && _e.touches.length === 2) {
+      pinchAt = Date.now();
+      if (Date.now() - pinchState.last > 250) { pinchState.last = Date.now(); _apply(_dist(_e.touches) / pinchState.d0); }
+    }
+  }, { passive: true });
+  var _end = function (_e) { if (pinchState) { pinchAt = Date.now(); if (_e.touches.length < 2) { pinchState = null; } } };
+  _el.addEventListener("touchend", _end, { passive: true }); _el.addEventListener("touchcancel", _end, { passive: true });
+}
+window.addEventListener("load", initPinchZoom); setTimeout(initPinchZoom, 1500);
 function onTouchEnd(_0x2a5f19) {
   var _0x1fd3b0 = _0x552966;
   var _0x409ab9 = _0x4bc6f9;
   dragging = false;
+  if (Date.now() - pinchAt < 600) { return; }
   var _0x5bac44 = _0x2a5f19.changedTouches ? _0x2a5f19.changedTouches[0] : _0x2a5f19;
   var _0x4ff983 = _0x5bac44.clientX - touchStartX;
   var _0x17512b = _0x5bac44.clientY - touchStartY;
@@ -16335,7 +16369,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.175.0 · 16/11/2026 16:30<span id="license-watermark"></span>
+  v2.176.0 · 21/11/2026 12:00<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
