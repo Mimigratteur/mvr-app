@@ -841,6 +841,8 @@ input[type=range]{accent-color:var(--G);touch-action:pan-y}
 .cfg-row label{flex:1;font-size:13px}
 
 body.fullscreen #topbar{display:none}
+#fs-float{display:none;position:fixed;top:44px;right:6px;z-index:3000;width:40px;height:40px;border-radius:50%;border:2px solid #fff;background:rgba(20,24,32,.72);color:#fff;font-size:18px;line-height:1;padding:0;box-shadow:0 0 0 2px rgba(0,0,0,.5)}
+body.fullscreen #fs-float{display:block}
 
 /* ─── CHORUS NOMADE (Outils) ─── */
 #cn-root{--cn-ink:var(--tx);--cn-mut:var(--tx2);--cn-line:var(--bd);--cn-well:var(--bg3);--cn-acc:var(--A);--cn-on:#0B0D12;--cn-tint:var(--Gl);--cn-tink:var(--G);
@@ -929,7 +931,7 @@ body.fullscreen #topbar{display:none}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.176.0</span> <button class="btn-sm" id="fs-top" onclick="browserFS()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.177.0</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
 </div>
 
 <div id="pages">
@@ -9851,6 +9853,38 @@ function toggleSceneTools(_0x52072a) {
     _0x10dc60.textContent = _0x3aaa14 ? "▴" : "▾";
   }
 }
+function toggleImmersive() {
+  var _d = document, _e = _d.documentElement;
+  var _on = !_d.body.classList.contains("fullscreen");
+  _d.body.classList.toggle("fullscreen", _on);
+  fsOn = _on;
+  var _b = _d.getElementById("fs-btn"); if (_b) _b.textContent = _on ? "✕" : "⛶";
+  try {
+    if (_on) {
+      var _rq = _e.requestFullscreen || _e.webkitRequestFullscreen || _e.mozRequestFullScreen;
+      if (_rq && !(_d.fullscreenElement || _d.webkitFullscreenElement)) { var _p = _rq.call(_e, { navigationUI: "hide" }); if (_p && _p.catch) _p.catch(function () {}); }
+    } else {
+      var _ex = _d.exitFullscreen || _d.webkitExitFullscreen || _d.mozCancelFullScreen;
+      if (_ex && (_d.fullscreenElement || _d.webkitFullscreenElement)) { var _q = _ex.call(_d); if (_q && _q.catch) _q.catch(function () {}); }
+    }
+  } catch (_x) {}
+  try { window.dispatchEvent(new Event("resize")); } catch (_x) {}
+}
+(function () {
+  var _mk = function () {
+    if (document.getElementById("fs-float")) return;
+    var _f = document.createElement("button"); _f.id = "fs-float"; _f.textContent = "✕"; _f.title = "Quitter le plein écran";
+    _f.onclick = toggleImmersive; document.body.appendChild(_f);
+  };
+  if (document.body) _mk(); else window.addEventListener("DOMContentLoaded", _mk);
+  var _sync = function () {
+    if (!(document.fullscreenElement || document.webkitFullscreenElement) && document.body.classList.contains("fullscreen") && window.__fsBrowser) {
+      document.body.classList.remove("fullscreen"); fsOn = false; var _b = document.getElementById("fs-btn"); if (_b) _b.textContent = "⛶";
+    }
+    window.__fsBrowser = !!(document.fullscreenElement || document.webkitFullscreenElement);
+  };
+  document.addEventListener("fullscreenchange", _sync); document.addEventListener("webkitfullscreenchange", _sync);
+})();
 function browserFS() {
   var _d = document, _e = _d.documentElement;
   var _on = _d.fullscreenElement || _d.webkitFullscreenElement || _d.mozFullScreenElement;
@@ -16369,7 +16403,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.176.0 · 21/11/2026 12:00<span id="license-watermark"></span>
+  v2.177.0 · 23/11/2026 12:00<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
