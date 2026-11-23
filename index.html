@@ -841,9 +841,31 @@ input[type=range]{accent-color:var(--G);touch-action:pan-y}
 .cfg-row label{flex:1;font-size:13px}
 
 body.fullscreen #topbar{display:none}
-#fs-float{display:none;position:fixed;bottom:8px;left:8px;z-index:3000;width:40px;height:40px;border-radius:50%;border:2px solid #fff;background:rgba(20,24,32,.72);color:#fff;font-size:18px;line-height:1;padding:0;box-shadow:0 0 0 2px rgba(0,0,0,.5)}
+#fs-float{display:none;position:fixed;top:44px;right:6px;z-index:3000;width:40px;height:40px;border-radius:50%;border:2px solid #fff;background:rgba(20,24,32,.72);color:#fff;font-size:18px;line-height:1;padding:0;box-shadow:0 0 0 2px rgba(0,0,0,.5)}
 body.fullscreen #fs-float{display:block}
-@media (max-width:600px){#tab-track-bar .loop-pick,#tab-track-bar .loop-rng{display:none!important}#tab-track-bar{padding:5px 8px!important;gap:6px!important}}
+/* --- Panneau de commandes de la tablature (mobile / tablette) --- */
+#page-scene:has(#tab-stage[style*="display: block"] #tab-sheet) #scene-btns{display:none!important}
+#tab-stage:has(#tab-sheet) #tab-stage-inner{margin-bottom:150px}
+#tab-sheet{position:fixed;left:0;right:0;bottom:0;z-index:2500;background:#232830;border-radius:20px 20px 0 0;box-shadow:0 -6px 22px rgba(0,0,0,.5);color:#E8ECF2;font-size:14px;padding-bottom:env(safe-area-inset-bottom,0)}
+#tab-sheet-handle{height:30px;display:flex;align-items:center;justify-content:center;touch-action:none;cursor:grab}
+#tab-sheet-handle span{display:block;width:46px;height:5px;border-radius:3px;background:#6B7486}
+#tab-sheet-main{display:flex;gap:8px;align-items:center;justify-content:center;padding:2px 10px 12px;flex-wrap:nowrap}
+#tab-sheet-main button,#tab-sheet-main select{min-height:48px;border-radius:14px;border:1px solid #3E4757;background:#2E3645;color:#E8ECF2;font-size:15px;padding:0 12px}
+#tab-sheet-main .sh-play{background:#1F7AFF;border-color:#1F7AFF;font-weight:700;min-width:96px;font-size:17px}
+#tab-sheet-main{gap:6px;padding-left:8px;padding-right:8px}
+#tab-sheet-main button,#tab-sheet-main select{padding:0 9px;font-size:14px;flex:0 0 auto}
+#tab-sheet-main #tab-sheet-speed{width:84px;padding:0 4px}
+#tab-sheet-more select{width:auto!important;min-width:90px;max-width:100%}
+#tab-sheet-main #tab-loop-btn.pc-on{background:#F4B740;color:#1B1F27;border-color:#F4B740}
+#tab-sheet-more{height:0;overflow:hidden;transition:height .2s ease;border-top:1px solid #3A4252}
+#tab-sheet-more .sh-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;padding:8px 10px}
+#tab-sheet-more button,#tab-sheet-more select{min-height:40px}
+#tab-sheet-more .loop-pick{display:none!important}
+#tab-stage.tab-dark,#tab-stage.tab-dark #tab-stage-inner{background:#1B1F27!important}
+#tab-stage.tab-dark .at-cursor-bar{background:rgba(90,160,255,.20)}
+#tab-stage.tab-dark .at-cursor-beat{background:#5AA0FF}
+#tab-stage.tab-dark .at-highlight *{fill:#5AA0FF!important;stroke:#5AA0FF!important}
+#tab-stage.tab-dark .img-loading{color:#9AA3B5!important}
 
 /* ─── CHORUS NOMADE (Outils) ─── */
 #cn-root{--cn-ink:var(--tx);--cn-mut:var(--tx2);--cn-line:var(--bd);--cn-well:var(--bg3);--cn-acc:var(--A);--cn-on:#0B0D12;--cn-tint:var(--Gl);--cn-tink:var(--G);
@@ -932,7 +954,7 @@ body.fullscreen #fs-float{display:block}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.178.0</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.179.0</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
 </div>
 
 <div id="pages">
@@ -8050,6 +8072,93 @@ function tabSetLoopRange(_f, _t) {
 }
 // --- Poignees vertes de boucle (comme Songsterr) : on glisse le bord jusqu'a la mesure voulue ---
 var tabHLayer = null, tabHStart = null, tabHEnd = null, tabHDrag = null;
+var tabAtRef = null;
+function tabUseSheet() {
+  try { return window.matchMedia("(max-width:1100px)").matches || window.matchMedia("(pointer:coarse)").matches; } catch (_e) { return false; }
+}
+function tabTopBarH() { return tabUseSheet() ? 24 : ((document.getElementById("tab-track-bar") || {}).offsetHeight || 100); }
+function tabBottomInset() { return tabUseSheet() ? 130 : 0; }
+function tabDisplayPrefs() {
+  var _w = window.innerWidth || 800;
+  return {
+    scale: prefs.tabScale || (_w < 600 ? 0.7 : (_w < 1100 ? 0.85 : 1)),
+    bars: prefs.tabBars || -1,
+    dark: prefs.tabDark === undefined ? tabUseSheet() : !!prefs.tabDark
+  };
+}
+function tabInitDisplay(_s, _at) {
+  var _p = tabDisplayPrefs();
+  _s.display.scale = _p.scale;
+  _s.display.barsPerRow = _p.bars;
+  try {
+    var _C = _at.model.Color, _r = _s.display.resources;
+    if (_p.dark) {
+      _r.mainGlyphColor = new _C(232, 236, 242, 255); _r.secondaryGlyphColor = new _C(232, 236, 242, 140);
+      _r.staffLineColor = new _C(112, 120, 135, 255); _r.barSeparatorColor = new _C(170, 178, 192, 255);
+      _r.barNumberColor = new _C(240, 130, 130, 255); _r.scoreInfoColor = new _C(232, 236, 242, 255);
+    } else {
+      _r.mainGlyphColor = new _C(0, 0, 0, 255); _r.secondaryGlyphColor = new _C(0, 0, 0, 100);
+      _r.staffLineColor = new _C(165, 165, 165, 255); _r.barSeparatorColor = new _C(34, 34, 17, 255);
+      _r.barNumberColor = new _C(200, 0, 0, 255); _r.scoreInfoColor = new _C(0, 0, 0, 255);
+    }
+  } catch (_e) {}
+}
+function tabThemeStage() {
+  var _st = document.getElementById("tab-stage");
+  if (_st) _st.classList.toggle("tab-dark", !!tabDisplayPrefs().dark);
+}
+function tabApplyDisplay() {
+  if (!tabApi || !tabAtRef) return;
+  try { tabInitDisplay(tabApi.settings, tabAtRef); tabThemeStage(); tabApi.updateSettings(); tabApi.render(); } catch (_e) {}
+}
+function tabBuildSheet(_bar) {
+  var _stage = document.getElementById("tab-stage");
+  var _old = document.getElementById("tab-sheet"); if (_old) _old.remove();
+  var _sh = document.createElement("div"); _sh.id = "tab-sheet";
+  var _hd = document.createElement("div"); _hd.id = "tab-sheet-handle"; _hd.innerHTML = "<span></span>";
+  var _main = document.createElement("div"); _main.id = "tab-sheet-main";
+  var _play = document.createElement("button"); _play.id = "tab-sheet-play"; _play.className = "sh-play"; _play.textContent = "▶ Play"; _play.onclick = tabTogglePlay;
+  var _rs = document.createElement("button"); _rs.textContent = "↺ Début"; _rs.onclick = tabRestart;
+  _main.appendChild(_play); _main.appendChild(_rs);
+  var _lb = _bar.querySelector("#tab-loop-btn"); if (_lb) _main.appendChild(_lb);
+  var _sp = document.createElement("select"); _sp.id = "tab-sheet-speed"; _sp.title = "Vitesse";
+  [50, 60, 70, 80, 90, 100, 110, 120].forEach(function (_v) { var _o = document.createElement("option"); _o.value = _v; _o.textContent = _v + " %"; _sp.appendChild(_o); });
+  var _cur = Math.round(((tabApi && tabApi.playbackSpeed) || 1) * 10) * 10; _sp.value = Math.max(50, Math.min(120, _cur));
+  _sp.onchange = function () { if (tabFileTempo) setBPM(Math.round(tabFileTempo * parseInt(_sp.value, 10) / 100)); };
+  _main.appendChild(_sp);
+  var _more = document.createElement("div"); _more.id = "tab-sheet-more";
+  _bar.style.cssText = "display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;padding:8px 10px;color:#E8ECF2;font-size:14px";
+  _more.appendChild(_bar);
+  // affichage : mesures par ligne, taille, thème
+  var _row = document.createElement("div"); _row.className = "sh-row";
+  var _bl = document.createElement("span"); _bl.textContent = "Mesures/ligne";
+  var _bs = document.createElement("select"); _bs.style.cssText = "background:#2E3645;color:#E8ECF2;border:1px solid #4A5468;border-radius:10px;padding:0 10px";
+  [["Auto", -1], ["2", 2], ["3", 3], ["4", 4], ["5", 5], ["6", 6]].forEach(function (_a) { var _o = document.createElement("option"); _o.textContent = _a[0]; _o.value = _a[1]; _bs.appendChild(_o); });
+  _bs.value = tabDisplayPrefs().bars;
+  _bs.onchange = function () { prefs.tabBars = parseInt(_bs.value, 10); try { dbSave(); } catch (_e) {} tabApplyDisplay(); };
+  var _zm = document.createElement("button"); _zm.textContent = "A−"; _zm.onclick = function () { prefs.tabScale = Math.max(0.4, Math.round((tabDisplayPrefs().scale - 0.1) * 10) / 10); try { dbSave(); } catch (_e) {} tabApplyDisplay(); };
+  var _zp = document.createElement("button"); _zp.textContent = "A+"; _zp.style.fontWeight = "700"; _zp.onclick = function () { prefs.tabScale = Math.min(1.8, Math.round((tabDisplayPrefs().scale + 0.1) * 10) / 10); try { dbSave(); } catch (_e) {} tabApplyDisplay(); };
+  var _th = document.createElement("button"); _th.textContent = tabDisplayPrefs().dark ? "☀ Clair" : "🌙 Sombre";
+  _th.onclick = function () { prefs.tabDark = !tabDisplayPrefs().dark; try { dbSave(); } catch (_e) {} _th.textContent = prefs.tabDark ? "☀ Clair" : "🌙 Sombre"; tabApplyDisplay(); };
+  [_bl, _bs, _zm, _zp, _th].forEach(function (_e) { _row.appendChild(_e); });
+  _more.appendChild(_row);
+  var _nav = document.createElement("div"); _nav.className = "sh-row";
+  var _pv = document.createElement("button"); _pv.textContent = "‹ Préc"; _pv.onclick = function () { prevSong(); };
+  var _nx = document.createElement("button"); _nx.textContent = "Suiv ›"; _nx.onclick = function () { nextSong(); };
+  var _lv = document.createElement("button"); _lv.textContent = "📡"; _lv.onclick = function () { liveOpenModal(); };
+  [_pv, _nx, _lv].forEach(function (_e) { _nav.appendChild(_e); });
+  _more.appendChild(_nav);
+  _sh.appendChild(_hd); _sh.appendChild(_main); _sh.appendChild(_more);
+  _stage.appendChild(_sh);
+  // poignee : glisser vers le haut / le bas, ou toucher pour ouvrir / fermer
+  var _full = 0, _y0 = 0, _h0 = 0, _drag = false, _moved = false;
+  var _fullH = function () { var _h = _more.style.height; _more.style.transition = "none"; _more.style.height = "auto"; var _f = Math.min(_more.scrollHeight, Math.round(window.innerHeight * 0.6)); _more.style.height = _h; return _f; };
+  var _setH = function (_h, _anim) { _more.style.transition = _anim ? "height .2s ease" : "none"; _more.style.height = _h + "px"; _more.style.overflowY = _h > 0 && _anim && _h >= _full ? "auto" : "hidden"; };
+  _hd.addEventListener("pointerdown", function (_e) { try { _hd.setPointerCapture(_e.pointerId); } catch (_x) {} _drag = true; _moved = false; _y0 = _e.clientY; _full = _fullH(); _h0 = _more.offsetHeight; _e.preventDefault(); });
+  _hd.addEventListener("pointermove", function (_e) { if (!_drag) return; var _dy = _y0 - _e.clientY; if (Math.abs(_dy) > 5) _moved = true; if (_moved) _setH(Math.max(0, Math.min(_full, _h0 + _dy)), false); });
+  var _up = function () { if (!_drag) return; _drag = false; var _open = _moved ? (_more.offsetHeight > _full * 0.4) : (_h0 === 0); _setH(_open ? _full : 0, true); };
+  _hd.addEventListener("pointerup", _up); _hd.addEventListener("pointercancel", _up);
+}
 function tabSurfaceRect(_c) {
   // les positions de mesures d'alphaTab sont relatives a sa zone d'affichage (.at-surface), pas au conteneur
   var _sf = _c && _c.querySelector ? _c.querySelector(".at-surface") : null;
@@ -8095,7 +8204,7 @@ function tabHandleTick(_fromMove) {
     var _e = tabHDrag.ev, _st = document.getElementById("tab-stage"), _in = document.getElementById("tab-stage-inner");
     if (!_st || !_in) return;
     var _sr = _st.getBoundingClientRect();
-    if (_e.clientY < _sr.top + 130) _st.scrollTop -= 14; else if (_e.clientY > _sr.bottom - 50) _st.scrollTop += 14;
+    if (_e.clientY < _sr.top + tabTopBarH() + 30) _st.scrollTop -= 14; else if (_e.clientY > _sr.bottom - 50 - tabBottomInset()) _st.scrollTop += 14;
     var _ir = tabSurfaceRect(_in);
     // c'est la POIGNEE qui decide (pas le doigt) : son bord tombe dans la mesure voulue
     var _hx = _e.clientX - tabHDrag.gx - _ir.left + (tabHDrag.start ? 4 : -4);
@@ -8211,7 +8320,7 @@ function tabBuildLoopControls(_bar) {
   var _inCss = "width:58px;padding:6px;border-radius:8px;background:#2E3645;color:#E8ECF2;border:1px solid #4A5468;font-size:14px;text-align:center";
   _rng.innerHTML = 'mesures <input id="tab-loop-from" type="number" min="1" max="' + _n + '" style="' + _inCss + '"> à <input id="tab-loop-to" type="number" min="1" max="' + _n + '" style="' + _inCss + '"> <span style="opacity:.6">/ ' + _n + "</span>";
   function _refresh() {
-    _btn.textContent = _l.on ? "🔁 Boucle activée" : "🔁 Boucle";
+    _btn.textContent = (_l.on && !tabUseSheet()) ? "🔁 Boucle activée" : "🔁 Boucle";
     _btn.classList.toggle("pc-on", !!_l.on);
     _rng.style.display = _l.on ? "inline-flex" : "none";
     _rng.querySelector("#tab-loop-from").value = _l.from;
@@ -8223,7 +8332,7 @@ function tabBuildLoopControls(_bar) {
     if (_l.on && _l.from === 1 && _l.to === _n) {
       try {
         var _st0 = document.getElementById("tab-stage"), _in0 = document.getElementById("tab-stage-inner");
-        var _bh = (document.getElementById("tab-track-bar") || {}).offsetHeight || 100;
+        var _bh = tabTopBarH();
         var _sr0 = _st0.getBoundingClientRect(), _ir0 = tabSurfaceRect(_in0);
         var _i0 = tabBarIndexAtPos(0, (_sr0.top + _bh + 40) - _ir0.top);
         if (_i0 >= 0) { _l.from = _i0 + 1; _l.to = Math.min(_n, _l.from + 3); }
@@ -8269,6 +8378,7 @@ function tabBuildLoopControls(_bar) {
 function tabBuildTrackBar(_score, _song, _at) {
   var _old = document.getElementById("tab-track-bar");
   if (_old) _old.remove();
+  var _oldSh = document.getElementById("tab-sheet"); if (_oldSh) _oldSh.remove();
   if (!_score || !_score.tracks) return;
   var _multi = _score.tracks.length >= 2;
   var _stage = document.getElementById("tab-stage");
@@ -8299,7 +8409,8 @@ function tabBuildTrackBar(_score, _song, _at) {
   if (_multi) { tabBuildMuteMenu(_bar); tabApplyMutes(); }
   tabBuildLoopControls(_bar);
   tabApplyLoop();
-  _stage.insertBefore(_bar, _stage.firstChild);
+  if (tabUseSheet()) tabBuildSheet(_bar); else _stage.insertBefore(_bar, _stage.firstChild);
+  tabThemeStage();
   updateCountdownBtn();
   if (!_multi) return;
   if (_saved !== 0 || !tabTrackIsFretted(_score.tracks[0])) setTimeout(function () { tabSelectTrack(_saved, _score, _song, _at); }, 0);
@@ -8316,6 +8427,7 @@ async function renderSceneTab(_0x1905ab) {
     tabApi = null;
   }
   var _0xtb0 = document.getElementById("tab-track-bar"); if (_0xtb0) _0xtb0.remove();
+  var _0xsh0 = document.getElementById("tab-sheet"); if (_0xsh0) _0xsh0.remove();
   var _0x2a97f5 = document.getElementById("tab-stage");
   var _0x186bb2 = document.getElementById("tab-stage-inner");
   _0x186bb2.innerHTML = "<div class=\"img-loading\">⏳ Chargement de la tablature…</div>";
@@ -8343,6 +8455,7 @@ async function renderSceneTab(_0x1905ab) {
     _0x401296.core.fontDirectory = "https://cdn.jsdelivr.net/npm/@coderline/alphatab@1.8.4/dist/font/";
     _0x401296.core.useWorkers = false;
     _0x401296.display.staveProfile = _0x307d3a.StaveProfile.Tab;
+    tabAtRef = _0x307d3a; tabInitDisplay(_0x401296, _0x307d3a); tabThemeStage();
     _0x401296.player.enablePlayer = true;
     _0x401296.player.enableCursor = true;
     _0x401296.player.enableAnimatedBeatCursor = true;
@@ -8350,7 +8463,7 @@ async function renderSceneTab(_0x1905ab) {
     _0x401296.player.scrollElement = _0x2a97f5;
     // La mesure en cours ne doit pas coller en haut de l'écran (cachée sous la barre Instrument) :
     // on la place environ au quart de la hauteur, avec la ligne précédente encore visible au-dessus.
-    _0x401296.player.scrollOffsetY = -Math.max(110, Math.round((_0x2a97f5.clientHeight || 600) * 0.24));
+    _0x401296.player.scrollOffsetY = -Math.max(tabUseSheet() ? 50 : 110, Math.round((_0x2a97f5.clientHeight || 600) * (tabUseSheet() ? 0.12 : 0.24)));
     tabApi = new _0x307d3a.AlphaTabApi(_0x186bb2, _0x401296);
     tabApi.masterVolume = 1;
     if (_0xsfBuf) {
@@ -8446,7 +8559,7 @@ function tabRestart() {
         if (_lp && _lp.on && !(_lp.from <= 1 && _lp.to >= tabScoreRef.masterBars.length)) {
           var _v = tabApi.boundsLookup.findMasterBarByIndex(_lp.from - 1).visualBounds;
           var _in = document.getElementById("tab-stage-inner");
-          var _bh = (document.getElementById("tab-track-bar") || {}).offsetHeight || 100;
+          var _bh = tabTopBarH();
           var _oy = tabSurfaceRect(_in).top - _tst.getBoundingClientRect().top + _tst.scrollTop;
           _y = Math.max(0, _oy + _v.y - _bh - 40);
         }
@@ -8981,6 +9094,8 @@ function tabSetPlayBtnState(_0x84af73) {
 
   var _0x29d056 = _0x552966;
   var _0x175dc8 = _0x4bc6f9;
+  var _shp = document.getElementById("tab-sheet-play");
+  if (_shp) { _shp.textContent = _0x84af73 === "loading" ? "⏳ …" : (_0x84af73 === "playing" ? "⏸ Pause" : "▶ Play"); _shp.disabled = _0x84af73 === "loading"; }
   var _0x44b8df = document.getElementById("tab-play-btn");
   if (!_0x44b8df) {
     return;
@@ -16410,7 +16525,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.178.0 · 23/11/2026 13:00<span id="license-watermark"></span>
+  v2.179.0 · 23/11/2026 14:00<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
