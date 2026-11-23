@@ -908,7 +908,7 @@ body.sheet-on #stage,body.sheet-on #grid-paper,body.sheet-on #img-stage,body.she
 #scene-btns.sheet > div{background:transparent}
 #scene-btns.sheet button{min-height:52px;border-radius:12px!important;font-size:14px}
 
-/* --- v2.186.5 : homogeneisation (hauteur 48, centre, memes couleurs) --- */
+/* --- v2.187.4 : homogeneisation (hauteur 48, centre, memes couleurs) --- */
 #tab-sheet-main button,#tab-sheet-main select{height:48px!important;min-height:48px!important;font-size:15px!important}
 #tab-sheet-main button:not(.sh-play),#tab-sheet-main select{background:#2A313E!important;border:1px solid #3A4252!important;color:#E8ECF2!important;border-radius:24px!important;display:flex;align-items:center;justify-content:center;text-align:center}
 #tab-sheet-main button.pp-gear,#tab-sheet-main button[title="Début"]{width:48px;min-width:48px!important;padding:0!important;font-size:22px!important;border-radius:50%!important}
@@ -1008,6 +1008,53 @@ body.sheet-on #stage,body.sheet-on #grid-paper,body.sheet-on #img-stage,body.she
 #tab-sheet .sh-pop .sh-switch::after{content:""!important}
 
 #tab-sheet-main button.on.on:not(.sh-play):not(#tab-sheet-speed),#tab-sheet-main #tab-loop-btn.pc-on.pc-on:not(.sh-play):not(#tab-sheet-speed){background:rgba(10,92,255,.35)!important;border:2px solid #4D9BFF!important;color:#fff!important}
+
+/* ===== v2.187 : ecran d'accueil mobile / tablette (barre du bas, titres, liste claire) ===== */
+#bottom-nav,#fab,#fab-menu,.pg-title{display:none}
+body.touch-ui:not([data-page="scene"]) #topbar .tabs{display:none}
+body.touch-ui:not([data-page="scene"]) #topbar{padding:8px 14px}
+body.touch-ui:not([data-page="scene"]) #topbar h1{margin-left:0;width:100%}
+body.touch-ui:not([data-page="scene"]) #topbar h1 #fs-top{margin-left:auto!important}
+body.touch-ui:not([data-page="scene"]) #pages{padding-bottom:110px}
+body.touch-ui:not([data-page="scene"]) #bottom-nav{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:1000;background:#1B2029;border-top:1px solid #2A3140;padding:8px 4px calc(8px + env(safe-area-inset-bottom,0));justify-content:space-around}
+#bottom-nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;background:transparent!important;border:none!important;box-shadow:none!important;color:#9AA3B5;font-size:11px;padding:0;min-height:0;font-family:inherit}
+#bottom-nav .bn-ic{width:56px;height:32px;border-radius:16px;display:flex;align-items:center;justify-content:center;transition:background .15s}
+#bottom-nav .bn-ic svg{width:24px;height:24px}
+#bottom-nav button.on{color:#fff}
+#bottom-nav button.on .bn-ic{background:#1F7AFF}
+body.touch-ui:not([data-page="scene"]) .pg-title{display:block;font-size:30px;font-weight:800;letter-spacing:-.5px;margin:6px 4px 16px;color:#F2EFE9}
+body.touch-ui:not([data-page="scene"]) #fab{display:flex;align-items:center;gap:8px;position:fixed;right:16px;bottom:calc(88px + env(safe-area-inset-bottom,0));height:56px;padding:0 22px;border-radius:28px;background:#2F3849;color:#F2EFE9;border:none;font-size:16px;font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.5);z-index:900}
+body[data-page="pdf"] #fab,body[data-page="tools"] #fab,body[data-page="cfg"] #fab{display:none!important}
+body.touch-ui:not([data-page="scene"]) #fab-menu.open{display:block;position:fixed;right:16px;bottom:calc(154px + env(safe-area-inset-bottom,0));background:#2F3849;border-radius:16px;box-shadow:0 8px 28px rgba(0,0,0,.55);z-index:950;overflow:hidden;min-width:220px}
+#fab-menu button{display:block;width:100%;text-align:left;background:transparent!important;border:none!important;border-bottom:1px solid #3A4458!important;color:#F2EFE9;font-size:16px;padding:16px 18px;border-radius:0!important}
+#fab-menu button:last-child{border-bottom:none!important}
+/* accueil : morceaux */
+body.touch-ui #page-songs > .pg-title + .row,body.touch-ui #page-sets > .pg-title + .row{display:none}
+body.touch-ui .pg > *{flex-shrink:0}
+body.touch-ui #page-pdf > .pg-title{display:none!important}
+body.touch-ui #page-tools > .pg-title,body.touch-ui #page-cfg > .pg-title{padding-left:14px;padding-top:10px}
+body.touch-ui #search{height:52px!important;min-height:52px;border-radius:26px;background:#2E3645 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239AA3B5' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M20 20l-4-4'/%3E%3C/svg%3E") no-repeat 16px center/22px;border:none;padding:0 18px 0 50px;font-size:16px;margin-top:0!important}
+body.touch-ui #songs-sort{height:40px!important;margin-top:12px;border-radius:20px;background:#2E3645;border:none;padding:0 14px;font-size:14px!important;color:#E8ECF2}
+body.touch-ui #tag-filter-row{flex-wrap:nowrap!important;overflow-x:auto;gap:8px!important;scrollbar-width:none;padding:2px 0 4px;margin-top:10px!important}
+body.touch-ui #tag-filter-row::-webkit-scrollbar{display:none}
+body.touch-ui #tag-filter-row .badge{flex:none;padding:9px 16px;font-size:14px;border-radius:18px;background:#2A3140;color:#C8D0DE}
+body.touch-ui #tag-filter-row .badge.bg{background:#1F7AFF;color:#fff}
+body.touch-ui #songs-list > div:not(.card){font-size:13px!important;font-weight:700;letter-spacing:.08em;color:#8B95A8!important;padding:20px 6px 8px!important}
+body.touch-ui #songs-list .card,body.touch-ui #sets-list .card{background:#1E2430;border:none;border-radius:16px;padding:14px 12px 14px 18px;margin-bottom:8px!important;box-shadow:none}
+body.touch-ui #songs-list .card > div > div:first-child > div:first-child{font-size:17px;font-weight:600;color:#F2EFE9}
+body.touch-ui #songs-list .badge{background:#2A3140!important;color:#AEB6C6!important;font-size:11px}
+body.touch-ui #songs-list .card .btn-sm,body.touch-ui #sets-list .card .btn-sm{min-width:42px;height:42px;padding:0 8px;border-radius:21px;background:transparent;border:1px solid #3A4458;color:#E8ECF2;font-size:15px}
+body.touch-ui #songs-list .card .btn-g,body.touch-ui #sets-list .card .btn-g{background:#1F7AFF!important;border-color:#1F7AFF!important;color:#fff!important}
+body.touch-ui #songs-list .card .btn-g{width:46px;height:46px;border-radius:50%}
+body.touch-ui #songs-list .card .btn-r{display:none}
+body.touch-ui #page-sets .btn-a{width:100%;height:50px;border-radius:14px;background:#1E2430!important;color:#E8ECF2!important;border:none!important;font-size:15px;box-shadow:none!important;font-weight:500}
+body.touch-ui #page-sets .row{border-top:none!important;padding-top:0!important;margin-top:0!important}
+body.touch-ui #sets-list .sl-card{background:#1E2430!important;border:none!important;border-radius:16px!important;margin-bottom:8px;padding:0;overflow:hidden}
+body.touch-ui #sets-list .sl-head{background:transparent!important;padding:12px 10px 12px 16px;gap:6px}
+body.touch-ui #sets-list .sl-head > div:first-child > div:first-child{font-size:17px!important;font-weight:600;color:#F2EFE9}
+body.touch-ui #sets-list .sl-head > div:first-child > div:last-child{font-size:12px!important}
+body.touch-ui #sets-list .sl-head .btn-sm{min-width:38px;height:38px;padding:0 8px;border-radius:19px;background:transparent;border:1px solid #3A4458;color:#E8ECF2}
+body.touch-ui #sets-list .sl-head .btn-g{background:#1F7AFF!important;border-color:#1F7AFF!important;color:#fff!important}
 /* --- Panneau du bas glissable pour TOUS les modes (grille, paroles, image, partition) sur mobile / tablette --- */
 #scene-btns.sheet{position:fixed;left:0;right:0;bottom:0;z-index:2400;background:#232830;border-top:none;border-radius:20px 20px 0 0;box-shadow:0 -6px 22px rgba(0,0,0,.5);color:#E8ECF2;padding:0 10px env(safe-area-inset-bottom,0);overflow:hidden;align-content:flex-start;gap:8px;transition:height .2s ease}
 #scene-sheet-handle{flex:0 0 100%;height:30px;display:flex;align-items:center;justify-content:center;touch-action:none;cursor:grab}
@@ -1141,7 +1188,7 @@ body.scene-dark #osmd-render-target svg{filter:invert(.9) hue-rotate(180deg)}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.186.5</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.187.4</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
 </div>
 
 <div id="pages">
@@ -8505,6 +8552,48 @@ function ppInit() {
 }
 
 
+
+// ---- Accueil mobile / tablette : barre de navigation du bas, titres, bouton d'ajout ----
+var MVR_NAV = [["songs", "Morceaux", '<path d="M9 18V5l11-2v13"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/>'],
+  ["sets", "Setlists", '<path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/>'],
+  ["scene", "Scène", '<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M10 9l5 3-5 3z" fill="currentColor"/>'],
+  ["pdf", "Importer", '<path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 20h16"/>'],
+  ["tools", "Outils", '<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>'],
+  ["cfg", "Réglages", '<circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/>']];
+function homeSync(_p) {
+  document.body.setAttribute("data-page", _p);
+  document.querySelectorAll("#bottom-nav button").forEach(function (_b) { _b.classList.toggle("on", _b.getAttribute("data-p") === _p); });
+  var _f = document.getElementById("fab"), _m = document.getElementById("fab-menu");
+  if (_m) _m.classList.remove("open");
+  if (_f) _f.querySelector("span").textContent = _p === "sets" ? "Nouvelle setlist" : "Ajouter";
+}
+function homeInit() {
+  if (document.getElementById("bottom-nav")) return;
+  var _t = { songs: "Morceaux", sets: "Setlists", pdf: "Importer", tools: "Outils", cfg: "Réglages" };
+  Object.keys(_t).forEach(function (_k) { var _pg = document.getElementById("page-" + _k); if (!_pg) return; var _h = document.createElement("div"); _h.className = "pg-title"; _h.textContent = _t[_k]; _pg.insertBefore(_h, _pg.firstChild); });
+  var _nav = document.createElement("div"); _nav.id = "bottom-nav";
+  MVR_NAV.forEach(function (_n) {
+    var _b = document.createElement("button"); _b.setAttribute("data-p", _n[0]);
+    _b.innerHTML = '<span class="bn-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + _n[2] + '</svg></span><span>' + _n[1] + '</span>';
+    _b.onclick = function () { go(_n[0]); };
+    _nav.appendChild(_b);
+  });
+  document.body.appendChild(_nav);
+  var _fab = document.createElement("button"); _fab.id = "fab"; _fab.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span>Ajouter</span>';
+  var _menu = document.createElement("div"); _menu.id = "fab-menu";
+  var _mi = function (_txt, _fn) { var _b = document.createElement("button"); _b.textContent = _txt; _b.onclick = function () { _menu.classList.remove("open"); _fn(); }; _menu.appendChild(_b); };
+  _mi("Nouveau morceau", function () { openSongModal(); });
+  _mi("Grille d'accords rapide", function () { newGridSong(); });
+  _fab.onclick = function () { if (document.body.getAttribute("data-page") === "sets") { openSetModal(); } else { _menu.classList.toggle("open"); } };
+  document.body.appendChild(_menu); document.body.appendChild(_fab);
+  var _se = document.getElementById("search"); if (_se) _se.placeholder = "Rechercher un morceau";
+  document.addEventListener("pointerdown", function (_e) { if (!_e.target.closest || !_e.target.closest("#fab,#fab-menu")) _menu.classList.remove("open"); }, true);
+  var _go = window.go; window.go = function (_p) { var _r = _go.apply(this, arguments); homeSync(_p); return _r; };
+  homeSync("songs");
+}
+function homeApply() { var _on = tabUseSheet(); document.body.classList.toggle("touch-ui", !!_on); if (_on) homeInit(); }
+window.addEventListener("load", function () { setTimeout(homeApply, 300); });
+window.addEventListener("resize", function () { homeApply(); });
 function tabSurfaceRect(_c) {
   // les positions de mesures d'alphaTab sont relatives a sa zone d'affichage (.at-surface), pas au conteneur
   var _sf = _c && _c.querySelector ? _c.querySelector(".at-surface") : null;
@@ -16873,7 +16962,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.186.5 · 24/11/2026 03:30<span id="license-watermark"></span>
+  v2.187.4 · 24/11/2026 04:50<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
