@@ -908,7 +908,7 @@ body.sheet-on #stage,body.sheet-on #grid-paper,body.sheet-on #img-stage,body.she
 #scene-btns.sheet > div{background:transparent}
 #scene-btns.sheet button{min-height:52px;border-radius:12px!important;font-size:14px}
 
-/* --- v2.189.3 : homogeneisation (hauteur 48, centre, memes couleurs) --- */
+/* --- v2.190.2 : homogeneisation (hauteur 48, centre, memes couleurs) --- */
 #tab-sheet-main button,#tab-sheet-main select{height:48px!important;min-height:48px!important;font-size:15px!important}
 #tab-sheet-main button:not(.sh-play),#tab-sheet-main select{background:#2A313E!important;border:1px solid #3A4252!important;color:#E8ECF2!important;border-radius:24px!important;display:flex;align-items:center;justify-content:center;text-align:center}
 #tab-sheet-main button.pp-gear,#tab-sheet-main button[title="Début"]{width:48px;min-width:48px!important;padding:0!important;font-size:22px!important;border-radius:50%!important}
@@ -1124,6 +1124,42 @@ body.touch-ui #songs-list .card{padding:4px 2px!important}
 
 .rw-a{font-size:13px;color:#8D97AB;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 body.touch-ui #songs-list .card{padding:4px 2px!important}
+
+/* --- v2.190 : barre et tiroir des autres modes (paroles, grille, image, MusicXML) --- */
+body.touch-ui #page-scene .cd-btn,body.touch-ui #page-scene #gp-precount-btn,body.touch-ui #page-scene button[onclick^="fontStep"],body.touch-ui #scene-tools-toggle,body.touch-ui #scene-tools-panel{display:none!important}
+#pp-bar .pp-metro{width:auto!important;min-width:64px!important;gap:6px;padding:0 12px!important;border-radius:21px!important;font-size:14px;font-weight:600;border:1px solid #3A4252!important}
+#pp-bar .pp-metro span{font-variant-numeric:tabular-nums}
+#pp-bar button.on{background:rgba(10,92,255,.28)!important;border:1px solid #4D9BFF!important;color:#fff!important}
+#pp-bar{gap:12px}
+#pp-bar button{min-width:44px;height:44px}
+#pp-bar .pp-play{min-width:60px!important;height:60px!important;width:60px!important}
+#sc-pop{display:none;position:fixed;left:10px;right:10px;max-height:55vh;overflow:auto;background:#1E2430;border-radius:16px;box-shadow:0 8px 28px rgba(0,0,0,.55);z-index:2600;color:#E8ECF2}
+#sc-pop.open{display:block}
+#sc-pop .sh-r{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:56px;padding:6px 16px;border-bottom:1px solid #2A3140;font-size:16px}
+#sc-pop .sh-r:last-child{border-bottom:none}
+#sc-pop .sh-r > span{flex:1;white-space:nowrap}
+#sc-pop select{height:40px;border-radius:10px;background:#2A3140;border:none;color:#E8ECF2;font-size:15px;padding:0 10px;min-width:96px}
+#sc-pop .sh-seg{display:flex;background:transparent;gap:6px;align-items:center}
+#sc-pop .sh-chip{min-width:46px;height:40px;border:none;background:#2A3140;color:#E8ECF2;font-size:16px;border-radius:8px;padding:0 10px}
+#sc-pop .sh-chip:active{background:#2A3140}
+#sc-pop .sh-v{min-width:72px;white-space:nowrap;text-align:center;font-size:15px;font-variant-numeric:tabular-nums}
+#sc-pop .sh-switch{width:54px;height:32px;border-radius:16px;background:#3A4252;border:none;position:relative;padding:0;flex:none}
+#sc-pop .sh-switch::after{content:"";position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:#fff;transition:left .15s}
+#sc-pop .sh-switch.on{background:#1F7AFF}
+#sc-pop .sh-switch.on::after{left:25px}
+/* tiroir : cartes */
+#scene-btns.sheet{background:#1B2029!important}
+#scene-btns.sheet #pp-bar{background:transparent;margin:0 -10px;padding:0 10px}
+#scene-btns.sheet > div:not(#pp-bar):not(#scene-sheet-handle):not(:has(.btn-sm:not(.cd-btn):not([onclick^="gpExportPlaybackLog"]))){display:none!important}
+#scene-btns.sheet button[onclick^="gpExportPlaybackLog"]{display:none!important}
+#scene-btns.sheet > div .btn-r,#scene-btns.sheet #gp-restart-btn{display:none!important}
+#scene-btns.sheet > div:not(#pp-bar):not(#scene-sheet-handle){background:#232A36;border-radius:16px;margin:12px 4px 0;padding:0!important;gap:0!important;flex-direction:column;align-items:stretch;overflow:hidden}
+#scene-btns.sheet > div:not(#pp-bar) button{background:transparent!important;border:none!important;border-bottom:1px solid #2A3140!important;border-radius:0!important;min-height:56px;font-size:16px;text-align:left;padding:0 16px;color:#E8ECF2!important;font-weight:400}
+#scene-btns.sheet > div:not(#pp-bar) button:last-child{border-bottom:none!important}
+#scene-btns.sheet > div .btn-g,#scene-btns.sheet #play-btn,#scene-btns.sheet #restart-btn{display:none!important}
+#scene-btns.sheet > button{flex:1 1 calc(33% - 6px)!important;min-width:0!important;margin-top:12px;height:56px;min-height:56px;border-radius:14px!important;background:#1E2430!important;border:none!important;font-size:15px!important;color:#E8ECF2!important;font-weight:400!important;padding:0 4px!important}
+#scene-btns.sheet > button.sc-fiche{flex:1 1 100%!important;text-align:left;padding:0 16px!important}
+#scene-btns.sheet > #audio-marker-btn{flex:1 1 100%!important}
 /* --- Panneau du bas glissable pour TOUS les modes (grille, paroles, image, partition) sur mobile / tablette --- */
 #scene-btns.sheet{position:fixed;left:0;right:0;bottom:0;z-index:2400;background:#232830;border-top:none;border-radius:20px 20px 0 0;box-shadow:0 -6px 22px rgba(0,0,0,.5);color:#E8ECF2;padding:0 10px env(safe-area-inset-bottom,0);overflow:hidden;align-content:flex-start;gap:8px;transition:height .2s ease}
 #scene-sheet-handle{flex:0 0 100%;height:30px;display:flex;align-items:center;justify-content:center;touch-action:none;cursor:grab}
@@ -1257,7 +1293,7 @@ body.scene-dark #osmd-render-target svg{filter:invert(.9) hue-rotate(180deg)}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.189.3</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.190.2</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
 </div>
 
 <div id="pages">
@@ -8551,13 +8587,11 @@ function initSceneSheet() {
   var _pb = document.createElement("div"); _pb.id = "pp-bar";
   var _b1 = document.createElement("button"); _b1.innerHTML = mvrIcon("restart"); _b1.title = "Début"; _b1.onclick = ppRestart;
   var _b2 = document.createElement("button"); _b2.className = "pp-play"; _b2.innerHTML = mvrIcon("play"); _b2.onclick = ppToggle;
-  var _b3 = document.createElement("button"); _b3.className = "pp-gear"; _b3.innerHTML = mvrIcon("gear"); _b3.title = "Réglages";
-  _pb.appendChild(_b1); _pb.appendChild(_b2); _pb.appendChild(_b3); _sb.insertBefore(_pb, _hd.nextSibling);
-  var _ex = document.createElement("div"); _ex.className = "sheet-extra";
-  var _am = document.createElement("button"); _am.textContent = "A−"; _am.onclick = function () { fontStep(-2); };
-  var _ap = document.createElement("button"); _ap.textContent = "A+"; _ap.style.fontWeight = "700"; _ap.onclick = function () { fontStep(2); };
-  var _tb = document.createElement("button"); _tb.className = "sheet-theme-btn"; _tb.onclick = toggleSceneDark;
-  _ex.appendChild(_am); _ex.appendChild(_ap); _ex.appendChild(_tb); _sb.appendChild(_ex); sceneApplyTheme();
+  var _bm = document.createElement("button"); _bm.className = "pp-metro"; _bm.title = "Métronome et tempo"; _bm.innerHTML = mvrIcon("metro") + '<span id="pp-bpm"></span>'; _bm.onclick = function (_e) { _e.stopPropagation(); scPop("metro", _bm); };
+  var _b3 = document.createElement("button"); _b3.className = "pp-gear"; _b3.innerHTML = mvrIcon("gear"); _b3.title = "Affichage"; _b3.onclick = function (_e) { _e.stopPropagation(); scPop("disp", _b3); };
+  _pb.appendChild(_b1); _pb.appendChild(_b2); _pb.appendChild(_bm); _pb.appendChild(_b3); _sb.insertBefore(_pb, _hd.nextSibling);
+  Array.prototype.forEach.call(_sb.querySelectorAll(":scope > button"), function (_b) { var _o = _b.getAttribute("onclick") || ""; if (/prevSong/.test(_o)) _b.textContent = "‹ Précédent"; else if (/nextSong/.test(_o)) _b.textContent = "Suivant ›"; else if (/liveOpenModal/.test(_o)) _b.textContent = "📡 Live"; else if (/openCurrentSongFiche/.test(_o)) { _b.textContent = "Fiche du morceau"; _b.classList.add("sc-fiche"); } });
+  sceneApplyTheme();
   var _open = false, _full = 0, _y0 = 0, _h0 = 0, _drag = false, _moved = false;
   var _colH = function () {
     var _g = Array.prototype.slice.call(_sb.children).filter(function (_c) { return _c.tagName === "DIV" && _c !== _hd && _c.id !== "pp-bar" && !_c.classList.contains("sheet-extra") && getComputedStyle(_c).display !== "none"; })[0];
@@ -8572,9 +8606,63 @@ function initSceneSheet() {
   _hd.addEventListener("pointermove", function (_e) { if (!_drag) return; var _dy = _y0 - _e.clientY; if (Math.abs(_dy) > 5) _moved = true; if (_moved) { _sb.style.transition = "none"; _sb.style.height = Math.max(_colH(), Math.min(_full, _h0 + _dy)) + "px"; } });
   var _up = function () { if (!_drag) return; _drag = false; _open = _moved ? (_sb.offsetHeight > (_colH() + _full) / 2) : !_open; _apply(true); };
   _hd.addEventListener("pointerup", _up); _hd.addEventListener("pointercancel", _up);
-  _b3.onclick = function () { _full = _fullH(); _open = !_open; _apply(true); };
 }
 window.addEventListener("load", function () { setTimeout(initSceneSheet, 600); });
+
+// ---- Fenetres Metronome / Affichage (paroles, grille, image, MusicXML) ----
+var scPopKind = "", scPopBtn = null;
+function scClosePop() { var _p = document.getElementById("sc-pop"); if (_p) _p.classList.remove("open"); document.querySelectorAll("#pp-bar button.on").forEach(function (_b) { _b.classList.remove("on"); }); scPopKind = ""; }
+function scPop(_kind, _btn) {
+  var _p = document.getElementById("sc-pop");
+  if (!_p) { _p = document.createElement("div"); _p.id = "sc-pop"; document.body.appendChild(_p);
+    document.addEventListener("pointerdown", function (_e) { if (!_e.target.closest || !_e.target.closest("#sc-pop,#pp-bar")) scClosePop(); }, true); }
+  if (_p.classList.contains("open") && scPopKind === _kind) { scClosePop(); return; }
+  scClosePop();
+  scPopKind = _kind; scPopBtn = _btn; _btn.classList.add("on");
+  _p.innerHTML = ""; (_kind === "metro" ? scBuildMetro : scBuildDisp)(_p);
+  var _sb = document.getElementById("scene-btns"); var _top = _sb ? _sb.getBoundingClientRect().top : window.innerHeight - 100;
+  _p.style.bottom = Math.round(window.innerHeight - _top + 8) + "px";
+  _p.classList.add("open");
+}
+function scRow(_label, _ctl, _modes) { var _r = document.createElement("div"); _r.className = "sh-r"; if (_modes) _r.setAttribute("data-modes", _modes); var _l = document.createElement("span"); _l.textContent = _label; _r.appendChild(_l); if (_ctl) _r.appendChild(_ctl); return _r; }
+function scBtn(_txt, _fn) { var _b = document.createElement("button"); _b.className = "sh-chip"; _b.textContent = _txt; _b.onclick = function (_e) { _e.stopPropagation(); _fn(_b); }; return _b; }
+function scSwitch(_on, _fn) { var _b = document.createElement("button"); _b.className = "sh-switch" + (_on ? " on" : ""); _b.onclick = function (_e) { _e.stopPropagation(); _fn(); _b.classList.toggle("on", _fn.state ? _fn.state() : !_b.classList.contains("on")); }; return _b; }
+function scStepper(_get, _minus, _plus, _fmt) {
+  var _w = document.createElement("div"); _w.className = "sh-seg sh-step sh-val";
+  var _v = document.createElement("span"); _v.className = "sh-v";
+  var _upd = function () { _v.textContent = _fmt ? _fmt(_get()) : _get(); };
+  _w.appendChild(scBtn("−", function () { _minus(); setTimeout(_upd, 60); }));
+  _w.appendChild(_v); _w.appendChild(scBtn("+", function () { _plus(); setTimeout(_upd, 60); }));
+  _upd(); return _w;
+}
+function scSelect(_opts, _val, _fn) { var _s = document.createElement("select"); _opts.forEach(function (_o) { var _e = document.createElement("option"); _e.value = _o[0]; _e.textContent = _o[1]; _s.appendChild(_e); }); _s.value = _val; _s.onchange = function () { _fn(_s.value); }; return _s; }
+function scBuildMetro(_p) {
+  var _bpmNow = function () { return Math.round(bpm * 10) / 10; };
+  _p.appendChild(scRow("Tempo", scStepper(_bpmNow, function () { setBPM(bpm - 1); }, function () { setBPM(bpm + 1); }, function (_v) { return _v + " BPM"; })));
+  var _tap = scBtn("Tap", function () { tapTempo(); }); _tap.style.minWidth = "84px";
+  _p.appendChild(scRow("Tap tempo", _tap));
+  _p.appendChild(scRow("Tic du métronome", (function () { var _b = document.createElement("button"); _b.className = "sh-switch" + (metroOn ? " on" : ""); _b.onclick = function (_e) { _e.stopPropagation(); toggleMetro(); _b.classList.toggle("on", !!metroOn); }; return _b; })()));
+  _p.appendChild(scRow("Précompte (1 mesure)", (function () { var _b = document.createElement("button"); _b.className = "sh-switch" + (prefs.precount !== false ? " on" : ""); _b.onclick = function (_e) { _e.stopPropagation(); togglePrecountBtn(); _b.classList.toggle("on", prefs.precount !== false); }; return _b; })()));
+  _p.appendChild(scRow("Compte à rebours 3·2·1", (function () { var _b = document.createElement("button"); _b.className = "sh-switch cd-switch" + (prefs.countdown ? " on" : ""); _b.onclick = function (_e) { _e.stopPropagation(); toggleCountdown(); }; return _b; })()));
+  var _ts = document.getElementById("timesig");
+  _p.appendChild(scRow("Signature", scSelect([["4", "4/4"], ["3", "3/4"], ["6", "6/8"], ["2", "2/4"]], _ts ? _ts.value : "4", function (_v) { if (_ts) { _ts.value = _v; _ts.dispatchEvent(new Event("change")); } })));
+  _p.appendChild(scRow("Levée (temps)", scSelect([["0", "0"], ["1", "1"], ["2", "2"], ["3", "3"], ["4", "4"]], String(typeof gpLeadInBeats === "number" ? gpLeadInBeats : 0), function (_v) { setLeadInBeats(+_v); })));
+}
+function scBuildDisp(_p) {
+  var _fs = document.getElementById("font-sz");
+  _p.appendChild(scRow("Taille", (function () { var _w = document.createElement("div"); _w.className = "sh-seg sh-step"; _w.appendChild(scBtn("A−", function () { fontStep(-2); })); _w.appendChild(scBtn("A+", function () { fontStep(2); })); return _w; })()));
+  var _sp = document.getElementById("scroll-spd");
+  if (_sp) _p.appendChild(scRow("Vitesse", scStepper(function () { return parseFloat(_sp.value); }, function () { _sp.value = Math.max(0, parseFloat(_sp.value) - 0.5); _sp.dispatchEvent(new Event("input")); }, function () { _sp.value = Math.min(20, parseFloat(_sp.value) + 0.5); _sp.dispatchEvent(new Event("input")); }), "lyrics img"));
+  var _tv = document.getElementById("transpose-v");
+  if (_tv) _p.appendChild(scRow("Transposition", scStepper(function () { return _tv.textContent; }, function () { doTranspose(-1); }, function () { doTranspose(1); }), "lyrics grid"));
+  var _nt = document.getElementById("notation");
+  if (_nt) _p.appendChild(scRow("Notation", scSelect([["int", "A B C"], ["fr", "Do Ré Mi"]], _nt.value, function (_v) { _nt.value = _v; renderScene(); }), "lyrics grid"));
+  var _th = document.createElement("button"); _th.className = "sh-switch sheet-theme-btn" + (tabDisplayPrefs().dark ? " on" : ""); _th.onclick = function (_e) { _e.stopPropagation(); toggleSceneDark(); };
+  _p.appendChild(scRow("Thème sombre", _th));
+  var _m = ppMode();
+  Array.prototype.forEach.call(_p.querySelectorAll("[data-modes]"), function (_r) { if ((" " + _r.getAttribute("data-modes") + " ").indexOf(" " + _m + " ") < 0) _r.style.display = "none"; });
+}
+setInterval(function () { var _e = document.getElementById("pp-bpm"); if (_e && typeof bpm === "number") { var _t = String(Math.round(bpm)); if (_e.textContent !== _t) _e.textContent = _t; } }, 500);
 // ---- Bouton Play/Pause flottant (apparait au toucher, disparait seul) ----
 function ppMode() {
   var _v = function (_id) { var _e = document.getElementById(_id); return _e && _e.style.display !== "none" && _e.offsetParent !== null; };
@@ -8634,6 +8722,7 @@ var MVR_NAV = [["songs", "Morceaux", '<path d="M9 18V5l11-2v13"/><circle cx="6.5
   ["tools", "Outils", '<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>'],
   ["cfg", "Réglages", '<circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/>']];
 function homeSync(_p) {
+  try { scClosePop(); } catch (_e) {}
   document.body.setAttribute("data-page", _p);
   document.querySelectorAll("#bottom-nav button").forEach(function (_b) { _b.classList.toggle("on", _b.getAttribute("data-p") === _p); });
   var _f = document.getElementById("fab"), _m = document.getElementById("fab-menu");
@@ -8749,7 +8838,8 @@ function homeDecorate() {
   var _wrap = function (_n) { var _f = window[_n]; if (typeof _f !== "function") return; window[_n] = function () { var _r = _f.apply(this, arguments); try { homeDecorate(); } catch (_e) {} return _r; }; };
   window.addEventListener("load", function () { setTimeout(function () { _wrap("renderSongs"); _wrap("renderSets"); homeDecorate(); }, 350); });
 })();
-function homeApply() { var _on = tabUseSheet(); document.body.classList.toggle("touch-ui", !!_on); if (_on) homeInit(); }
+function homeApply() {
+  var _td = document.getElementById("scene-tempo-display"); if (_td && tabUseSheet()) _td.onclick = function () { var _b = document.querySelector("#pp-bar .pp-metro"); if (_b) scPop("metro", _b); }; var _on = tabUseSheet(); document.body.classList.toggle("touch-ui", !!_on); if (_on) homeInit(); }
 window.addEventListener("load", function () { setTimeout(homeApply, 300); });
 window.addEventListener("resize", function () { homeApply(); });
 function tabSurfaceRect(_c) {
@@ -17122,7 +17212,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.189.3 · 24/11/2026 06:55<span id="license-watermark"></span>
+  v2.190.2 · 24/11/2026 08:40<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
