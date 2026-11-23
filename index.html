@@ -873,6 +873,24 @@ body.fullscreen #fs-float{display:block}
 #scene-btns.sheet > button{flex:0 1 auto;min-width:80px}
 #scene-btns.sheet .sheet-extra{display:flex;flex-wrap:wrap}
 body.sheet-on #stage,body.sheet-on #grid-paper,body.sheet-on #img-stage,body.sheet-on #osmd-stage{padding-bottom:150px!important}
+/* --- Theme sombre commun a tous les modes de la scene --- */
+body.scene-dark #stage.lyr-theme{background:#1B1F27}
+body.scene-dark #stage.lyr-theme .s-row{border-bottom-color:rgba(255,255,255,.08)}
+body.scene-dark .lyr-text{color:#E8ECF2}
+body.scene-dark .lyr-chord{background:#2E3645;color:#F2F4F8;border-color:#475066;box-shadow:0 2px 6px rgba(0,0,0,.45)}
+body.scene-dark #grid-paper{background:#1B1F27;color:#E8ECF2}
+body.scene-dark .gp-title,body.scene-dark .gp-chord-cell,body.scene-dark .gp-simple-chord-name{color:#E8ECF2}
+body.scene-dark .gp-meta{color:#9AA3B5}
+body.scene-dark .gp-measure-box{border-color:#AAB2C0}
+body.scene-dark .gp-measure-num{color:#7B8496}
+body.scene-dark .gp-beatcell{background:#252B36;border-color:#3A4252;color:#8DB4FF}
+body.scene-dark .gp-beatcell-labeled{background:#2E3645;border-color:#475066;color:#E8ECF2}
+body.scene-dark .gp-measure-box.gp-measure-current{background:#27405F;border-color:#5AA0FF;box-shadow:0 0 0 2px #5AA0FF}
+body.scene-dark .gp-beatcell-active{background:#5AA0FF!important;border-color:#5AA0FF!important;color:#0B0D12!important}
+body.scene-dark .gp-annotation-input{color:#E8ECF2}
+body.scene-dark #img-stage,body.scene-dark #osmd-stage{background:#1B1F27}
+body.scene-dark #img-stage img{filter:invert(.9) hue-rotate(180deg)}
+body.scene-dark #osmd-render-target svg{filter:invert(.9) hue-rotate(180deg)}
 #tab-stage.tab-dark,#tab-stage.tab-dark #tab-stage-inner{background:#1B1F27!important}
 #tab-stage.tab-dark .at-cursor-bar{background:rgba(90,160,255,.20)}
 #tab-stage.tab-dark .at-cursor-beat{background:#5AA0FF}
@@ -966,7 +984,7 @@ body.sheet-on #stage,body.sheet-on #grid-paper,body.sheet-on #img-stage,body.she
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.180.0</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.181.0</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
 </div>
 
 <div id="pages">
@@ -8150,8 +8168,8 @@ function tabBuildSheet(_bar) {
   _bs.onchange = function () { prefs.tabBars = parseInt(_bs.value, 10); try { dbSave(); } catch (_e) {} tabApplyDisplay(); };
   var _zm = document.createElement("button"); _zm.textContent = "A−"; _zm.onclick = function () { prefs.tabScale = Math.max(0.4, Math.round((tabDisplayPrefs().scale - 0.1) * 10) / 10); try { dbSave(); } catch (_e) {} tabApplyDisplay(); };
   var _zp = document.createElement("button"); _zp.textContent = "A+"; _zp.style.fontWeight = "700"; _zp.onclick = function () { prefs.tabScale = Math.min(1.8, Math.round((tabDisplayPrefs().scale + 0.1) * 10) / 10); try { dbSave(); } catch (_e) {} tabApplyDisplay(); };
-  var _th = document.createElement("button"); _th.textContent = tabDisplayPrefs().dark ? "☀ Clair" : "🌙 Sombre";
-  _th.onclick = function () { prefs.tabDark = !tabDisplayPrefs().dark; try { dbSave(); } catch (_e) {} _th.textContent = prefs.tabDark ? "☀ Clair" : "🌙 Sombre"; tabApplyDisplay(); };
+  var _th = document.createElement("button"); _th.className = "sheet-theme-btn"; _th.textContent = tabDisplayPrefs().dark ? "☀ Clair" : "🌙 Sombre";
+  _th.onclick = toggleSceneDark;
   [_bl, _bs, _zm, _zp, _th].forEach(function (_e) { _row.appendChild(_e); });
   _more.appendChild(_row);
   var _nav = document.createElement("div"); _nav.className = "sh-row";
@@ -8171,6 +8189,13 @@ function tabBuildSheet(_bar) {
   var _up = function () { if (!_drag) return; _drag = false; var _open = _moved ? (_more.offsetHeight > _full * 0.4) : (_h0 === 0); _setH(_open ? _full : 0, true); };
   _hd.addEventListener("pointerup", _up); _hd.addEventListener("pointercancel", _up);
 }
+function sceneApplyTheme() { document.body.classList.toggle("scene-dark", !!tabDisplayPrefs().dark); var _t = tabDisplayPrefs().dark ? "☀ Clair" : "🌙 Sombre"; document.querySelectorAll(".sheet-theme-btn").forEach(function (_b) { _b.textContent = _t; }); }
+function toggleSceneDark() {
+  prefs.tabDark = !tabDisplayPrefs().dark;
+  try { dbSave(); } catch (_e) {}
+  sceneApplyTheme(); tabApplyDisplay();
+}
+window.addEventListener("load", function () { setTimeout(sceneApplyTheme, 800); setTimeout(sceneApplyTheme, 2500); });
 function initSceneSheet() {
   var _sb = document.getElementById("scene-btns");
   if (!_sb || _sb._sheet || !tabUseSheet()) return;
@@ -8180,7 +8205,8 @@ function initSceneSheet() {
   var _ex = document.createElement("div"); _ex.className = "sheet-extra";
   var _am = document.createElement("button"); _am.textContent = "A−"; _am.onclick = function () { fontStep(-2); };
   var _ap = document.createElement("button"); _ap.textContent = "A+"; _ap.style.fontWeight = "700"; _ap.onclick = function () { fontStep(2); };
-  _ex.appendChild(_am); _ex.appendChild(_ap); _sb.appendChild(_ex);
+  var _tb = document.createElement("button"); _tb.className = "sheet-theme-btn"; _tb.onclick = toggleSceneDark;
+  _ex.appendChild(_am); _ex.appendChild(_ap); _ex.appendChild(_tb); _sb.appendChild(_ex); sceneApplyTheme();
   var _open = false, _full = 0, _y0 = 0, _h0 = 0, _drag = false, _moved = false;
   var _colH = function () {
     var _g = Array.prototype.slice.call(_sb.children).filter(function (_c) { return _c.tagName === "DIV" && _c !== _hd && !_c.classList.contains("sheet-extra") && getComputedStyle(_c).display !== "none"; })[0];
@@ -16563,7 +16589,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.180.0 · 23/11/2026 15:00<span id="license-watermark"></span>
+  v2.181.0 · 23/11/2026 16:00<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
