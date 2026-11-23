@@ -862,6 +862,29 @@ body.fullscreen #fs-float{display:block}
 #tab-sheet-more button,#tab-sheet-more select{min-height:40px}
 #tab-sheet-more .loop-pick{display:none!important}
 
+
+/* --- v2.183 : menus discrets + bouton Play/Pause flottant façon YouTube --- */
+#pp-bar{display:flex;align-items:center;justify-content:center;gap:14px;height:60px;padding:0 12px}
+#pp-bar button,#tab-sheet-main button,#tab-sheet-main select{background:transparent!important;border:none!important;color:#E8ECF2!important;min-height:48px;min-width:48px;font-size:22px;padding:0 6px;border-radius:24px}
+#scene-btns.sheet #gp-play-btn,#scene-btns.sheet #gp-pause-btn,#scene-btns.sheet #play-btn,#scene-btns.sheet #osmd-play-btn,#scene-btns.sheet #img-play-btn{display:none!important}
+#tab-sheet-main .sh-play,#pp-bar .pp-play{display:flex!important;align-items:center;justify-content:center;line-height:1!important;text-align:center}
+#tab-sheet-main button,#pp-bar button{box-shadow:none!important}
+#pp-bar button{flex:0 0 auto!important;max-width:none!important;width:auto}
+#scene-btns.sheet #pp-bar button{background:transparent!important;border:none!important;font-size:24px;min-width:56px}
+#scene-btns.sheet #pp-bar .pp-play{background:#1F7AFF!important;width:60px!important;height:60px;min-width:60px;border-radius:50%;font-size:26px;color:#fff!important}
+#pp-bar .pp-play,#tab-sheet-main .sh-play{background:#1F7AFF!important;color:#fff!important;width:56px!important;height:56px!important;min-width:56px!important;flex:0 0 56px!important;border-radius:50%;font-size:24px;padding:0;line-height:56px}
+#pp-bar .pp-gear,#tab-sheet-main .pp-gear{font-size:22px}
+#tab-sheet-main{height:64px;padding:0 8px 6px;gap:10px;justify-content:center}
+#tab-sheet-main #tab-sheet-speed{font-size:14px;width:72px;min-width:0;appearance:none;text-align:center;border:1px solid #3E4757!important;border-radius:16px;min-height:36px}
+#tab-sheet-main #tab-loop-btn{font-size:15px}
+#tab-sheet-main #tab-loop-btn.pc-on{background:#F4B740!important;color:#1B1F27!important}
+#tab-sheet-handle,#scene-sheet-handle{height:20px}
+#tab-sheet:not(.sh-open) #tab-sheet-handle span,#scene-btns.sheet:not(.sh-open) #scene-sheet-handle span{background:rgba(120,130,150,.75);width:54px;box-shadow:0 0 0 1px rgba(255,255,255,.5)}
+#tab-stage:has(#tab-sheet) #tab-stage-inner{margin-bottom:100px}
+body.sheet-on #stage,body.sheet-on #grid-paper,body.sheet-on #img-stage,body.sheet-on #osmd-stage{padding-bottom:100px!important}
+#pp-fab{position:fixed;left:50%;top:50%;width:84px;height:84px;margin:-42px 0 0 -42px;border-radius:50%;border:none;background:rgba(15,18,26,.72);color:#fff;font-size:34px;line-height:84px;text-align:center;z-index:2300;display:none;opacity:0;transition:opacity .25s ease;box-shadow:0 4px 18px rgba(0,0,0,.45);-webkit-tap-highlight-color:transparent;padding:0;cursor:pointer;backdrop-filter:blur(4px)}
+#pp-fab.show{opacity:1}
+#pp-fab:active{transform:scale(.94)}
 /* --- Panneau du bas glissable pour TOUS les modes (grille, paroles, image, partition) sur mobile / tablette --- */
 #scene-btns.sheet{position:fixed;left:0;right:0;bottom:0;z-index:2400;background:#232830;border-top:none;border-radius:20px 20px 0 0;box-shadow:0 -6px 22px rgba(0,0,0,.5);color:#E8ECF2;padding:0 10px env(safe-area-inset-bottom,0);overflow:hidden;align-content:flex-start;gap:8px;transition:height .2s ease}
 #scene-sheet-handle{flex:0 0 100%;height:30px;display:flex;align-items:center;justify-content:center;touch-action:none;cursor:grab}
@@ -995,7 +1018,7 @@ body.scene-dark #osmd-render-target svg{filter:invert(.9) hue-rotate(180deg)}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.182.0</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.183.1</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
 </div>
 
 <div id="pages">
@@ -8167,15 +8190,16 @@ function tabBuildSheet(_bar) {
   var _sh = document.createElement("div"); _sh.id = "tab-sheet";
   var _hd = document.createElement("div"); _hd.id = "tab-sheet-handle"; _hd.innerHTML = "<span></span>";
   var _main = document.createElement("div"); _main.id = "tab-sheet-main";
-  var _play = document.createElement("button"); _play.id = "tab-sheet-play"; _play.className = "sh-play"; _play.textContent = "▶ Play"; _play.onclick = tabTogglePlay;
-  var _rs = document.createElement("button"); _rs.textContent = "↺ Début"; _rs.onclick = tabRestart;
-  _main.appendChild(_play); _main.appendChild(_rs);
+  var _play = document.createElement("button"); _play.id = "tab-sheet-play"; _play.className = "sh-play"; _play.textContent = "▶"; _play.onclick = tabTogglePlay;
+  var _rs = document.createElement("button"); _rs.textContent = "↺"; _rs.title = "Début"; _rs.onclick = tabRestart;
+  _main.appendChild(_rs); _main.appendChild(_play);
   var _lb = _bar.querySelector("#tab-loop-btn"); if (_lb) _main.appendChild(_lb);
   var _sp = document.createElement("select"); _sp.id = "tab-sheet-speed"; _sp.title = "Vitesse";
   [50, 60, 70, 80, 90, 100, 110, 120].forEach(function (_v) { var _o = document.createElement("option"); _o.value = _v; _o.textContent = _v + " %"; _sp.appendChild(_o); });
   var _cur = Math.round(((tabApi && tabApi.playbackSpeed) || 1) * 10) * 10; _sp.value = Math.max(50, Math.min(120, _cur));
   _sp.onchange = function () { if (tabFileTempo) setBPM(Math.round(tabFileTempo * parseInt(_sp.value, 10) / 100)); };
   _main.appendChild(_sp);
+  var _gear = document.createElement("button"); _gear.className = "pp-gear"; _gear.textContent = "⚙"; _gear.title = "Réglages"; _main.appendChild(_gear);
   var _more = document.createElement("div"); _more.id = "tab-sheet-more";
   _bar.style.cssText = "display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;padding:8px 10px;color:#E8ECF2;font-size:14px";
   _more.appendChild(_bar);
@@ -8203,11 +8227,12 @@ function tabBuildSheet(_bar) {
   // poignee : glisser vers le haut / le bas, ou toucher pour ouvrir / fermer
   var _full = 0, _y0 = 0, _h0 = 0, _drag = false, _moved = false;
   var _fullH = function () { var _h = _more.style.height; _more.style.transition = "none"; _more.style.height = "auto"; var _f = Math.min(_more.scrollHeight, Math.round(window.innerHeight * 0.6)); _more.style.height = _h; return _f; };
-  var _setH = function (_h, _anim) { _more.style.transition = _anim ? "height .2s ease" : "none"; _more.style.height = _h + "px"; _more.style.overflowY = _h > 0 && _anim && _h >= _full ? "auto" : "hidden"; };
+  var _setH = function (_h, _anim) { _more.style.transition = _anim ? "height .2s ease" : "none"; _more.style.height = _h + "px"; _more.style.overflowY = _h > 0 && _anim && _h >= _full ? "auto" : "hidden"; _sh.classList.toggle("sh-open", _h > 0); };
   _hd.addEventListener("pointerdown", function (_e) { try { _hd.setPointerCapture(_e.pointerId); } catch (_x) {} _drag = true; _moved = false; _y0 = _e.clientY; _full = _fullH(); _h0 = _more.offsetHeight; _e.preventDefault(); });
   _hd.addEventListener("pointermove", function (_e) { if (!_drag) return; var _dy = _y0 - _e.clientY; if (Math.abs(_dy) > 5) _moved = true; if (_moved) _setH(Math.max(0, Math.min(_full, _h0 + _dy)), false); });
   var _up = function () { if (!_drag) return; _drag = false; var _open = _moved ? (_more.offsetHeight > _full * 0.4) : (_h0 === 0); _setH(_open ? _full : 0, true); };
   _hd.addEventListener("pointerup", _up); _hd.addEventListener("pointercancel", _up);
+  _gear.onclick = function () { _full = _fullH(); _setH((parseInt(_more.style.height, 10) || 0) > 0 ? 0 : _full, true); };
 }
 function sceneApplyTheme() { document.body.classList.toggle("scene-dark", !!tabDisplayPrefs().dark); var _t = tabDisplayPrefs().dark ? "☀ Clair" : "🌙 Sombre"; document.querySelectorAll(".sheet-theme-btn").forEach(function (_b) { _b.textContent = _t; }); }
 function toggleSceneDark() {
@@ -8222,6 +8247,11 @@ function initSceneSheet() {
   _sb._sheet = 1; _sb.classList.add("sheet"); document.body.classList.add("sheet-on");
   var _hd = document.createElement("div"); _hd.id = "scene-sheet-handle"; _hd.innerHTML = "<span></span>";
   _sb.insertBefore(_hd, _sb.firstChild);
+  var _pb = document.createElement("div"); _pb.id = "pp-bar";
+  var _b1 = document.createElement("button"); _b1.textContent = "↺"; _b1.title = "Début"; _b1.onclick = ppRestart;
+  var _b2 = document.createElement("button"); _b2.className = "pp-play"; _b2.textContent = "▶"; _b2.onclick = ppToggle;
+  var _b3 = document.createElement("button"); _b3.className = "pp-gear"; _b3.textContent = "⚙"; _b3.title = "Réglages";
+  _pb.appendChild(_b1); _pb.appendChild(_b2); _pb.appendChild(_b3); _sb.insertBefore(_pb, _hd.nextSibling);
   var _ex = document.createElement("div"); _ex.className = "sheet-extra";
   var _am = document.createElement("button"); _am.textContent = "A−"; _am.onclick = function () { fontStep(-2); };
   var _ap = document.createElement("button"); _ap.textContent = "A+"; _ap.style.fontWeight = "700"; _ap.onclick = function () { fontStep(2); };
@@ -8229,11 +8259,11 @@ function initSceneSheet() {
   _ex.appendChild(_am); _ex.appendChild(_ap); _ex.appendChild(_tb); _sb.appendChild(_ex); sceneApplyTheme();
   var _open = false, _full = 0, _y0 = 0, _h0 = 0, _drag = false, _moved = false;
   var _colH = function () {
-    var _g = Array.prototype.slice.call(_sb.children).filter(function (_c) { return _c.tagName === "DIV" && _c !== _hd && !_c.classList.contains("sheet-extra") && getComputedStyle(_c).display !== "none"; })[0];
-    return 30 + (_g ? _g.offsetHeight : 56) + 4;
+    var _g = Array.prototype.slice.call(_sb.children).filter(function (_c) { return _c.tagName === "DIV" && _c !== _hd && _c.id !== "pp-bar" && !_c.classList.contains("sheet-extra") && getComputedStyle(_c).display !== "none"; })[0];
+    return 20 + 60;
   };
   var _fullH = function () { var _h = _sb.style.height; _sb.style.transition = "none"; _sb.style.height = "auto"; var _f = Math.min(_sb.scrollHeight, Math.round(window.innerHeight * 0.7)); _sb.style.height = _h; return _f; };
-  var _apply = function (_anim) { _sb.style.transition = _anim ? "height .2s ease" : "none"; _sb.style.height = (_open ? _fullH() : _colH()) + "px"; _sb.style.overflowY = _open ? "auto" : "hidden"; };
+  var _apply = function (_anim) { _sb.style.transition = _anim ? "height .2s ease" : "none"; _sb.style.height = (_open ? _fullH() : _colH()) + "px"; _sb.style.overflowY = _open ? "auto" : "hidden"; _sb.classList.toggle("sh-open", _open); };
   _apply(false);
   new MutationObserver(function (_m) { if (!_open && !_drag && _m.some(function (_r) { return _r.target !== _sb; })) _apply(false); })
     .observe(_sb, { attributes: true, attributeFilter: ["style", "class"], subtree: true });
@@ -8241,8 +8271,59 @@ function initSceneSheet() {
   _hd.addEventListener("pointermove", function (_e) { if (!_drag) return; var _dy = _y0 - _e.clientY; if (Math.abs(_dy) > 5) _moved = true; if (_moved) { _sb.style.transition = "none"; _sb.style.height = Math.max(_colH(), Math.min(_full, _h0 + _dy)) + "px"; } });
   var _up = function () { if (!_drag) return; _drag = false; _open = _moved ? (_sb.offsetHeight > (_colH() + _full) / 2) : !_open; _apply(true); };
   _hd.addEventListener("pointerup", _up); _hd.addEventListener("pointercancel", _up);
+  _b3.onclick = function () { _full = _fullH(); _open = !_open; _apply(true); };
 }
 window.addEventListener("load", function () { setTimeout(initSceneSheet, 600); });
+// ---- Bouton Play/Pause flottant (apparait au toucher, disparait seul) ----
+function ppMode() {
+  var _v = function (_id) { var _e = document.getElementById(_id); return _e && _e.style.display !== "none" && _e.offsetParent !== null; };
+  if (_v("tab-stage")) return "tab"; if (_v("osmd-stage")) return "osmd"; if (_v("img-stage")) return "img"; if (_v("grid-paper")) return "grid"; return "lyrics";
+}
+function ppIsPlaying() {
+  try { var _m = ppMode();
+    if (_m === "tab") return !!(tabApi && tabApi.playerState === 1);
+    if (_m === "osmd") return !!osmdPlaying; if (_m === "img") return !!imgPlaying; if (_m === "grid") return !!gpIsPlaying;
+    return !!playing; } catch (_e) { return false; }
+}
+function ppToggle() {
+  var _m = ppMode(), _pl = ppIsPlaying();
+  try {
+    if (_m === "tab") tabTogglePlay(); else if (_m === "osmd") osmdTogglePlay(); else if (_m === "img") imgTogglePlay();
+    else if (_m === "grid") { if (_pl) gpPause(); else gpPlay(); } else togglePlay();
+  } catch (_e) {}
+  setTimeout(ppRefresh, 120);
+}
+function ppRestart() {
+  try { var _m = ppMode(); if (_m === "tab") tabRestart(); else if (_m === "grid") gpRestart(); else if (_m === "osmd") osmdRestart(); else if (_m === "img") imgRestart(); else resetScene(); } catch (_e) {}
+  setTimeout(ppRefresh, 150);
+}
+var ppTimer = 0;
+function ppRefresh() { var _p = document.querySelector("#pp-bar .pp-play"); if (_p) _p.textContent = ppIsPlaying() ? "⏸" : "▶"; }
+setInterval(ppRefresh, 400);
+function ppShow() {
+  return;
+  var _f = document.getElementById("pp-fab"), _pg = document.getElementById("page-scene");
+  if (!_f || !_pg || !_pg.offsetWidth) return;
+  ppRefresh(); _f.style.display = "block"; void _f.offsetWidth; _f.classList.add("show");
+  clearTimeout(ppTimer);
+  ppTimer = setTimeout(function () { _f.classList.remove("show"); setTimeout(function () { if (!_f.classList.contains("show")) _f.style.display = "none"; }, 300); }, 3000);
+}
+function ppInit() {
+  if (document.getElementById("pp-fab") || !tabUseSheet()) return;
+  var _f = document.createElement("button"); _f.id = "pp-fab"; _f.textContent = "▶"; _f.title = "Lecture / Pause";
+  _f.onclick = function (_e) { _e.stopPropagation(); ppToggle(); };
+  document.body.appendChild(_f);
+  var _pg = document.getElementById("page-scene"), _x = 0, _y = 0, _t = 0;
+  _pg.addEventListener("pointerdown", function (_e) { _x = _e.clientX; _y = _e.clientY; _t = Date.now(); }, true);
+  _pg.addEventListener("pointerup", function (_e) {
+    if (Math.abs(_e.clientX - _x) > 10 || Math.abs(_e.clientY - _y) > 10 || Date.now() - _t > 500) return;
+    if (_e.target.closest && _e.target.closest("button,select,input,a,#tab-sheet,#scene-btns,#topbar,.modal,.at-cursor-bar-handle")) return;
+    ppShow();
+  }, true);
+  setInterval(function () { if (_f.classList.contains("show")) ppRefresh(); }, 400);
+}
+
+
 function tabSurfaceRect(_c) {
   // les positions de mesures d'alphaTab sont relatives a sa zone d'affichage (.at-surface), pas au conteneur
   var _sf = _c && _c.querySelector ? _c.querySelector(".at-surface") : null;
@@ -9179,7 +9260,7 @@ function tabSetPlayBtnState(_0x84af73) {
   var _0x29d056 = _0x552966;
   var _0x175dc8 = _0x4bc6f9;
   var _shp = document.getElementById("tab-sheet-play");
-  if (_shp) { _shp.textContent = _0x84af73 === "loading" ? "⏳ …" : (_0x84af73 === "playing" ? "⏸ Pause" : "▶ Play"); _shp.disabled = _0x84af73 === "loading"; }
+  if (_shp) { _shp.textContent = _0x84af73 === "loading" ? "…" : (_0x84af73 === "playing" ? "⏸" : "▶"); _shp.disabled = _0x84af73 === "loading"; }
   var _0x44b8df = document.getElementById("tab-play-btn");
   if (!_0x44b8df) {
     return;
@@ -16609,7 +16690,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.182.0 · 23/11/2026 17:00<span id="license-watermark"></span>
+  v2.183.1 · 23/11/2026 19:00<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
