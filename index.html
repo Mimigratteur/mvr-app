@@ -1299,7 +1299,7 @@ body.scene-dark #osmd-render-target svg{filter:invert(.9) hue-rotate(180deg)}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.190.4</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.190.5</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
 </div>
 
 <div id="pages">
@@ -5255,7 +5255,7 @@ function renderSets() {
       });
       return "<div class=\"song-row\" data-slid=\"" + _0x57b54e.id + "\" data-idx=\"" + _0xe5607f + "\" draggable=\"true\" ondragstart=\"slDragStart(event)\" ondragover=\"slDragOver(event)\" ondrop=\"slDrop(event,'" + _0x57b54e.id + "')\" ondragleave=\"slDragLeave(event)\"><span class=\"num\">" + (_0xe5607f + 1) + "</span><span class=\"drag-h\">⠿</span><span style=\"flex:1;font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap\">" + esc(_0x2a3fc3) + "</span>" + (_0x3c3882 && _0x3c3882.bpm ? "<span class=\"dur\">" + _0x3c3882.bpm + " BPM</span>" : "") + "<button class=\"btn-sm\" onclick=\"event.stopPropagation();launchSetAt('" + _0x57b54e.id + "'," + _0xe5607f + ")\">▶</button></div>";
     }).join("") : "<p style=\"font-size:12px;color:var(--tx3)\">Aucun morceau.</p>";
-    _0x32bc96.innerHTML = "<div class=\"sl-head\" onclick=\"toggleSlBody('" + _0x57b54e.id + "')\"><div style=\"flex:1;min-width:0\"><div style=\"font-weight:500;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap\">" + esc(_0x57b54e.name) + "</div><div style=\"font-size:11px;color:var(--tx3)\">" + (_0x57b54e.date ? esc(_0x57b54e.date) + " · " : "") + (_0x57b54e.venue ? esc(_0x57b54e.venue) + " · " : "") + (_0x57b54e.songIds || []).length + " morceau" + (_0x57b54e.songIds.length !== 1 ? "x" : "") + (_0x4e0936 ? " · ⏱ " + _0x4e0936 : "") + "</div></div><button class=\"btn-sm btn-g\" onclick=\"event.stopPropagation();launchSet('" + _0x57b54e.id + "')\">▶ Scène</button><button class=\"btn-sm\" title=\"Exporter (PDF, texte, ChordPro)\" onclick=\"event.stopPropagation();openExport('set','" + _0x57b54e.id + "')\">📄</button><button class=\"btn-sm\" onclick=\"event.stopPropagation();syncPublishSetlist('" + _0x57b54e.id + "')\">📤</button><button class=\"btn-sm\" onclick=\"event.stopPropagation();openSetModal('" + _0x57b54e.id + "')\">✎</button><span style=\"color:var(--tx2);margin-left:4px\" id=\"arr-" + _0x57b54e.id + "\">▾</span></div><div class=\"sl-body\" id=\"slb-" + _0x57b54e.id + "\" style=\"display:none\">" + _0x1f6c1f + (_0x57b54e.notes ? "<div style=\"font-size:11px;color:var(--tx3);padding:4px 0\">📝 " + esc(_0x57b54e.notes) + "</div>" : "") + "</div>";
+    _0x32bc96.innerHTML = "<div class=\"sl-head\" onclick=\"toggleSlBody('" + _0x57b54e.id + "')\"><div style=\"flex:1;min-width:0\"><div style=\"font-weight:500;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap\">" + esc(_0x57b54e.name) + "</div><div style=\"font-size:11px;color:var(--tx3)\">" + (_0x57b54e.date ? esc(_0x57b54e.date) + " · " : "") + (_0x57b54e.venue ? esc(_0x57b54e.venue) + " · " : "") + (_0x57b54e.songIds || []).length + " morceau" + (_0x57b54e.songIds.length !== 1 ? "x" : "") + (_0x4e0936 ? " · ⏱ " + _0x4e0936 : "") + "</div></div><button class=\"btn-sm btn-g\" onclick=\"event.stopPropagation();launchSet('" + _0x57b54e.id + "')\">▶ Scène</button><button class=\"btn-sm\" title=\"Exporter (PDF, texte, ChordPro)\" onclick=\"event.stopPropagation();openExport('set','" + _0x57b54e.id + "')\">📄</button><button class=\"btn-sm\" onclick=\"event.stopPropagation();syncPublishSetlist('" + _0x57b54e.id + "')\">📤</button><button class=\"btn-sm\" onclick=\"event.stopPropagation();openSetModal('" + _0x57b54e.id + "')\">✎</button><span style=\"color:var(--tx2);margin-left:4px\" id=\"arr-" + _0x57b54e.id + "\">▾</span></div><div class=\"sl-body\" id=\"slb-" + _0x57b54e.id + "\" style=\"display:none\">" + _0x1f6c1f + "" + "</div>";
     _0x7e2f2c.appendChild(_0x32bc96);
   });
 }
@@ -17218,7 +17218,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.190.4 · 24/11/2026 09:30<span id="license-watermark"></span>
+  v2.190.5 · 23/11/2026 12:00<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
