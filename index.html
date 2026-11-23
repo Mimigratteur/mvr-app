@@ -908,7 +908,7 @@ body.sheet-on #stage,body.sheet-on #grid-paper,body.sheet-on #img-stage,body.she
 #scene-btns.sheet > div{background:transparent}
 #scene-btns.sheet button{min-height:52px;border-radius:12px!important;font-size:14px}
 
-/* --- v2.185.3 : homogeneisation (hauteur 48, centre, memes couleurs) --- */
+/* --- v2.186.0 : homogeneisation (hauteur 48, centre, memes couleurs) --- */
 #tab-sheet-main button,#tab-sheet-main select{height:48px!important;min-height:48px!important;font-size:15px!important}
 #tab-sheet-main button:not(.sh-play),#tab-sheet-main select{background:#2A313E!important;border:1px solid #3A4252!important;color:#E8ECF2!important;border-radius:24px!important;display:flex;align-items:center;justify-content:center;text-align:center}
 #tab-sheet-main button.pp-gear,#tab-sheet-main button[title="Début"]{width:48px;min-width:48px!important;padding:0!important;font-size:22px!important;border-radius:50%!important}
@@ -977,6 +977,32 @@ body.sheet-on #stage,body.sheet-on #grid-paper,body.sheet-on #img-stage,body.she
 #tab-sheet-more .sh-card > .sh-sub{display:none;background:#171C26}
 #tab-sheet-more .sh-card > .sh-sub.open{display:block}
 #tab-sheet-more .sh-card > .sh-sub .sh-r:last-child{border-bottom:none!important}
+
+/* --- v2.186 : icones coherentes (barre) + fenetres Piste / Metronome --- */
+.mi{display:block;width:24px;height:24px}
+#tab-sheet-main button,#pp-bar button{display:flex!important;align-items:center;justify-content:center}
+#tab-sheet-main button:not(.sh-play):not(#tab-sheet-speed){width:42px!important;min-width:42px!important;height:42px!important;min-height:42px!important;padding:0!important;border-radius:50%!important;border:1px solid transparent!important;background:transparent!important;color:#C8D0DE!important;font-size:0!important}
+#tab-sheet-main #tab-sheet-speed{width:68px!important;min-width:0;height:42px!important;min-height:42px!important;font-size:14px!important;padding:0 4px!important}
+#tab-sheet-main{gap:4px!important;padding-left:4px!important;padding-right:4px!important}
+#tab-sheet-main button.on{background:rgba(10,92,255,.28)!important;border:1px solid #4D9BFF!important;color:#fff!important}
+#tab-sheet-main #tab-loop-btn.pc-on{background:rgba(10,92,255,.28)!important;border:1px solid #4D9BFF!important;color:#fff!important}
+#tab-sheet-main .sh-play,#pp-bar .pp-play{color:#fff!important}
+#tab-sheet-main .sh-play .mi,#pp-bar .pp-play .mi{width:26px;height:26px}
+#tab-sheet-main #tab-loop-btn{min-width:42px!important;width:42px!important}
+#pp-bar button{color:#C8D0DE}
+#tab-sheet .sh-pop{display:none;position:absolute;left:10px;right:10px;bottom:calc(100% + 8px);max-height:50vh;overflow:auto;background:#1E2430;border-radius:16px;box-shadow:0 8px 28px rgba(0,0,0,.55);z-index:2600;color:#E8ECF2}
+#tab-sheet .sh-pop.open{display:block}
+#tab-sheet .sh-pop .sh-r,#tab-sheet .sh-pop > button{display:flex!important;align-items:center;justify-content:space-between;gap:12px;min-height:56px;padding:0 16px!important;margin:0!important;border:none!important;border-bottom:1px solid #2A3140!important;border-radius:0!important;background:transparent!important;width:100%;box-sizing:border-box;font-size:16px!important;font-weight:400;color:#E8ECF2!important;height:auto!important;text-align:left}
+#tab-sheet .sh-pop > button::after{content:"›";color:#8B95A8;font-size:22px}
+#tab-sheet .sh-pop .sh-r select{flex:1;max-width:62%;height:40px;border-radius:10px;background:#2A3140;border:none;color:#E8ECF2;font-size:15px;padding:0 10px}
+#tab-sheet .sh-pop .pp-panel{position:static!important;display:none;min-width:0!important;max-width:none!important;max-height:200px;margin:0 8px 8px!important;background:#171C26!important}
+#tab-sheet .sh-pop .sh-switch{width:54px!important;height:32px!important;min-height:32px!important;border-radius:16px!important;background:#3A4252!important;border:none!important;position:relative;padding:0!important;flex:none}
+#tab-sheet .sh-pop .sh-switch.on{background:#1F7AFF!important}
+#tab-sheet .sh-pop .sh-switch::after{content:""!important;position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:#fff;transition:left .15s}
+#tab-sheet .sh-pop .sh-switch.on::after{left:25px}
+#tab-sheet .sh-pop > :last-child{border-bottom:none!important}
+#tab-sheet-more #tab-track-bar .loop-rng[style*="display: none"]{display:none!important}
+#tab-sheet-more #tab-track-bar:has(.loop-rng[style*="display: none"]){display:none!important}
 /* --- Panneau du bas glissable pour TOUS les modes (grille, paroles, image, partition) sur mobile / tablette --- */
 #scene-btns.sheet{position:fixed;left:0;right:0;bottom:0;z-index:2400;background:#232830;border-top:none;border-radius:20px 20px 0 0;box-shadow:0 -6px 22px rgba(0,0,0,.5);color:#E8ECF2;padding:0 10px env(safe-area-inset-bottom,0);overflow:hidden;align-content:flex-start;gap:8px;transition:height .2s ease}
 #scene-sheet-handle{flex:0 0 100%;height:30px;display:flex;align-items:center;justify-content:center;touch-action:none;cursor:grab}
@@ -1110,7 +1136,7 @@ body.scene-dark #osmd-render-target svg{filter:invert(.9) hue-rotate(180deg)}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.185.3</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.186.0</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
 </div>
 
 <div id="pages">
@@ -8190,7 +8216,7 @@ function tabBuildMuteMenu(_bar) {
   var _btn = document.createElement("button");
   _btn.className = "btn-sm";
   _btn.style.flexShrink = "0";
-  _btn.textContent = "🎚 Pistes";
+  _btn.textContent = "Pistes";
   var _panel = document.createElement("div");
   _panel.style.cssText = "display:none;position:absolute;top:100%;right:10px;min-width:240px;max-width:92vw;max-height:60vh;overflow:auto;background:#2E3645;border:1px solid #4A5468;border-radius:10px;padding:6px;box-shadow:0 8px 24px rgba(0,0,0,.5)";
   function _refresh() {
@@ -8206,7 +8232,7 @@ function tabBuildMuteMenu(_bar) {
       _row.onclick = function (_ev) { _ev.stopPropagation(); tabToggleMute(_i); _refresh(); };
       _panel.appendChild(_row);
     });
-    _btn.textContent = _nm ? ("🔇 Pistes (" + _nm + " coupée" + (_nm > 1 ? "s" : "") + ")") : "🎚 Pistes";
+    _btn.textContent = _nm ? ("Pistes (" + _nm + " coupée" + (_nm > 1 ? "s" : "") + ")") : "Pistes";
   }
   _btn.onclick = function (_ev) {
     _ev.stopPropagation();
@@ -8276,6 +8302,16 @@ function tabApplyDisplay() {
   if (!tabApi || !tabAtRef) return;
   try { tabInitDisplay(tabApi.settings, tabAtRef); tabThemeStage(); tabApi.updateSettings(); tabApi.render(); } catch (_e) {}
 }
+var MVR_ICONS = {
+  restart: '<path d="M4 12a8 8 0 1 0 2.6-5.9"/><path d="M4 3.5V8h4.5"/>',
+  play: '<path d="M7 4.5v15l12-7.5z" fill="currentColor"/>',
+  pause: '<path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor"/>',
+  loop: '<path d="M17 2.5l3.5 3.5-3.5 3.5"/><path d="M3.5 11V9.5A3.5 3.5 0 0 1 7 6h13.5"/><path d="M7 21.5L3.5 18 7 14.5"/><path d="M20.5 13v1.5A3.5 3.5 0 0 1 17 18H3.5"/>',
+  metro: '<path d="M8.5 21h7L13.7 4.5h-3.4z"/><path d="M12 16.5l4-9"/><path d="M9.2 12.5h5.6"/>',
+  tracks: '<path d="M3.5 6h9M17.5 6h3M3.5 12h3M11.5 12h9M3.5 18h11M19.5 18h1"/><circle cx="15" cy="6" r="2.2"/><circle cx="9" cy="12" r="2.2"/><circle cx="17" cy="18" r="2.2"/>',
+  gear: '<circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/>'
+};
+function mvrIcon(_n) { return '<svg class="mi" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + MVR_ICONS[_n] + '</svg>'; }
 function tabBuildSheet(_bar) {
   var _mk = function (_t, _c, _f) { var _e = document.createElement(_t); if (_c) _e.className = _c; if (_f) _f(_e); return _e; };
   var _sv = function () { try { dbSave(); } catch (_x) {} };
@@ -8284,8 +8320,8 @@ function tabBuildSheet(_bar) {
   var _sh = document.createElement("div"); _sh.id = "tab-sheet";
   var _hd = document.createElement("div"); _hd.id = "tab-sheet-handle"; _hd.innerHTML = "<span></span>";
   var _main = document.createElement("div"); _main.id = "tab-sheet-main";
-  var _play = document.createElement("button"); _play.id = "tab-sheet-play"; _play.className = "sh-play"; _play.textContent = "▶"; _play.onclick = tabTogglePlay;
-  var _rs = document.createElement("button"); _rs.textContent = "↺"; _rs.title = "Début"; _rs.onclick = tabRestart;
+  var _play = document.createElement("button"); _play.id = "tab-sheet-play"; _play.className = "sh-play"; _play.innerHTML = mvrIcon("play"); _play.onclick = tabTogglePlay;
+  var _rs = document.createElement("button"); _rs.innerHTML = mvrIcon("restart"); _rs.title = "Début"; _rs.onclick = tabRestart;
   _main.appendChild(_rs); _main.appendChild(_play);
   var _lb = _bar.querySelector("#tab-loop-btn"); if (_lb) _main.appendChild(_lb);
   var _sp = document.createElement("select"); _sp.id = "tab-sheet-speed"; _sp.title = "Vitesse";
@@ -8293,7 +8329,9 @@ function tabBuildSheet(_bar) {
   var _cur = Math.round(((tabApi && tabApi.playbackSpeed) || 1) * 10) * 10; _sp.value = Math.max(50, Math.min(120, _cur));
   _sp.onchange = function () { if (tabFileTempo) setBPM(Math.round(tabFileTempo * parseInt(_sp.value, 10) / 100)); };
   _main.appendChild(_sp);
-  var _gear = document.createElement("button"); _gear.className = "pp-gear"; _gear.textContent = "⚙"; _gear.title = "Réglages"; _main.appendChild(_gear);
+  var _mb = document.createElement("button"); _mb.innerHTML = mvrIcon("metro"); _mb.title = "Métronome"; _main.appendChild(_mb);
+  var _pb = document.createElement("button"); _pb.innerHTML = mvrIcon("tracks"); _pb.title = "Pistes"; _main.appendChild(_pb);
+  var _gear = document.createElement("button"); _gear.className = "pp-gear"; _gear.innerHTML = mvrIcon("gear"); _gear.title = "Réglages"; _main.appendChild(_gear);
   var _more = document.createElement("div"); _more.id = "tab-sheet-more";
   _bar.style.cssText = "display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;padding:8px 10px;color:#E8ECF2;font-size:14px";
   _more.appendChild(_bar);
@@ -8301,8 +8339,7 @@ function tabBuildSheet(_bar) {
   // reglages : cartes a lignes (style liste)
   var _cdb = _bar.querySelector(".cd-btn");
   if (_cdb) {
-    var _mrow = _mk("button", "sh-metro"); _mrow.innerHTML = "<span>♩ Métronome</span>";
-    var _msub = _mk("div", "sh-sub");
+    var _msub = _mk("div", "sh-pop");
     var _sw = function (_label, _cls, _on, _fn) {
       var _r = _mk("div", "sh-r"); _r.appendChild(_mk("span", "", function (_e) { _e.textContent = _label; }));
       var _b = _mk("button", "sh-switch " + _cls + (_on ? " on" : "")); _b.onclick = function () { _fn(_b); }; _r.appendChild(_b); return _r;
@@ -8312,11 +8349,25 @@ function tabBuildSheet(_bar) {
       prefs.tabMetro = !prefs.tabMetro; _sv(); _b.classList.toggle("on", !!prefs.tabMetro);
       try { if (tabApi) tabApi.metronomeVolume = prefs.tabMetro ? 1 : 0; } catch (_x) {}
     }));
-    _mrow.onclick = function () { _msub.classList.toggle("open"); _mrow.classList.toggle("opened"); };
-    _bar.insertBefore(_mrow, _cdb); _bar.insertBefore(_msub, _cdb); _cdb.style.display = "none";
+    _cdb.style.display = "none";
   }
   var _selEl = _bar.querySelector("select"), _labEl = _bar.querySelector("span");
-  if (_selEl && _labEl) { var _w = _mk("div", "sh-r"); _bar.insertBefore(_w, _labEl); _w.appendChild(_labEl); _w.appendChild(_selEl); }
+  var _popP = _mk("div", "sh-pop");
+  if (_selEl && _labEl) { var _w = _mk("div", "sh-r"); _w.appendChild(_labEl); _w.appendChild(_selEl); _popP.appendChild(_w); }
+  var _muteB = Array.prototype.filter.call(_bar.children, function (_c) { return _c.tagName === "BUTTON" && !_c.classList.contains("cd-btn") && _c.id !== "tab-loop-btn"; })[0];
+  if (_muteB) { var _mp = _muteB.nextElementSibling; _popP.appendChild(_muteB); if (_mp && _mp.tagName === "DIV") { _mp.classList.add("pp-panel"); _popP.appendChild(_mp); } }
+  if (!_popP.children.length) _pb.style.display = "none";
+  var _pops = [[_msub, _mb], [_popP, _pb]];
+  var _closePops = function () { _pops.forEach(function (_q) { _q[0].classList.remove("open"); _q[1].classList.remove("on"); }); };
+  _pops.forEach(function (_q) {
+    _sh.appendChild(_q[0]);
+    _q[1].onclick = function (_e) { _e.stopPropagation(); var _was = _q[0].classList.contains("open"); _closePops(); if (!_was) { _q[0].classList.add("open"); _q[1].classList.add("on"); } };
+  });
+  document.addEventListener("pointerdown", function _outside(_e) {
+    if (!document.body.contains(_sh)) { document.removeEventListener("pointerdown", _outside); return; }
+    if (_e.target.closest && (_e.target.closest(".sh-pop") || _e.target.closest("#tab-sheet-main"))) return;
+    _closePops();
+  }, true);
   var _card = _mk("div", "sh-card");
   var _sub2 = _mk("div", "sh-sub");
   var _r1 = _mk("div", "sh-r col");
@@ -8359,7 +8410,7 @@ function tabBuildSheet(_bar) {
   _hd.addEventListener("pointermove", function (_e) { if (!_drag) return; var _dy = _y0 - _e.clientY; if (Math.abs(_dy) > 5) _moved = true; if (_moved) _setH(Math.max(0, Math.min(_full, _h0 + _dy)), false); });
   var _up = function () { if (!_drag) return; _drag = false; var _open = _moved ? (_more.offsetHeight > _full * 0.4) : (_h0 === 0); _setH(_open ? _full : 0, true); };
   _hd.addEventListener("pointerup", _up); _hd.addEventListener("pointercancel", _up);
-  _gear.onclick = function () { _full = _fullH(); _setH((parseInt(_more.style.height, 10) || 0) > 0 ? 0 : _full, true); };
+  _gear.onclick = function () { _closePops(); _full = _fullH(); _setH((parseInt(_more.style.height, 10) || 0) > 0 ? 0 : _full, true); };
 }
 function sceneApplyTheme() { document.body.classList.toggle("scene-dark", !!tabDisplayPrefs().dark); var _dk = !!tabDisplayPrefs().dark, _t = _dk ? "☀ Clair" : "🌙 Sombre"; document.querySelectorAll(".sheet-theme-btn").forEach(function (_b) { if (_b.classList.contains("sh-switch")) _b.classList.toggle("on", _dk); else _b.textContent = _t; }); }
 function toggleSceneDark() {
@@ -8375,9 +8426,9 @@ function initSceneSheet() {
   var _hd = document.createElement("div"); _hd.id = "scene-sheet-handle"; _hd.innerHTML = "<span></span>";
   _sb.insertBefore(_hd, _sb.firstChild);
   var _pb = document.createElement("div"); _pb.id = "pp-bar";
-  var _b1 = document.createElement("button"); _b1.textContent = "↺"; _b1.title = "Début"; _b1.onclick = ppRestart;
-  var _b2 = document.createElement("button"); _b2.className = "pp-play"; _b2.textContent = "▶"; _b2.onclick = ppToggle;
-  var _b3 = document.createElement("button"); _b3.className = "pp-gear"; _b3.textContent = "⚙"; _b3.title = "Réglages";
+  var _b1 = document.createElement("button"); _b1.innerHTML = mvrIcon("restart"); _b1.title = "Début"; _b1.onclick = ppRestart;
+  var _b2 = document.createElement("button"); _b2.className = "pp-play"; _b2.innerHTML = mvrIcon("play"); _b2.onclick = ppToggle;
+  var _b3 = document.createElement("button"); _b3.className = "pp-gear"; _b3.innerHTML = mvrIcon("gear"); _b3.title = "Réglages";
   _pb.appendChild(_b1); _pb.appendChild(_b2); _pb.appendChild(_b3); _sb.insertBefore(_pb, _hd.nextSibling);
   var _ex = document.createElement("div"); _ex.className = "sheet-extra";
   var _am = document.createElement("button"); _am.textContent = "A−"; _am.onclick = function () { fontStep(-2); };
@@ -8425,7 +8476,7 @@ function ppRestart() {
   setTimeout(ppRefresh, 150);
 }
 var ppTimer = 0;
-function ppRefresh() { var _p = document.querySelector("#pp-bar .pp-play"); if (_p) _p.textContent = ppIsPlaying() ? "⏸" : "▶"; }
+function ppRefresh() { var _p = document.querySelector("#pp-bar .pp-play"); if (_p) { var _pl = ppIsPlaying(); if (_p._pl !== _pl) { _p._pl = _pl; _p.innerHTML = mvrIcon(_pl ? "pause" : "play"); } } }
 setInterval(ppRefresh, 400);
 function ppShow() {
   return;
@@ -8612,7 +8663,7 @@ function tabBuildLoopControls(_bar) {
   var _inCss = "width:58px;padding:6px;border-radius:8px;background:#2E3645;color:#E8ECF2;border:1px solid #4A5468;font-size:14px;text-align:center";
   _rng.innerHTML = 'Boucle : mesures <input id="tab-loop-from" type="number" min="1" max="' + _n + '" style="' + _inCss + '"> à <input id="tab-loop-to" type="number" min="1" max="' + _n + '" style="' + _inCss + '"> <span style="opacity:.6">/ ' + _n + "</span>";
   function _refresh() {
-    _btn.textContent = tabUseSheet() ? "🔁" : (_l.on ? "🔁 Boucle activée" : "🔁 Boucle");
+    if (tabUseSheet()) _btn.innerHTML = mvrIcon("loop"); else _btn.textContent = _l.on ? "🔁 Boucle activée" : "🔁 Boucle";
     _btn.title = "Boucle";
     _btn.classList.toggle("pc-on", !!_l.on);
     _rng.style.display = _l.on ? "inline-flex" : "none";
@@ -9388,7 +9439,7 @@ function tabSetPlayBtnState(_0x84af73) {
   var _0x29d056 = _0x552966;
   var _0x175dc8 = _0x4bc6f9;
   var _shp = document.getElementById("tab-sheet-play");
-  if (_shp) { _shp.textContent = _0x84af73 === "loading" ? "…" : (_0x84af73 === "playing" ? "⏸" : "▶"); _shp.disabled = _0x84af73 === "loading"; }
+  if (_shp) { _shp.innerHTML = _0x84af73 === "loading" ? "…" : mvrIcon(_0x84af73 === "playing" ? "pause" : "play"); _shp.disabled = _0x84af73 === "loading"; }
   var _0x44b8df = document.getElementById("tab-play-btn");
   if (!_0x44b8df) {
     return;
@@ -16819,7 +16870,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.185.3 · 24/11/2026 00:30<span id="license-watermark"></span>
+  v2.186.0 · 24/11/2026 01:00<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
