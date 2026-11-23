@@ -908,7 +908,7 @@ body.sheet-on #stage,body.sheet-on #grid-paper,body.sheet-on #img-stage,body.she
 #scene-btns.sheet > div{background:transparent}
 #scene-btns.sheet button{min-height:52px;border-radius:12px!important;font-size:14px}
 
-/* --- v2.186.3 : homogeneisation (hauteur 48, centre, memes couleurs) --- */
+/* --- v2.186.2 : homogeneisation (hauteur 48, centre, memes couleurs) --- */
 #tab-sheet-main button,#tab-sheet-main select{height:48px!important;min-height:48px!important;font-size:15px!important}
 #tab-sheet-main button:not(.sh-play),#tab-sheet-main select{background:#2A313E!important;border:1px solid #3A4252!important;color:#E8ECF2!important;border-radius:24px!important;display:flex;align-items:center;justify-content:center;text-align:center}
 #tab-sheet-main button.pp-gear,#tab-sheet-main button[title="Début"]{width:48px;min-width:48px!important;padding:0!important;font-size:22px!important;border-radius:50%!important}
@@ -1008,15 +1008,6 @@ body.sheet-on #stage,body.sheet-on #grid-paper,body.sheet-on #img-stage,body.she
 #tab-sheet .sh-pop .sh-switch::after{content:""!important}
 
 #tab-sheet-main button.on.on:not(.sh-play):not(#tab-sheet-speed),#tab-sheet-main #tab-loop-btn.pc-on.pc-on:not(.sh-play):not(#tab-sheet-speed){background:rgba(10,92,255,.35)!important;border:2px solid #4D9BFF!important;color:#fff!important}
-
-#tab-sheet .sh-pop .sh-r.trk{padding:0!important;gap:0}
-#tab-sheet .sh-pop .trk-name{flex:1;height:56px;background:transparent;border:none;color:#E8ECF2;font-size:16px;text-align:left;padding:0 8px 0 16px;display:flex;align-items:center;gap:10px;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-#tab-sheet .sh-pop .trk-name::before{content:"";width:18px;flex:none}
-#tab-sheet .sh-pop .trk-name{font-weight:400}
-#tab-sheet .sh-pop .trk-name.on{color:#4D9BFF;font-weight:700}
-#tab-sheet .sh-pop .trk-name.on::before{content:"✓"}
-#tab-sheet .sh-pop .trk-mute{width:64px;height:56px;border:none;background:transparent;color:#C8D0DE;display:flex;align-items:center;justify-content:center;flex:none}
-#tab-sheet .sh-pop .trk.muted .trk-name,#tab-sheet .sh-pop .trk.muted .trk-mute{color:#7B8495}
 /* --- Panneau du bas glissable pour TOUS les modes (grille, paroles, image, partition) sur mobile / tablette --- */
 #scene-btns.sheet{position:fixed;left:0;right:0;bottom:0;z-index:2400;background:#232830;border-top:none;border-radius:20px 20px 0 0;box-shadow:0 -6px 22px rgba(0,0,0,.5);color:#E8ECF2;padding:0 10px env(safe-area-inset-bottom,0);overflow:hidden;align-content:flex-start;gap:8px;transition:height .2s ease}
 #scene-sheet-handle{flex:0 0 100%;height:30px;display:flex;align-items:center;justify-content:center;touch-action:none;cursor:grab}
@@ -1150,7 +1141,7 @@ body.scene-dark #osmd-render-target svg{filter:invert(.9) hue-rotate(180deg)}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.186.3</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.186.2</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
 </div>
 
 <div id="pages">
@@ -8323,8 +8314,6 @@ var MVR_ICONS = {
   loop: '<path d="M17 2.5l3.5 3.5-3.5 3.5"/><path d="M3.5 11V9.5A3.5 3.5 0 0 1 7 6h13.5"/><path d="M7 21.5L3.5 18 7 14.5"/><path d="M20.5 13v1.5A3.5 3.5 0 0 1 17 18H3.5"/>',
   metro: '<path d="M8.5 21h7L13.7 4.5h-3.4z"/><path d="M12 16.5l4-9"/><path d="M9.2 12.5h5.6"/>',
   tracks: '<path d="M3.5 6h9M17.5 6h3M3.5 12h3M11.5 12h9M3.5 18h11M19.5 18h1"/><circle cx="15" cy="6" r="2.2"/><circle cx="9" cy="12" r="2.2"/><circle cx="17" cy="18" r="2.2"/>',
-  vol: '<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a8 8 0 0 1 0 11"/>',
-  mute: '<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M16 9.5l5 5M21 9.5l-5 5"/>',
   gear: '<path d="M2.5 19.5l5.5-15 5.5 15M4.4 14.5h7.2"/><path d="M14.5 19.5l3.2-8.5 3.3 8.5M15.7 16.6h4"/>'
 };
 function mvrIcon(_n) { return '<svg class="mi" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + MVR_ICONS[_n] + '</svg>'; }
@@ -8369,24 +8358,9 @@ function tabBuildSheet(_bar) {
   }
   var _selEl = _bar.querySelector("select"), _labEl = _bar.querySelector("span");
   var _popP = _mk("div", "sh-pop");
+  if (_selEl && _labEl) { var _w = _mk("div", "sh-r"); _w.appendChild(_labEl); _w.appendChild(_selEl); _popP.appendChild(_w); }
   var _muteB = Array.prototype.filter.call(_bar.children, function (_c) { return _c.tagName === "BUTTON" && !_c.classList.contains("cd-btn") && _c.id !== "tab-loop-btn"; })[0];
-  if (_muteB) { var _mp = _muteB.nextElementSibling; if (_mp && _mp.tagName === "DIV") _mp.remove(); _muteB.remove(); }
-  if (_selEl) {
-    var _bt = function () {
-      _popP.innerHTML = "";
-      var _cur = parseInt(_selEl.value, 10) || 0, _mu = (tabSongRef && tabSongRef.tabMuted) || [];
-      tabScoreRef.tracks.forEach(function (_t, _i) {
-        var _m = _mu.indexOf(_i) >= 0;
-        var _r = _mk("div", "sh-r trk" + (_m ? " muted" : ""));
-        var _n = _mk("button", "trk-name" + (_i === _cur ? " on" : ""), function (_e) { _e.textContent = tabTrackName(_t, _i); });
-        _n.onclick = function (_ev) { _ev.stopPropagation(); _selEl.value = _i; if (_selEl.onchange) _selEl.onchange(); _bt(); };
-        var _v = _mk("button", "trk-mute"); _v.innerHTML = mvrIcon(_m ? "mute" : "vol"); _v.title = _m ? "Réactiver le son" : "Couper le son";
-        _v.onclick = function (_ev) { _ev.stopPropagation(); tabToggleMute(_i); _bt(); };
-        _r.appendChild(_n); _r.appendChild(_v); _popP.appendChild(_r);
-      });
-    };
-    _bt(); _pb.addEventListener("click", _bt);
-  }
+  if (_muteB) { var _mp = _muteB.nextElementSibling; _popP.appendChild(_muteB); if (_mp && _mp.tagName === "DIV") { _mp.classList.add("pp-panel"); _popP.appendChild(_mp); } }
   if (!_popP.children.length) _pb.style.display = "none";
   var _pops = [[_msub, _mb], [_popP, _pb]];
   var _closePops = function () { _pops.forEach(function (_q) { _q[0].classList.remove("open"); _q[1].classList.remove("on"); }); };
@@ -16898,7 +16872,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.186.3 · 24/11/2026 02:30<span id="license-watermark"></span>
+  v2.186.2 · 24/11/2026 02:00<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
