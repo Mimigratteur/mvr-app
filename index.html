@@ -861,6 +861,18 @@ body.fullscreen #fs-float{display:block}
 #tab-sheet-more .sh-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;padding:8px 10px}
 #tab-sheet-more button,#tab-sheet-more select{min-height:40px}
 #tab-sheet-more .loop-pick{display:none!important}
+
+/* --- Panneau du bas glissable pour TOUS les modes (grille, paroles, image, partition) sur mobile / tablette --- */
+#scene-btns.sheet{position:fixed;left:0;right:0;bottom:0;z-index:2400;background:#232830;border-top:none;border-radius:20px 20px 0 0;box-shadow:0 -6px 22px rgba(0,0,0,.5);color:#E8ECF2;padding:0 10px env(safe-area-inset-bottom,0);overflow:hidden;align-content:flex-start;gap:8px;transition:height .2s ease}
+#scene-sheet-handle{flex:0 0 100%;height:30px;display:flex;align-items:center;justify-content:center;touch-action:none;cursor:grab}
+#scene-sheet-handle span{display:block;width:46px;height:5px;border-radius:3px;background:#6B7486}
+#scene-btns.sheet > div{flex:0 0 100%;justify-content:center;gap:6px;padding-bottom:12px}
+#scene-btns.sheet button{min-height:48px;border-radius:14px;max-width:none;font-size:14px;padding:0 10px;background:#2E3645;color:#E8ECF2;border:1px solid #3E4757}
+#scene-btns.sheet button.btn-g,#scene-btns.sheet #gp-play-btn,#scene-btns.sheet #play-btn,#scene-btns.sheet #osmd-play-btn{background:#1F7AFF!important;border-color:#1F7AFF!important;color:#fff!important;font-weight:700;font-size:16px}
+#scene-btns.sheet button.btn-r{background:#2E3645!important;color:#E8ECF2!important;border-color:#3E4757!important}
+#scene-btns.sheet > button{flex:0 1 auto;min-width:80px}
+#scene-btns.sheet .sheet-extra{display:flex;flex-wrap:wrap}
+body.sheet-on #stage,body.sheet-on #grid-paper,body.sheet-on #img-stage,body.sheet-on #osmd-stage{padding-bottom:150px!important}
 #tab-stage.tab-dark,#tab-stage.tab-dark #tab-stage-inner{background:#1B1F27!important}
 #tab-stage.tab-dark .at-cursor-bar{background:rgba(90,160,255,.20)}
 #tab-stage.tab-dark .at-cursor-beat{background:#5AA0FF}
@@ -954,7 +966,7 @@ body.fullscreen #fs-float{display:block}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.179.0</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.180.0</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
 </div>
 
 <div id="pages">
@@ -8159,6 +8171,32 @@ function tabBuildSheet(_bar) {
   var _up = function () { if (!_drag) return; _drag = false; var _open = _moved ? (_more.offsetHeight > _full * 0.4) : (_h0 === 0); _setH(_open ? _full : 0, true); };
   _hd.addEventListener("pointerup", _up); _hd.addEventListener("pointercancel", _up);
 }
+function initSceneSheet() {
+  var _sb = document.getElementById("scene-btns");
+  if (!_sb || _sb._sheet || !tabUseSheet()) return;
+  _sb._sheet = 1; _sb.classList.add("sheet"); document.body.classList.add("sheet-on");
+  var _hd = document.createElement("div"); _hd.id = "scene-sheet-handle"; _hd.innerHTML = "<span></span>";
+  _sb.insertBefore(_hd, _sb.firstChild);
+  var _ex = document.createElement("div"); _ex.className = "sheet-extra";
+  var _am = document.createElement("button"); _am.textContent = "A−"; _am.onclick = function () { fontStep(-2); };
+  var _ap = document.createElement("button"); _ap.textContent = "A+"; _ap.style.fontWeight = "700"; _ap.onclick = function () { fontStep(2); };
+  _ex.appendChild(_am); _ex.appendChild(_ap); _sb.appendChild(_ex);
+  var _open = false, _full = 0, _y0 = 0, _h0 = 0, _drag = false, _moved = false;
+  var _colH = function () {
+    var _g = Array.prototype.slice.call(_sb.children).filter(function (_c) { return _c.tagName === "DIV" && _c !== _hd && !_c.classList.contains("sheet-extra") && getComputedStyle(_c).display !== "none"; })[0];
+    return 30 + (_g ? _g.offsetHeight : 56) + 4;
+  };
+  var _fullH = function () { var _h = _sb.style.height; _sb.style.transition = "none"; _sb.style.height = "auto"; var _f = Math.min(_sb.scrollHeight, Math.round(window.innerHeight * 0.7)); _sb.style.height = _h; return _f; };
+  var _apply = function (_anim) { _sb.style.transition = _anim ? "height .2s ease" : "none"; _sb.style.height = (_open ? _fullH() : _colH()) + "px"; _sb.style.overflowY = _open ? "auto" : "hidden"; };
+  _apply(false);
+  new MutationObserver(function (_m) { if (!_open && !_drag && _m.some(function (_r) { return _r.target !== _sb; })) _apply(false); })
+    .observe(_sb, { attributes: true, attributeFilter: ["style", "class"], subtree: true });
+  _hd.addEventListener("pointerdown", function (_e) { try { _hd.setPointerCapture(_e.pointerId); } catch (_x) {} _drag = true; _moved = false; _y0 = _e.clientY; _full = _fullH(); _h0 = _sb.offsetHeight; _e.preventDefault(); });
+  _hd.addEventListener("pointermove", function (_e) { if (!_drag) return; var _dy = _y0 - _e.clientY; if (Math.abs(_dy) > 5) _moved = true; if (_moved) { _sb.style.transition = "none"; _sb.style.height = Math.max(_colH(), Math.min(_full, _h0 + _dy)) + "px"; } });
+  var _up = function () { if (!_drag) return; _drag = false; _open = _moved ? (_sb.offsetHeight > (_colH() + _full) / 2) : !_open; _apply(true); };
+  _hd.addEventListener("pointerup", _up); _hd.addEventListener("pointercancel", _up);
+}
+window.addEventListener("load", function () { setTimeout(initSceneSheet, 600); });
 function tabSurfaceRect(_c) {
   // les positions de mesures d'alphaTab sont relatives a sa zone d'affichage (.at-surface), pas au conteneur
   var _sf = _c && _c.querySelector ? _c.querySelector(".at-surface") : null;
@@ -16525,7 +16563,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.179.0 · 23/11/2026 14:00<span id="license-watermark"></span>
+  v2.180.0 · 23/11/2026 15:00<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
