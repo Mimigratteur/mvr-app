@@ -908,7 +908,7 @@ body.sheet-on #stage,body.sheet-on #grid-paper,body.sheet-on #img-stage,body.she
 #scene-btns.sheet > div{background:transparent}
 #scene-btns.sheet button{min-height:52px;border-radius:12px!important;font-size:14px}
 
-/* --- v2.185.0 : homogeneisation (hauteur 48, centre, memes couleurs) --- */
+/* --- v2.185.1 : homogeneisation (hauteur 48, centre, memes couleurs) --- */
 #tab-sheet-main button,#tab-sheet-main select{height:48px!important;min-height:48px!important;font-size:15px!important}
 #tab-sheet-main button:not(.sh-play),#tab-sheet-main select{background:#2A313E!important;border:1px solid #3A4252!important;color:#E8ECF2!important;border-radius:24px!important;display:flex;align-items:center;justify-content:center;text-align:center}
 #tab-sheet-main button.pp-gear,#tab-sheet-main button[title="Début"]{width:48px;min-width:48px!important;padding:0!important;font-size:22px!important;border-radius:50%!important}
@@ -957,6 +957,19 @@ body.sheet-on #stage,body.sheet-on #grid-paper,body.sheet-on #img-stage,body.she
 #tab-sheet-more .sh-navrow button:last-child{border-right:none!important}
 #tab-sheet-main button:not(.sh-play),#tab-sheet-main select{background:transparent!important}
 #tab-sheet-main button.pp-gear,#tab-sheet-main button[title="Début"]{border-color:transparent!important}
+
+#tab-sheet-more #tab-track-bar .sh-metro{font-weight:400}
+#tab-sheet-more #tab-track-bar .sh-metro.opened::after{transform:rotate(90deg)}
+#tab-sheet-more #tab-track-bar > div.sh-sub{display:none;margin:0!important;max-height:none;background:#171C26;padding:0!important}
+#tab-sheet-more #tab-track-bar > div.sh-sub.open{display:block}
+#tab-sheet-more #tab-track-bar > div.sh-sub .sh-r{padding-left:30px!important}
+#tab-sheet-main #tab-loop-btn{min-width:48px!important;width:48px;padding:0!important;border-radius:50%!important;font-size:22px!important}
+
+#tab-sheet-more #tab-track-bar .cd-btn{display:none!important}
+#tab-sheet-more #tab-track-bar .sh-switch{width:54px!important;height:32px!important;min-height:32px!important;border-radius:16px!important;background:#3A4252!important;border:none!important;position:relative;padding:0!important;flex:none;width:54px}
+#tab-sheet-more #tab-track-bar .sh-switch.on{background:#1F7AFF!important}
+#tab-sheet-more #tab-track-bar .sh-switch::after{content:""!important;position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:#fff;transition:left .15s;font-size:0}
+#tab-sheet-more #tab-track-bar .sh-switch.on::after{left:25px}
 /* --- Panneau du bas glissable pour TOUS les modes (grille, paroles, image, partition) sur mobile / tablette --- */
 #scene-btns.sheet{position:fixed;left:0;right:0;bottom:0;z-index:2400;background:#232830;border-top:none;border-radius:20px 20px 0 0;box-shadow:0 -6px 22px rgba(0,0,0,.5);color:#E8ECF2;padding:0 10px env(safe-area-inset-bottom,0);overflow:hidden;align-content:flex-start;gap:8px;transition:height .2s ease}
 #scene-sheet-handle{flex:0 0 100%;height:30px;display:flex;align-items:center;justify-content:center;touch-action:none;cursor:grab}
@@ -1090,7 +1103,7 @@ body.scene-dark #osmd-render-target svg{filter:invert(.9) hue-rotate(180deg)}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.185.0</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.185.1</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
 </div>
 
 <div id="pages">
@@ -8170,7 +8183,7 @@ function tabBuildMuteMenu(_bar) {
   var _btn = document.createElement("button");
   _btn.className = "btn-sm";
   _btn.style.flexShrink = "0";
-  _btn.textContent = "🔊 Sons";
+  _btn.textContent = "🎚 Pistes";
   var _panel = document.createElement("div");
   _panel.style.cssText = "display:none;position:absolute;top:100%;right:10px;min-width:240px;max-width:92vw;max-height:60vh;overflow:auto;background:#2E3645;border:1px solid #4A5468;border-radius:10px;padding:6px;box-shadow:0 8px 24px rgba(0,0,0,.5)";
   function _refresh() {
@@ -8186,7 +8199,7 @@ function tabBuildMuteMenu(_bar) {
       _row.onclick = function (_ev) { _ev.stopPropagation(); tabToggleMute(_i); _refresh(); };
       _panel.appendChild(_row);
     });
-    _btn.textContent = _nm ? ("🔇 Sons (" + _nm + ")") : "🔊 Sons";
+    _btn.textContent = _nm ? ("🔇 Pistes (" + _nm + " coupée" + (_nm > 1 ? "s" : "") + ")") : "🎚 Pistes";
   }
   _btn.onclick = function (_ev) {
     _ev.stopPropagation();
@@ -8257,6 +8270,8 @@ function tabApplyDisplay() {
   try { tabInitDisplay(tabApi.settings, tabAtRef); tabThemeStage(); tabApi.updateSettings(); tabApi.render(); } catch (_e) {}
 }
 function tabBuildSheet(_bar) {
+  var _mk = function (_t, _c, _f) { var _e = document.createElement(_t); if (_c) _e.className = _c; if (_f) _f(_e); return _e; };
+  var _sv = function () { try { dbSave(); } catch (_x) {} };
   var _stage = document.getElementById("tab-stage");
   var _old = document.getElementById("tab-sheet"); if (_old) _old.remove();
   var _sh = document.createElement("div"); _sh.id = "tab-sheet";
@@ -8277,8 +8292,22 @@ function tabBuildSheet(_bar) {
   _more.appendChild(_bar);
   var _lbl = _bar.querySelector("span"); if (_lbl && /Instrument/.test(_lbl.textContent)) _lbl.textContent = "Piste";
   // reglages : cartes a lignes (style liste)
-  var _mk = function (_t, _c, _f) { var _e = document.createElement(_t); if (_c) _e.className = _c; if (_f) _f(_e); return _e; };
-  var _sv = function () { try { dbSave(); } catch (_x) {} };
+  var _cdb = _bar.querySelector(".cd-btn");
+  if (_cdb) {
+    var _mrow = _mk("button", "sh-metro"); _mrow.innerHTML = "<span>♩ Métronome</span>";
+    var _msub = _mk("div", "sh-sub");
+    var _sw = function (_label, _cls, _on, _fn) {
+      var _r = _mk("div", "sh-r"); _r.appendChild(_mk("span", "", function (_e) { _e.textContent = _label; }));
+      var _b = _mk("button", "sh-switch " + _cls + (_on ? " on" : "")); _b.onclick = function () { _fn(_b); }; _r.appendChild(_b); return _r;
+    };
+    _msub.appendChild(_sw("Précompte (1 mesure)", "cd-switch", !!prefs.countdown, function () { toggleCountdown(); }));
+    _msub.appendChild(_sw("Tic du métronome", "mt-switch", !!prefs.tabMetro, function (_b) {
+      prefs.tabMetro = !prefs.tabMetro; _sv(); _b.classList.toggle("on", !!prefs.tabMetro);
+      try { if (tabApi) tabApi.metronomeVolume = prefs.tabMetro ? 1 : 0; } catch (_x) {}
+    }));
+    _mrow.onclick = function () { _msub.classList.toggle("open"); _mrow.classList.toggle("opened"); };
+    _bar.insertBefore(_mrow, _cdb); _bar.insertBefore(_msub, _cdb); _cdb.style.display = "none";
+  }
   var _selEl = _bar.querySelector("select"), _labEl = _bar.querySelector("span");
   if (_selEl && _labEl) { var _w = _mk("div", "sh-r"); _bar.insertBefore(_w, _labEl); _w.appendChild(_labEl); _w.appendChild(_selEl); }
   var _card = _mk("div", "sh-card");
@@ -8572,7 +8601,8 @@ function tabBuildLoopControls(_bar) {
   var _inCss = "width:58px;padding:6px;border-radius:8px;background:#2E3645;color:#E8ECF2;border:1px solid #4A5468;font-size:14px;text-align:center";
   _rng.innerHTML = 'Boucle : mesures <input id="tab-loop-from" type="number" min="1" max="' + _n + '" style="' + _inCss + '"> à <input id="tab-loop-to" type="number" min="1" max="' + _n + '" style="' + _inCss + '"> <span style="opacity:.6">/ ' + _n + "</span>";
   function _refresh() {
-    _btn.textContent = (_l.on && !tabUseSheet()) ? "🔁 Boucle activée" : "🔁 Boucle";
+    _btn.textContent = tabUseSheet() ? "🔁" : (_l.on ? "🔁 Boucle activée" : "🔁 Boucle");
+    _btn.title = "Boucle";
     _btn.classList.toggle("pc-on", !!_l.on);
     _rng.style.display = _l.on ? "inline-flex" : "none";
     _rng.querySelector("#tab-loop-from").value = _l.from;
@@ -8780,7 +8810,7 @@ function tabTogglePlay() {
   if (!tabApi) {
     return;
   }
-  try { tabApi.countInVolume = 0; } catch (_e) {}
+  try { tabApi.countInVolume = 0; tabApi.metronomeVolume = prefs.tabMetro ? 1 : 0; } catch (_e) {}
   if (cdCancel()) { tabSetPlayBtnState("ready"); return; }
   var _isPlaying = tabApi.playerState === 1;
   if (!_isPlaying && prefs.countdown) {
@@ -10420,6 +10450,7 @@ function toggleCountdown() {
 }
 function updateCountdownBtn() {
   var _on = !!prefs.countdown;
+  document.querySelectorAll(".cd-switch").forEach(function (_s) { _s.classList.toggle("on", _on); });
   document.querySelectorAll(".cd-btn").forEach(function (_b) {
     _b.classList.toggle("pc-on", _on);
     _b.classList.toggle("pc-off", !_on);
@@ -16777,7 +16808,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.185.0 · 23/11/2026 23:00<span id="license-watermark"></span>
+  v2.185.1 · 23/11/2026 23:30<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
