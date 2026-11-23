@@ -841,8 +841,9 @@ input[type=range]{accent-color:var(--G);touch-action:pan-y}
 .cfg-row label{flex:1;font-size:13px}
 
 body.fullscreen #topbar{display:none}
-#fs-float{display:none;position:fixed;top:44px;right:6px;z-index:3000;width:40px;height:40px;border-radius:50%;border:2px solid #fff;background:rgba(20,24,32,.72);color:#fff;font-size:18px;line-height:1;padding:0;box-shadow:0 0 0 2px rgba(0,0,0,.5)}
+#fs-float{display:none;position:fixed;bottom:8px;left:8px;z-index:3000;width:40px;height:40px;border-radius:50%;border:2px solid #fff;background:rgba(20,24,32,.72);color:#fff;font-size:18px;line-height:1;padding:0;box-shadow:0 0 0 2px rgba(0,0,0,.5)}
 body.fullscreen #fs-float{display:block}
+@media (max-width:600px){#tab-track-bar .loop-pick,#tab-track-bar .loop-rng{display:none!important}#tab-track-bar{padding:5px 8px!important;gap:6px!important}}
 
 /* ─── CHORUS NOMADE (Outils) ─── */
 #cn-root{--cn-ink:var(--tx);--cn-mut:var(--tx2);--cn-line:var(--bd);--cn-well:var(--bg3);--cn-acc:var(--A);--cn-on:#0B0D12;--cn-tint:var(--Gl);--cn-tink:var(--G);
@@ -931,7 +932,7 @@ body.fullscreen #fs-float{display:block}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.177.0</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.178.0</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
 </div>
 
 <div id="pages">
@@ -8049,6 +8050,11 @@ function tabSetLoopRange(_f, _t) {
 }
 // --- Poignees vertes de boucle (comme Songsterr) : on glisse le bord jusqu'a la mesure voulue ---
 var tabHLayer = null, tabHStart = null, tabHEnd = null, tabHDrag = null;
+function tabSurfaceRect(_c) {
+  // les positions de mesures d'alphaTab sont relatives a sa zone d'affichage (.at-surface), pas au conteneur
+  var _sf = _c && _c.querySelector ? _c.querySelector(".at-surface") : null;
+  return (_sf || _c).getBoundingClientRect();
+}
 function tabBarIndexAtPos(_x, _y) {
   var _lk = tabApi && tabApi.boundsLookup, _best = -1, _bd = 1e9;
   if (!_lk || !_lk.staffSystems) return -1;
@@ -8090,7 +8096,7 @@ function tabHandleTick(_fromMove) {
     if (!_st || !_in) return;
     var _sr = _st.getBoundingClientRect();
     if (_e.clientY < _sr.top + 130) _st.scrollTop -= 14; else if (_e.clientY > _sr.bottom - 50) _st.scrollTop += 14;
-    var _ir = _in.getBoundingClientRect();
+    var _ir = tabSurfaceRect(_in);
     // c'est la POIGNEE qui decide (pas le doigt) : son bord tombe dans la mesure voulue
     var _hx = _e.clientX - tabHDrag.gx - _ir.left + (tabHDrag.start ? 4 : -4);
     var _hy = _e.clientY - tabHDrag.gy - _ir.top;
@@ -8115,7 +8121,7 @@ function tabHandlesDraw() {
     }
     if (!_l || !_l.on) { tabHLayer.style.display = "none"; return; }
     tabHLayer.style.display = "block";
-    var _sr = _st.getBoundingClientRect(), _ir = _in.getBoundingClientRect();
+    var _sr = _st.getBoundingClientRect(), _ir = tabSurfaceRect(_in);
     var _ox = _ir.left - _sr.left + _st.scrollLeft, _oy = _ir.top - _sr.top + _st.scrollTop;
     var _lk = tabApi.boundsLookup;
     var _a = _lk.findMasterBarByIndex(_l.from - 1), _b = _lk.findMasterBarByIndex(_l.to - 1);
@@ -8138,7 +8144,7 @@ function tabTouchPick(_ev) {
   try {
     if (!tabPickStep || !tabApi || !tabApi.boundsLookup || Date.now() - tabLastPickAt < 700) return;
     var _el = document.getElementById("tab-stage-inner"); if (!_el) return;
-    var _r = _el.getBoundingClientRect();
+    var _r = tabSurfaceRect(_el);
     var _b = tabApi.boundsLookup.getBeatAtPos(_ev.clientX - _r.left, _ev.clientY - _r.top);
     if (_b) tabOnBeatPick(_b);
   } catch (_e) {}
@@ -8200,6 +8206,7 @@ function tabBuildLoopControls(_bar) {
   _btn.className = "btn-sm";
   _btn.style.flexShrink = "0";
   var _rng = document.createElement("span");
+  _rng.className = "loop-rng";
   _rng.style.cssText = "display:none;align-items:center;gap:4px;font-size:13px;flex-shrink:0";
   var _inCss = "width:58px;padding:6px;border-radius:8px;background:#2E3645;color:#E8ECF2;border:1px solid #4A5468;font-size:14px;text-align:center";
   _rng.innerHTML = 'mesures <input id="tab-loop-from" type="number" min="1" max="' + _n + '" style="' + _inCss + '"> à <input id="tab-loop-to" type="number" min="1" max="' + _n + '" style="' + _inCss + '"> <span style="opacity:.6">/ ' + _n + "</span>";
@@ -8217,7 +8224,7 @@ function tabBuildLoopControls(_bar) {
       try {
         var _st0 = document.getElementById("tab-stage"), _in0 = document.getElementById("tab-stage-inner");
         var _bh = (document.getElementById("tab-track-bar") || {}).offsetHeight || 100;
-        var _sr0 = _st0.getBoundingClientRect(), _ir0 = _in0.getBoundingClientRect();
+        var _sr0 = _st0.getBoundingClientRect(), _ir0 = tabSurfaceRect(_in0);
         var _i0 = tabBarIndexAtPos(0, (_sr0.top + _bh + 40) - _ir0.top);
         if (_i0 >= 0) { _l.from = _i0 + 1; _l.to = Math.min(_n, _l.from + 3); }
       } catch (_e) {}
@@ -8238,7 +8245,7 @@ function tabBuildLoopControls(_bar) {
   _rng.querySelector("#tab-loop-from").onchange = _onNum;
   _rng.querySelector("#tab-loop-to").onchange = _onNum;
   var _pick = document.createElement("button");
-  _pick.className = "btn-sm";
+  _pick.className = "btn-sm loop-pick";
   _pick.style.flexShrink = "0";
   _pick.textContent = "🎯 Choisir sur la partition";
   var _hint = document.createElement("div");
@@ -8440,7 +8447,7 @@ function tabRestart() {
           var _v = tabApi.boundsLookup.findMasterBarByIndex(_lp.from - 1).visualBounds;
           var _in = document.getElementById("tab-stage-inner");
           var _bh = (document.getElementById("tab-track-bar") || {}).offsetHeight || 100;
-          var _oy = _in.getBoundingClientRect().top - _tst.getBoundingClientRect().top + _tst.scrollTop;
+          var _oy = tabSurfaceRect(_in).top - _tst.getBoundingClientRect().top + _tst.scrollTop;
           _y = Math.max(0, _oy + _v.y - _bh - 40);
         }
       } catch (_e) { _y = 0; }
@@ -16403,7 +16410,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.177.0 · 23/11/2026 12:00<span id="license-watermark"></span>
+  v2.178.0 · 23/11/2026 13:00<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
