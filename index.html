@@ -908,7 +908,7 @@ body.sheet-on #stage,body.sheet-on #grid-paper,body.sheet-on #img-stage,body.she
 #scene-btns.sheet > div{background:transparent}
 #scene-btns.sheet button{min-height:52px;border-radius:12px!important;font-size:14px}
 
-/* --- v2.188.1 : homogeneisation (hauteur 48, centre, memes couleurs) --- */
+/* --- v2.189.0 : homogeneisation (hauteur 48, centre, memes couleurs) --- */
 #tab-sheet-main button,#tab-sheet-main select{height:48px!important;min-height:48px!important;font-size:15px!important}
 #tab-sheet-main button:not(.sh-play),#tab-sheet-main select{background:#2A313E!important;border:1px solid #3A4252!important;color:#E8ECF2!important;border-radius:24px!important;display:flex;align-items:center;justify-content:center;text-align:center}
 #tab-sheet-main button.pp-gear,#tab-sheet-main button[title="Début"]{width:48px;min-width:48px!important;padding:0!important;font-size:22px!important;border-radius:50%!important}
@@ -1097,6 +1097,27 @@ body.touch-ui:not([data-page="scene"]) #fab{background:linear-gradient(135deg,#3
 body.touch-ui:not([data-page="scene"]) #fab:active{transform:scale(.96)}
 body.touch-ui:not([data-page="scene"]) #fab-menu.open{background:#1E2633;border:1px solid #2A3342}
 #fab-menu button{border-bottom-color:#2A3342!important}
+
+/* liste : nom seul + menu d'actions */
+body.touch-ui #songs-list .card button:not(.rw-more){display:none!important}
+body.touch-ui #songs-list .card{padding:4px 2px!important}
+.rw-main{min-height:56px}
+.rw-t{font-size:18px;font-weight:500}
+.rw-more{width:44px;height:44px;border-radius:50%;border:none!important;background:transparent!important;color:#8B95A8;display:flex;align-items:center;justify-content:center;flex:none;padding:0}
+.rw-more svg{width:22px;height:22px}
+.rw-more:active{background:#1B2330!important}
+#song-sheet{display:none;position:fixed;inset:0;z-index:3000}
+#song-sheet.open{display:block}
+#song-sheet .ss-back{position:absolute;inset:0;background:rgba(0,0,0,.55)}
+#song-sheet .ss-box{position:absolute;left:0;right:0;bottom:0;background:#1B2230;border-radius:22px 22px 0 0;padding:10px 0 calc(14px + env(safe-area-inset-bottom,0));box-shadow:0 -10px 40px rgba(0,0,0,.5);animation:ssUp .18s ease-out}
+@keyframes ssUp{from{transform:translateY(40px);opacity:.4}to{transform:none;opacity:1}}
+#song-sheet .ss-grip{width:44px;height:5px;border-radius:3px;background:#3A4458;margin:0 auto 12px}
+#song-sheet .ss-title{font-size:17px;font-weight:600;color:#F2EFE9;padding:4px 22px 12px;border-bottom:1px solid #263041;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#song-sheet .ss-row{display:flex;align-items:center;gap:16px;width:100%;background:transparent;border:none;color:#E8ECF2;font-size:17px;padding:0 22px;min-height:58px;text-align:left}
+#song-sheet .ss-row svg{width:22px;height:22px;color:#8FB4FF;flex:none}
+#song-sheet .ss-row:first-child svg{color:#4D9BFF}
+#song-sheet .ss-red,#song-sheet .ss-red svg{color:#FF6B6B}
+#song-sheet .ss-row:active{background:#232C3D}
 /* --- Panneau du bas glissable pour TOUS les modes (grille, paroles, image, partition) sur mobile / tablette --- */
 #scene-btns.sheet{position:fixed;left:0;right:0;bottom:0;z-index:2400;background:#232830;border-top:none;border-radius:20px 20px 0 0;box-shadow:0 -6px 22px rgba(0,0,0,.5);color:#E8ECF2;padding:0 10px env(safe-area-inset-bottom,0);overflow:hidden;align-content:flex-start;gap:8px;transition:height .2s ease}
 #scene-sheet-handle{flex:0 0 100%;height:30px;display:flex;align-items:center;justify-content:center;touch-action:none;cursor:grab}
@@ -1230,7 +1251,7 @@ body.scene-dark #osmd-render-target svg{filter:invert(.9) hue-rotate(180deg)}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.188.1</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.189.0</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
 </div>
 
 <div id="pages">
@@ -8644,9 +8665,30 @@ var HI = {
   tab: '<path d="M4 6h16M4 10h16M4 14h16M4 18h16"/>',
   grid: '<rect x="3.5" y="5" width="17" height="14" rx="2"/><path d="M9.2 5v14M14.8 5v14"/>',
   score: '<path d="M9 18V5l10-2v13"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/>',
-  note: '<path d="M5 6h14M5 11h14M5 16h9"/>'
+  note: '<path d="M5 6h14M5 11h14M5 16h9"/>',
+  more: '<circle cx="12" cy="5" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="19" r="1.6" fill="currentColor"/>',
+  trash: '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>'
 };
 function hiSvg(_n) { return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + HI[_n] + '</svg>'; }
+
+function songSheetOpen(_name, _b) {
+  var _sh = document.getElementById("song-sheet");
+  if (!_sh) {
+    _sh = document.createElement("div"); _sh.id = "song-sheet";
+    _sh.innerHTML = '<div class="ss-back"></div><div class="ss-box"><div class="ss-grip"></div><div class="ss-title"></div><div class="ss-list"></div></div>';
+    document.body.appendChild(_sh);
+    _sh.querySelector(".ss-back").onclick = function () { _sh.classList.remove("open"); };
+  }
+  _sh.querySelector(".ss-title").textContent = _name;
+  var _ls = _sh.querySelector(".ss-list"); _ls.innerHTML = "";
+  [["play", "Lancer sur scène", _b.play, ""], ["add", "Ajouter à une setlist", _b.add, ""], ["edit", "Modifier", _b.edit, ""], ["trash", "Supprimer", _b.del, " ss-red"]].forEach(function (_a) {
+    if (!_a[2]) return;
+    var _r = document.createElement("button"); _r.className = "ss-row" + _a[3]; _r.innerHTML = hiSvg(_a[0]) + "<span>" + _a[1] + "</span>";
+    _r.onclick = function () { _sh.classList.remove("open"); setTimeout(function () { _a[2].click(); }, 120); };
+    _ls.appendChild(_r);
+  });
+  _sh.classList.add("open");
+}
 function homeDecorate() {
   if (!document.body.classList.contains("touch-ui")) return;
   document.querySelectorAll("#songs-list .card").forEach(function (_c) {
@@ -8664,16 +8706,21 @@ function homeDecorate() {
     var _sg = null; try { _sg = songs.find(function (_x) { return _x.id === _id; }); } catch (_e) {}
     var _ty = "note";
     if (_sg) { if (_sg.tabKey) _ty = "tab"; else if (_sg.osmdKey || _sg.imgPageCount) _ty = "score"; else if (_sg.grid && String(_sg.grid).trim()) _ty = "grid"; }
-    var _cls = { tab: "", grid: " t-grid", score: " t-score", note: " t-note" }[_ty];
-    _info.className = "rw-main";
-    _info.innerHTML = '<div class="rw-tile' + _cls + '">' + hiSvg(_ty) + '</div><div class="rw-txt"><div class="rw-t"></div><div class="rw-m"></div></div>';
-    _info.querySelector(".rw-t").textContent = _t; _info.querySelector(".rw-m").textContent = _meta;
+    var _btns = {};
     _row.querySelectorAll("button").forEach(function (_b) {
       var _o = _b.getAttribute("onclick") || "";
-      if (/launchSong/.test(_o)) _b.innerHTML = hiSvg("play");
-      else if (/openAttachModal/.test(_o)) _b.innerHTML = hiSvg("add");
-      else if (/editGridSong|openSongModal|editSong/.test(_o)) _b.innerHTML = hiSvg("edit");
+      if (/launchSong/.test(_o)) _btns.play = _b;
+      else if (/openAttachModal/.test(_o)) _btns.add = _b;
+      else if (/editGridSong|openSongModal|editSong/.test(_o)) _btns.edit = _b;
+      else if (_b.classList.contains("btn-r")) _btns.del = _b;
     });
+    _info.className = "rw-main";
+    _info.innerHTML = '<div class="rw-txt"><div class="rw-t"></div></div>';
+    _info.querySelector(".rw-t").textContent = _t;
+    _info.onclick = function () { if (_btns.play) _btns.play.click(); };
+    var _mo = document.createElement("button"); _mo.className = "rw-more"; _mo.title = "Actions"; _mo.innerHTML = hiSvg("more");
+    _mo.onclick = function (_e) { _e.stopPropagation(); songSheetOpen(_t, _btns); };
+    _row.appendChild(_mo);
   });
   document.querySelectorAll("#sets-list .sl-head").forEach(function (_h) {
     if (_h.getAttribute("data-dec")) return; _h.setAttribute("data-dec", "1");
@@ -17060,7 +17107,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.188.1 · 24/11/2026 05:25<span id="license-watermark"></span>
+  v2.189.0 · 24/11/2026 06:00<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
