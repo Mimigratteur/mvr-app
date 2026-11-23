@@ -908,7 +908,7 @@ body.sheet-on #stage,body.sheet-on #grid-paper,body.sheet-on #img-stage,body.she
 #scene-btns.sheet > div{background:transparent}
 #scene-btns.sheet button{min-height:52px;border-radius:12px!important;font-size:14px}
 
-/* --- v2.184.3 : homogeneisation (hauteur 48, centre, memes couleurs) --- */
+/* --- v2.185.0 : homogeneisation (hauteur 48, centre, memes couleurs) --- */
 #tab-sheet-main button,#tab-sheet-main select{height:48px!important;min-height:48px!important;font-size:15px!important}
 #tab-sheet-main button:not(.sh-play),#tab-sheet-main select{background:#2A313E!important;border:1px solid #3A4252!important;color:#E8ECF2!important;border-radius:24px!important;display:flex;align-items:center;justify-content:center;text-align:center}
 #tab-sheet-main button.pp-gear,#tab-sheet-main button[title="Début"]{width:48px;min-width:48px!important;padding:0!important;font-size:22px!important;border-radius:50%!important}
@@ -925,6 +925,38 @@ body.sheet-on #stage,body.sheet-on #grid-paper,body.sheet-on #img-stage,body.she
 .sh-line{min-height:48px}
 .sh-sec{padding:12px 16px 4px;gap:10px}
 .sh-cap{font-size:12px;font-weight:600}
+
+/* --- v2.185 : tiroir en cartes a lignes (style liste) --- */
+#tab-sheet-more{background:#12161D!important;padding-bottom:10px}
+#tab-sheet-more .sh-card,#tab-sheet-more #tab-track-bar{display:block!important;position:static!important;margin:12px 14px 0!important;padding:0!important;background:#1E2430!important;border:none!important;border-radius:16px!important;overflow:hidden;text-transform:none!important;letter-spacing:0!important;font-size:16px!important;color:#E8ECF2!important}
+#tab-sheet-more .sh-r,#tab-sheet-more #tab-track-bar > button,#tab-sheet-more #tab-track-bar .loop-rng{display:flex!important;align-items:center;justify-content:space-between;gap:12px;min-height:56px;padding:0 16px!important;margin:0!important;border:none!important;border-bottom:1px solid #2A3140!important;border-radius:0!important;background:transparent!important;width:100%;box-sizing:border-box;font-size:16px!important;color:#E8ECF2!important;height:auto!important;text-align:left}
+#tab-sheet-more .sh-card > .sh-r:last-child{border-bottom:none!important}
+#tab-sheet-more .sh-r.col{flex-direction:column;align-items:stretch;justify-content:center;gap:10px;padding:14px 16px!important}
+#tab-sheet-more .sh-r select{flex:1;max-width:62%!important;width:auto!important;height:40px!important;min-height:40px!important;border-radius:10px!important;background:#2A3140!important;border:none!important;color:#E8ECF2!important;font-size:15px!important;padding:0 10px!important;grid-column:auto!important}
+#tab-sheet-more #tab-track-bar .cd-btn::before{content:"Compte à rebours"}
+#tab-sheet-more #tab-track-bar .cd-btn{color:#8B95A8!important}
+#tab-sheet-more #tab-track-bar button{font-weight:400!important}
+#tab-sheet-more #tab-track-bar > div button::after{content:none!important}
+#tab-sheet-more #tab-track-bar .cd-btn.pc-on{color:#4D9BFF!important;font-weight:700}
+#tab-sheet-more #tab-track-bar button:not(.cd-btn)::after{content:"›";color:#8B95A8;font-size:22px}
+#tab-sheet-more #tab-track-bar button:not(.cd-btn):not(.sh-r){justify-content:space-between}
+#tab-sheet-more #tab-track-bar .loop-rng{justify-content:flex-start;font-size:16px!important}
+#tab-sheet-more #tab-track-bar .loop-rng input{width:60px;height:40px;border-radius:10px;background:#2A3140;border:none;color:#E8ECF2;text-align:center;font-size:16px}
+#tab-sheet-more #tab-track-bar .loop-rng input:first-of-type{margin-left:auto}
+#tab-sheet-more #tab-track-bar > div:not(.sh-r){position:static!important;display:block;max-height:240px;margin:0 8px 8px!important;min-width:0!important;max-width:none!important}
+#tab-sheet-more .sh-seg{display:flex;background:#12161D;border-radius:10px;padding:3px;gap:2px}
+#tab-sheet-more .sh-seg .sh-chip{flex:1;height:40px!important;min-height:40px!important;border:none!important;background:transparent!important;color:#C8CFDC!important;font-size:15px!important;border-radius:8px!important;padding:0!important}
+#tab-sheet-more .sh-seg .sh-chip.on{background:#1F7AFF!important;color:#fff!important;font-weight:700}
+#tab-sheet-more .sh-step .sh-chip{width:64px;flex:none}
+#tab-sheet-more .sh-switch{width:54px!important;height:32px!important;min-height:32px!important;border-radius:16px!important;background:#3A4252!important;border:none!important;position:relative;padding:0!important;flex:none}
+#tab-sheet-more .sh-switch::after{content:"";position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:#fff;transition:left .15s}
+#tab-sheet-more .sh-switch.on{background:#1F7AFF!important}
+#tab-sheet-more .sh-switch.on::after{left:25px}
+#tab-sheet-more .sh-navrow{display:flex!important;margin-bottom:6px!important}
+#tab-sheet-more .sh-navrow button{flex:1;height:56px!important;min-height:56px!important;background:transparent!important;border:none!important;border-right:1px solid #2A3140!important;border-radius:0!important;color:#E8ECF2!important;font-size:15px!important;padding:0!important}
+#tab-sheet-more .sh-navrow button:last-child{border-right:none!important}
+#tab-sheet-main button:not(.sh-play),#tab-sheet-main select{background:transparent!important}
+#tab-sheet-main button.pp-gear,#tab-sheet-main button[title="Début"]{border-color:transparent!important}
 /* --- Panneau du bas glissable pour TOUS les modes (grille, paroles, image, partition) sur mobile / tablette --- */
 #scene-btns.sheet{position:fixed;left:0;right:0;bottom:0;z-index:2400;background:#232830;border-top:none;border-radius:20px 20px 0 0;box-shadow:0 -6px 22px rgba(0,0,0,.5);color:#E8ECF2;padding:0 10px env(safe-area-inset-bottom,0);overflow:hidden;align-content:flex-start;gap:8px;transition:height .2s ease}
 #scene-sheet-handle{flex:0 0 100%;height:30px;display:flex;align-items:center;justify-content:center;touch-action:none;cursor:grab}
@@ -1058,7 +1090,7 @@ body.scene-dark #osmd-render-target svg{filter:invert(.9) hue-rotate(180deg)}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.184.3</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.185.0</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
 </div>
 
 <div id="pages">
@@ -8244,29 +8276,34 @@ function tabBuildSheet(_bar) {
   _bar.style.cssText = "display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;padding:8px 10px;color:#E8ECF2;font-size:14px";
   _more.appendChild(_bar);
   var _lbl = _bar.querySelector("span"); if (_lbl && /Instrument/.test(_lbl.textContent)) _lbl.textContent = "Piste";
-  // reglages : sections nettes (Piste / Affichage / Morceaux)
+  // reglages : cartes a lignes (style liste)
   var _mk = function (_t, _c, _f) { var _e = document.createElement(_t); if (_c) _e.className = _c; if (_f) _f(_e); return _e; };
-  var _cap = function (_txt) { return _mk("div", "sh-cap", function (_e) { _e.textContent = _txt; }); };
-  var _sec = _mk("div", "sh-sec");
-  _sec.appendChild(_cap("Affichage"));
+  var _sv = function () { try { dbSave(); } catch (_x) {} };
+  var _selEl = _bar.querySelector("select"), _labEl = _bar.querySelector("span");
+  if (_selEl && _labEl) { var _w = _mk("div", "sh-r"); _bar.insertBefore(_w, _labEl); _w.appendChild(_labEl); _w.appendChild(_selEl); }
+  var _card = _mk("div", "sh-card");
+  var _r1 = _mk("div", "sh-r col");
+  _r1.appendChild(_mk("span", "", function (_e) { _e.textContent = "Mesures par ligne"; }));
   var _seg = _mk("div", "sh-seg");
   var _curB = tabDisplayPrefs().bars;
   [["Auto", -1], ["2", 2], ["3", 3], ["4", 4], ["5", 5], ["6", 6]].forEach(function (_a) {
     var _b = _mk("button", "sh-chip" + (_curB === _a[1] ? " on" : ""), function (_e) { _e.textContent = _a[0]; });
-    _b.onclick = function () { prefs.tabBars = _a[1]; try { dbSave(); } catch (_x) {} Array.prototype.forEach.call(_seg.children, function (_c) { _c.classList.toggle("on", _c === _b); }); tabApplyDisplay(); };
+    _b.onclick = function () { prefs.tabBars = _a[1]; _sv(); Array.prototype.forEach.call(_seg.children, function (_c) { _c.classList.toggle("on", _c === _b); }); tabApplyDisplay(); };
     _seg.appendChild(_b);
   });
-  var _l1 = _mk("div", "sh-line"); _l1.appendChild(_mk("span", "", function (_e) { _e.textContent = "Mesures par ligne"; })); _sec.appendChild(_l1); _sec.appendChild(_seg);
-  var _l2 = _mk("div", "sh-line");
-  _l2.appendChild(_mk("span", "", function (_e) { _e.textContent = "Taille"; }));
-  var _st = _mk("div", "sh-step");
-  var _zm = _mk("button", "", function (_e) { _e.textContent = "−"; _e.title = "Plus petit"; }); _zm.onclick = function () { prefs.tabScale = Math.max(0.4, Math.round((tabDisplayPrefs().scale - 0.1) * 10) / 10); try { dbSave(); } catch (_x) {} tabApplyDisplay(); };
-  var _zp = _mk("button", "", function (_e) { _e.textContent = "+"; _e.title = "Plus grand"; }); _zp.onclick = function () { prefs.tabScale = Math.min(1.8, Math.round((tabDisplayPrefs().scale + 0.1) * 10) / 10); try { dbSave(); } catch (_x) {} tabApplyDisplay(); };
-  _st.appendChild(_zm); _st.appendChild(_zp); _l2.appendChild(_st); _sec.appendChild(_l2);
-  var _th = _mk("button", "sheet-theme-btn sh-wide"); _th.textContent = tabDisplayPrefs().dark ? "☀ Thème clair" : "🌙 Thème sombre"; _th.onclick = toggleSceneDark;
-  _sec.appendChild(_th);
-  _more.appendChild(_sec);
-  var _nav = _mk("div", "sh-sec sh-navrow");
+  _r1.appendChild(_seg); _card.appendChild(_r1);
+  var _r2 = _mk("div", "sh-r");
+  _r2.appendChild(_mk("span", "", function (_e) { _e.textContent = "Taille"; }));
+  var _st = _mk("div", "sh-seg sh-step");
+  var _zm = _mk("button", "sh-chip", function (_e) { _e.textContent = "A−"; _e.title = "Plus petit"; }); _zm.onclick = function () { prefs.tabScale = Math.max(0.4, Math.round((tabDisplayPrefs().scale - 0.1) * 10) / 10); _sv(); tabApplyDisplay(); };
+  var _zp = _mk("button", "sh-chip", function (_e) { _e.textContent = "A+"; _e.title = "Plus grand"; _e.style.fontWeight = "700"; }); _zp.onclick = function () { prefs.tabScale = Math.min(1.8, Math.round((tabDisplayPrefs().scale + 0.1) * 10) / 10); _sv(); tabApplyDisplay(); };
+  _st.appendChild(_zm); _st.appendChild(_zp); _r2.appendChild(_st); _card.appendChild(_r2);
+  var _r3 = _mk("div", "sh-r");
+  _r3.appendChild(_mk("span", "", function (_e) { _e.textContent = "Thème sombre"; }));
+  var _th = _mk("button", "sheet-theme-btn sh-switch" + (tabDisplayPrefs().dark ? " on" : "")); _th.onclick = toggleSceneDark;
+  _r3.appendChild(_th); _card.appendChild(_r3);
+  _more.appendChild(_card);
+  var _nav = _mk("div", "sh-card sh-navrow");
   var _pv = _mk("button", "", function (_e) { _e.textContent = "‹ Précédent"; }); _pv.onclick = function () { prevSong(); };
   var _nx = _mk("button", "", function (_e) { _e.textContent = "Suivant ›"; }); _nx.onclick = function () { nextSong(); };
   var _lv = _mk("button", "", function (_e) { _e.textContent = "📡 Live"; }); _lv.onclick = function () { liveOpenModal(); };
@@ -8284,7 +8321,7 @@ function tabBuildSheet(_bar) {
   _hd.addEventListener("pointerup", _up); _hd.addEventListener("pointercancel", _up);
   _gear.onclick = function () { _full = _fullH(); _setH((parseInt(_more.style.height, 10) || 0) > 0 ? 0 : _full, true); };
 }
-function sceneApplyTheme() { document.body.classList.toggle("scene-dark", !!tabDisplayPrefs().dark); var _t = tabDisplayPrefs().dark ? "☀ Thème clair" : "🌙 Thème sombre"; document.querySelectorAll(".sheet-theme-btn").forEach(function (_b) { _b.textContent = _t; }); }
+function sceneApplyTheme() { document.body.classList.toggle("scene-dark", !!tabDisplayPrefs().dark); var _dk = !!tabDisplayPrefs().dark, _t = _dk ? "☀ Clair" : "🌙 Sombre"; document.querySelectorAll(".sheet-theme-btn").forEach(function (_b) { if (_b.classList.contains("sh-switch")) _b.classList.toggle("on", _dk); else _b.textContent = _t; }); }
 function toggleSceneDark() {
   prefs.tabDark = !tabDisplayPrefs().dark;
   try { dbSave(); } catch (_e) {}
@@ -16740,7 +16777,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.184.3 · 23/11/2026 22:30<span id="license-watermark"></span>
+  v2.185.0 · 23/11/2026 23:00<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
