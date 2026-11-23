@@ -878,10 +878,11 @@ body.fullscreen #fs-float{display:block}
 #tab-sheet-main #tab-sheet-speed{font-size:14px;width:72px;min-width:0;appearance:none;text-align:center;border:1px solid #3E4757!important;border-radius:16px;min-height:36px}
 #tab-sheet-main #tab-loop-btn{font-size:15px}
 #tab-sheet-main #tab-loop-btn.pc-on{background:#F4B740!important;color:#1B1F27!important}
-#tab-sheet-handle,#scene-sheet-handle{height:20px}
+#tab-sheet-handle,#scene-sheet-handle{height:42px;cursor:grab}
+#tab-sheet-handle span,#scene-sheet-handle span{width:64px!important;height:6px!important;border-radius:3px}
 #tab-sheet:not(.sh-open) #tab-sheet-handle span,#scene-btns.sheet:not(.sh-open) #scene-sheet-handle span{background:rgba(120,130,150,.75);width:54px;box-shadow:0 0 0 1px rgba(255,255,255,.5)}
-#tab-stage:has(#tab-sheet) #tab-stage-inner{margin-bottom:100px}
-body.sheet-on #stage,body.sheet-on #grid-paper,body.sheet-on #img-stage,body.sheet-on #osmd-stage{padding-bottom:100px!important}
+#tab-stage:has(#tab-sheet) #tab-stage-inner{margin-bottom:120px}
+body.sheet-on #stage,body.sheet-on #grid-paper,body.sheet-on #img-stage,body.sheet-on #osmd-stage{padding-bottom:120px!important}
 #pp-fab{position:fixed;left:50%;top:50%;width:84px;height:84px;margin:-42px 0 0 -42px;border-radius:50%;border:none;background:rgba(15,18,26,.72);color:#fff;font-size:34px;line-height:84px;text-align:center;z-index:2300;display:none;opacity:0;transition:opacity .25s ease;box-shadow:0 4px 18px rgba(0,0,0,.45);-webkit-tap-highlight-color:transparent;padding:0;cursor:pointer;backdrop-filter:blur(4px)}
 #pp-fab.show{opacity:1}
 #pp-fab:active{transform:scale(.94)}
@@ -1039,7 +1040,7 @@ body.scene-dark #osmd-render-target svg{filter:invert(.9) hue-rotate(180deg)}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.184.0</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.184.1</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
 </div>
 
 <div id="pages">
@@ -8291,7 +8292,7 @@ function initSceneSheet() {
   var _open = false, _full = 0, _y0 = 0, _h0 = 0, _drag = false, _moved = false;
   var _colH = function () {
     var _g = Array.prototype.slice.call(_sb.children).filter(function (_c) { return _c.tagName === "DIV" && _c !== _hd && _c.id !== "pp-bar" && !_c.classList.contains("sheet-extra") && getComputedStyle(_c).display !== "none"; })[0];
-    return 20 + 60;
+    return 42 + 60;
   };
   var _fullH = function () { var _h = _sb.style.height; _sb.style.transition = "none"; _sb.style.height = "auto"; var _f = Math.min(_sb.scrollHeight, Math.round(window.innerHeight * 0.7)); _sb.style.height = _h; return _f; };
   var _apply = function (_anim) { _sb.style.transition = _anim ? "height .2s ease" : "none"; _sb.style.height = (_open ? _fullH() : _colH()) + "px"; _sb.style.overflowY = _open ? "auto" : "hidden"; _sb.classList.toggle("sh-open", _open); };
@@ -16721,7 +16722,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.184.0 · 23/11/2026 20:00<span id="license-watermark"></span>
+  v2.184.1 · 23/11/2026 21:00<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
