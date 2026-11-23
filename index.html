@@ -908,7 +908,7 @@ body.sheet-on #stage,body.sheet-on #grid-paper,body.sheet-on #img-stage,body.she
 #scene-btns.sheet > div{background:transparent}
 #scene-btns.sheet button{min-height:52px;border-radius:12px!important;font-size:14px}
 
-/* --- v2.186.4 : homogeneisation (hauteur 48, centre, memes couleurs) --- */
+/* --- v2.186.5 : homogeneisation (hauteur 48, centre, memes couleurs) --- */
 #tab-sheet-main button,#tab-sheet-main select{height:48px!important;min-height:48px!important;font-size:15px!important}
 #tab-sheet-main button:not(.sh-play),#tab-sheet-main select{background:#2A313E!important;border:1px solid #3A4252!important;color:#E8ECF2!important;border-radius:24px!important;display:flex;align-items:center;justify-content:center;text-align:center}
 #tab-sheet-main button.pp-gear,#tab-sheet-main button[title="Début"]{width:48px;min-width:48px!important;padding:0!important;font-size:22px!important;border-radius:50%!important}
@@ -1141,7 +1141,7 @@ body.scene-dark #osmd-render-target svg{filter:invert(.9) hue-rotate(180deg)}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.186.4</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.186.5</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
 </div>
 
 <div id="pages">
@@ -8360,7 +8360,8 @@ function tabBuildSheet(_bar) {
   var _popP = _mk("div", "sh-pop");
   if (_selEl && _labEl) { var _w = _mk("div", "sh-r"); _w.appendChild(_labEl); _w.appendChild(_selEl); _popP.appendChild(_w); }
   var _muteB = Array.prototype.filter.call(_bar.children, function (_c) { return _c.tagName === "BUTTON" && !_c.classList.contains("cd-btn") && _c.id !== "tab-loop-btn"; })[0];
-  if (_muteB) { var _mp = _muteB.nextElementSibling; _popP.appendChild(_muteB); if (_mp && _mp.tagName === "DIV") { _mp.classList.add("pp-panel"); _popP.appendChild(_mp); } }
+  if (_muteB) { var _mp = _muteB.nextElementSibling; if (_mp && _mp.tagName === "DIV") _mp.remove(); _muteB.remove(); }
+  if (tabSongRef && tabSongRef.tabMuted && tabSongRef.tabMuted.length) { tabSongRef.tabMuted = []; _sv(); try { tabApplyMutes(); } catch (_x) {} }
   if (!_popP.children.length) _pb.style.display = "none";
   var _pops = [[_msub, _mb], [_popP, _pb]];
   var _closePops = function () { _pops.forEach(function (_q) { _q[0].classList.remove("open"); _q[1].classList.remove("on"); }); };
@@ -16872,7 +16873,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.186.4 · 24/11/2026 03:00<span id="license-watermark"></span>
+  v2.186.5 · 24/11/2026 03:30<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
