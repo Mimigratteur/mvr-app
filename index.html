@@ -908,7 +908,7 @@ body.sheet-on #stage,body.sheet-on #grid-paper,body.sheet-on #img-stage,body.she
 #scene-btns.sheet > div{background:transparent}
 #scene-btns.sheet button{min-height:52px;border-radius:12px!important;font-size:14px}
 
-/* --- v2.190.3 : homogeneisation (hauteur 48, centre, memes couleurs) --- */
+/* --- v2.190.4 : homogeneisation (hauteur 48, centre, memes couleurs) --- */
 #tab-sheet-main button,#tab-sheet-main select{height:48px!important;min-height:48px!important;font-size:15px!important}
 #tab-sheet-main button:not(.sh-play),#tab-sheet-main select{background:#2A313E!important;border:1px solid #3A4252!important;color:#E8ECF2!important;border-radius:24px!important;display:flex;align-items:center;justify-content:center;text-align:center}
 #tab-sheet-main button.pp-gear,#tab-sheet-main button[title="Début"]{width:48px;min-width:48px!important;padding:0!important;font-size:22px!important;border-radius:50%!important}
@@ -1161,6 +1161,11 @@ body.touch-ui #page-scene .cd-btn,body.touch-ui #page-scene #gp-precount-btn,bod
 #scene-btns.sheet > button{flex:1 1 calc(33% - 6px)!important;min-width:0!important;margin-top:12px;height:56px;min-height:56px;border-radius:14px!important;background:#1E2430!important;border:none!important;font-size:15px!important;color:#E8ECF2!important;font-weight:400!important;padding:0 4px!important}
 #scene-btns.sheet > button.sc-fiche{flex:1 1 100%!important;text-align:left;padding:0 16px!important}
 #scene-btns.sheet > #audio-marker-btn{flex:1 1 100%!important}
+
+/* v2.190.4 : les fenetres passent au-dessus de la barre du bas ; boutons d'action toujours accessibles */
+.modal-bg{z-index:3200!important}
+.modal{z-index:3201!important}
+#set-modal .modal > .row:last-child{position:sticky;bottom:calc(-1 * (16px + var(--safe)));background:var(--bg);margin:12px -16px calc(-16px - var(--safe));padding:12px 16px calc(12px + var(--safe));border-top:1px solid var(--bd);z-index:5}
 /* --- Panneau du bas glissable pour TOUS les modes (grille, paroles, image, partition) sur mobile / tablette --- */
 #scene-btns.sheet{position:fixed;left:0;right:0;bottom:0;z-index:2400;background:#232830;border-top:none;border-radius:20px 20px 0 0;box-shadow:0 -6px 22px rgba(0,0,0,.5);color:#E8ECF2;padding:0 10px env(safe-area-inset-bottom,0);overflow:hidden;align-content:flex-start;gap:8px;transition:height .2s ease}
 #scene-sheet-handle{flex:0 0 100%;height:30px;display:flex;align-items:center;justify-content:center;touch-action:none;cursor:grab}
@@ -1294,7 +1299,7 @@ body.scene-dark #osmd-render-target svg{filter:invert(.9) hue-rotate(180deg)}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.190.3</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.190.4</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
 </div>
 
 <div id="pages">
@@ -17213,7 +17218,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.190.3 · 24/11/2026 09:00<span id="license-watermark"></span>
+  v2.190.4 · 24/11/2026 09:30<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
