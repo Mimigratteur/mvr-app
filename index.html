@@ -908,7 +908,7 @@ body.sheet-on #stage,body.sheet-on #grid-paper,body.sheet-on #img-stage,body.she
 #scene-btns.sheet > div{background:transparent}
 #scene-btns.sheet button{min-height:52px;border-radius:12px!important;font-size:14px}
 
-/* --- v2.187.4 : homogeneisation (hauteur 48, centre, memes couleurs) --- */
+/* --- v2.188.1 : homogeneisation (hauteur 48, centre, memes couleurs) --- */
 #tab-sheet-main button,#tab-sheet-main select{height:48px!important;min-height:48px!important;font-size:15px!important}
 #tab-sheet-main button:not(.sh-play),#tab-sheet-main select{background:#2A313E!important;border:1px solid #3A4252!important;color:#E8ECF2!important;border-radius:24px!important;display:flex;align-items:center;justify-content:center;text-align:center}
 #tab-sheet-main button.pp-gear,#tab-sheet-main button[title="Début"]{width:48px;min-width:48px!important;padding:0!important;font-size:22px!important;border-radius:50%!important}
@@ -1055,6 +1055,48 @@ body.touch-ui #sets-list .sl-head > div:first-child > div:first-child{font-size:
 body.touch-ui #sets-list .sl-head > div:first-child > div:last-child{font-size:12px!important}
 body.touch-ui #sets-list .sl-head .btn-sm{min-width:38px;height:38px;padding:0 8px;border-radius:19px;background:transparent;border:1px solid #3A4458;color:#E8ECF2}
 body.touch-ui #sets-list .sl-head .btn-g{background:#1F7AFF!important;border-color:#1F7AFF!important;color:#fff!important}
+
+/* ===== v2.188 : finition (typographie, lignes fines, icones, ombres douces) ===== */
+body.touch-ui:not([data-page="scene"]){background:#12161D}
+body.touch-ui:not([data-page="scene"]) #topbar{background:transparent;border-bottom:none}
+body.touch-ui:not([data-page="scene"]) #topbar h1 #fs-top{background:transparent;border:none;color:#8B95A8;font-size:18px}
+body.touch-ui:not([data-page="scene"]) #pages{background:linear-gradient(180deg,#19212E 0,#12161D 240px)}
+body.touch-ui:not([data-page="scene"]) .pg-title{font-size:34px;letter-spacing:-.03em;margin:10px 4px 18px}
+body.touch-ui #search{background-color:#1A212C;border:1px solid #262E3B;font-size:16px}
+body.touch-ui #search:focus{border-color:#1F7AFF;outline:none}
+body.touch-ui #songs-sort{background:#1A212C;border:1px solid #262E3B;color:#C8D0DE}
+body.touch-ui #tag-filter-row .badge{background:#1A212C;border:1px solid #262E3B;color:#B5BECE;font-weight:500}
+body.touch-ui #tag-filter-row .badge.bg{background:#1F7AFF;border-color:#1F7AFF;color:#fff}
+body.touch-ui #songs-list > div:not(.card){font-size:12px!important;letter-spacing:.14em;color:#5F6A7E!important;padding:22px 4px 6px!important}
+body.touch-ui #songs-list .card{background:transparent!important;border:none!important;border-bottom:1px solid #1F2733!important;border-radius:0!important;padding:12px 2px!important;margin:0!important}
+body.touch-ui #songs-list .card > div{gap:12px!important}
+.rw-tile{width:46px;height:46px;border-radius:13px;background:#1B2330;display:flex;align-items:center;justify-content:center;flex:none;color:#7FA8FF}
+.rw-tile svg{width:22px;height:22px}
+.rw-tile.t-grid{color:#F4B740}.rw-tile.t-score{color:#5CD6A0}.rw-tile.t-note{color:#9AA3B5}
+.rw-main{display:flex;align-items:center;gap:12px;flex:1;min-width:0}
+.rw-txt{min-width:0}
+.rw-t{font-size:17px;font-weight:600;color:#F2EFE9;letter-spacing:-.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rw-m{font-size:13px;color:#7C879B;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+body.touch-ui #songs-list .card .btn-sm{border:none!important;background:transparent!important;color:#8B95A8!important;min-width:40px;width:40px;height:40px;padding:0!important;display:flex;align-items:center;justify-content:center;border-radius:50%!important}
+body.touch-ui #songs-list .card .btn-sm svg,body.touch-ui #sets-list .sl-head .btn-sm svg{width:21px;height:21px}
+body.touch-ui #songs-list .card .btn-g{background:#1F7AFF!important;color:#fff!important;width:44px;height:44px;box-shadow:0 4px 14px rgba(31,122,255,.35)}
+body.touch-ui #songs-list .card .btn-g svg{width:20px;height:20px}
+body.touch-ui #songs-list .card:active{background:#171E2A!important}
+body.touch-ui #songs-list .card .btn-sm.btn-r{display:none!important}
+body.touch-ui #sets-list .sl-card{background:transparent!important;border-radius:0!important;border-bottom:1px solid #1F2733!important;margin-bottom:0}
+body.touch-ui #sets-list .sl-head{padding:14px 2px!important}
+body.touch-ui #sets-list .sl-head .btn-sm{border:none!important;background:transparent!important;color:#8B95A8!important;min-width:38px;padding:0 6px!important}
+body.touch-ui #sets-list .sl-head .btn-g{background:#1F7AFF!important;color:#fff!important;padding:0 14px!important;font-weight:600;box-shadow:0 4px 14px rgba(31,122,255,.35)}
+body.touch-ui #page-sets .btn-a{background:#1A212C!important;border:1px solid #262E3B!important}
+body.touch-ui:not([data-page="scene"]) #bottom-nav{background:rgba(18,22,29,.9);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid #1F2733}
+#bottom-nav button{font-size:10.5px;font-weight:500;letter-spacing:.01em}
+#bottom-nav .bn-ic{width:60px;height:30px}
+#bottom-nav button.on .bn-ic{background:rgba(31,122,255,.22);color:#6FA8FF}
+#bottom-nav button.on{color:#E8ECF2}
+body.touch-ui:not([data-page="scene"]) #fab{background:linear-gradient(135deg,#3C8DFF,#1F6BFF);color:#fff;box-shadow:0 10px 28px rgba(31,107,255,.45)}
+body.touch-ui:not([data-page="scene"]) #fab:active{transform:scale(.96)}
+body.touch-ui:not([data-page="scene"]) #fab-menu.open{background:#1E2633;border:1px solid #2A3342}
+#fab-menu button{border-bottom-color:#2A3342!important}
 /* --- Panneau du bas glissable pour TOUS les modes (grille, paroles, image, partition) sur mobile / tablette --- */
 #scene-btns.sheet{position:fixed;left:0;right:0;bottom:0;z-index:2400;background:#232830;border-top:none;border-radius:20px 20px 0 0;box-shadow:0 -6px 22px rgba(0,0,0,.5);color:#E8ECF2;padding:0 10px env(safe-area-inset-bottom,0);overflow:hidden;align-content:flex-start;gap:8px;transition:height .2s ease}
 #scene-sheet-handle{flex:0 0 100%;height:30px;display:flex;align-items:center;justify-content:center;touch-action:none;cursor:grab}
@@ -1188,7 +1230,7 @@ body.scene-dark #osmd-render-target svg{filter:invert(.9) hue-rotate(180deg)}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.187.4</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.188.1</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
 </div>
 
 <div id="pages">
@@ -8591,6 +8633,62 @@ function homeInit() {
   var _go = window.go; window.go = function (_p) { var _r = _go.apply(this, arguments); homeSync(_p); return _r; };
   homeSync("songs");
 }
+
+// ---- Finition de la liste des morceaux et setlists (icones, ligne d'infos) ----
+var HI = {
+  play: '<path d="M7 4.5v15l12-7.5z" fill="currentColor" stroke="none"/>',
+  add: '<path d="M4 6h11M4 12h7M4 18h7"/><path d="M17 13v6M14 16h6"/>',
+  edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',
+  up: '<path d="M12 15V4M7 9l5-5 5 5"/><path d="M5 14v5h14v-5"/>',
+  doc: '<path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M10 12h5M10 16h5"/>',
+  tab: '<path d="M4 6h16M4 10h16M4 14h16M4 18h16"/>',
+  grid: '<rect x="3.5" y="5" width="17" height="14" rx="2"/><path d="M9.2 5v14M14.8 5v14"/>',
+  score: '<path d="M9 18V5l10-2v13"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/>',
+  note: '<path d="M5 6h14M5 11h14M5 16h9"/>'
+};
+function hiSvg(_n) { return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + HI[_n] + '</svg>'; }
+function homeDecorate() {
+  if (!document.body.classList.contains("touch-ui")) return;
+  document.querySelectorAll("#songs-list .card").forEach(function (_c) {
+    if (_c.getAttribute("data-dec")) return; _c.setAttribute("data-dec", "1");
+    var _row = _c.firstElementChild; if (!_row) return;
+    var _info = _row.firstElementChild; if (!_info) return;
+    var _t = _info.firstElementChild ? _info.firstElementChild.textContent : "";
+    var _bd = Array.prototype.map.call(_info.querySelectorAll(".badge"), function (_b) { return _b.textContent.trim(); });
+    var _du = _info.querySelector(".dur"); _du = _du ? _du.textContent.replace("⏱", "").trim() : "";
+    var _bpm = "", _tags = [];
+    _bd.forEach(function (_x) { if (/BPM/i.test(_x)) _bpm = _x; else if (!/^(tablature-gp|grille|pdf|import)/i.test(_x)) _tags.push(_x); });
+    var _meta = _tags.concat(_bpm ? [_bpm] : []).concat(_du && _du !== "0s" ? [_du] : []).join(" · ");
+    var _id = ""; var _pl = _row.querySelector("button[onclick*='launchSong']");
+    if (_pl) { var _m = /launchSong\('([^']+)'/.exec(_pl.getAttribute("onclick")); if (_m) _id = _m[1]; }
+    var _sg = null; try { _sg = songs.find(function (_x) { return _x.id === _id; }); } catch (_e) {}
+    var _ty = "note";
+    if (_sg) { if (_sg.tabKey) _ty = "tab"; else if (_sg.osmdKey || _sg.imgPageCount) _ty = "score"; else if (_sg.grid && String(_sg.grid).trim()) _ty = "grid"; }
+    var _cls = { tab: "", grid: " t-grid", score: " t-score", note: " t-note" }[_ty];
+    _info.className = "rw-main";
+    _info.innerHTML = '<div class="rw-tile' + _cls + '">' + hiSvg(_ty) + '</div><div class="rw-txt"><div class="rw-t"></div><div class="rw-m"></div></div>';
+    _info.querySelector(".rw-t").textContent = _t; _info.querySelector(".rw-m").textContent = _meta;
+    _row.querySelectorAll("button").forEach(function (_b) {
+      var _o = _b.getAttribute("onclick") || "";
+      if (/launchSong/.test(_o)) _b.innerHTML = hiSvg("play");
+      else if (/openAttachModal/.test(_o)) _b.innerHTML = hiSvg("add");
+      else if (/editGridSong|openSongModal|editSong/.test(_o)) _b.innerHTML = hiSvg("edit");
+    });
+  });
+  document.querySelectorAll("#sets-list .sl-head").forEach(function (_h) {
+    if (_h.getAttribute("data-dec")) return; _h.setAttribute("data-dec", "1");
+    _h.querySelectorAll("button").forEach(function (_b) {
+      var _o = _b.getAttribute("onclick") || "";
+      if (/openExport/.test(_o)) _b.innerHTML = hiSvg("doc");
+      else if (/syncPublishSetlist/.test(_o)) _b.innerHTML = hiSvg("up");
+      else if (/openSetModal/.test(_o)) _b.innerHTML = hiSvg("edit");
+    });
+  });
+}
+(function () {
+  var _wrap = function (_n) { var _f = window[_n]; if (typeof _f !== "function") return; window[_n] = function () { var _r = _f.apply(this, arguments); try { homeDecorate(); } catch (_e) {} return _r; }; };
+  window.addEventListener("load", function () { setTimeout(function () { _wrap("renderSongs"); _wrap("renderSets"); homeDecorate(); }, 350); });
+})();
 function homeApply() { var _on = tabUseSheet(); document.body.classList.toggle("touch-ui", !!_on); if (_on) homeInit(); }
 window.addEventListener("load", function () { setTimeout(homeApply, 300); });
 window.addEventListener("resize", function () { homeApply(); });
@@ -16962,7 +17060,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.187.4 · 24/11/2026 04:50<span id="license-watermark"></span>
+  v2.188.1 · 24/11/2026 05:25<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
