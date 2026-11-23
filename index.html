@@ -885,6 +885,27 @@ body.sheet-on #stage,body.sheet-on #grid-paper,body.sheet-on #img-stage,body.she
 #pp-fab{position:fixed;left:50%;top:50%;width:84px;height:84px;margin:-42px 0 0 -42px;border-radius:50%;border:none;background:rgba(15,18,26,.72);color:#fff;font-size:34px;line-height:84px;text-align:center;z-index:2300;display:none;opacity:0;transition:opacity .25s ease;box-shadow:0 4px 18px rgba(0,0,0,.45);-webkit-tap-highlight-color:transparent;padding:0;cursor:pointer;backdrop-filter:blur(4px)}
 #pp-fab.show{opacity:1}
 #pp-fab:active{transform:scale(.94)}
+
+/* --- v2.184 : tiroir de reglages propre --- */
+#tab-sheet-more{background:#1B2029}
+#tab-sheet-more #tab-track-bar{position:static!important;display:grid!important;grid-template-columns:1fr 1fr!important;gap:10px!important;padding:16px 16px 6px!important;background:transparent!important;border:none!important;font-size:12px!important;text-transform:uppercase;letter-spacing:.08em;color:#8B95A8!important}
+#tab-sheet-more #tab-track-bar > span{grid-column:1/-1;margin-bottom:-4px}
+#tab-sheet-more #tab-track-bar select{grid-column:1/-1;width:100%!important;max-width:none!important;min-height:48px;border-radius:12px!important;background:#2A313E!important;border:1px solid #3A4252!important;color:#E8ECF2!important;font-size:15px!important;text-transform:none;letter-spacing:0;padding:0 12px!important}
+#tab-sheet-more #tab-track-bar button{min-height:52px;border-radius:14px!important;background:#2A313E!important;border:1px solid #3A4252!important;color:#E8ECF2!important;font-size:14px!important;text-transform:none;letter-spacing:0;margin:0!important}
+#tab-sheet-more #tab-track-bar .loop-pick{display:none!important}
+.sh-sec{padding:14px 16px 6px;display:flex;flex-direction:column;gap:10px}
+.sh-cap{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#8B95A8}
+.sh-line{display:flex;align-items:center;justify-content:space-between;color:#E8ECF2;font-size:15px}
+.sh-seg{display:flex;gap:6px}
+.sh-chip{flex:1;min-height:44px;border-radius:12px;border:1px solid #3A4252;background:#2A313E;color:#C8CFDC;font-size:15px}
+.sh-chip.on{background:#1F7AFF;border-color:#1F7AFF;color:#fff;font-weight:700}
+.sh-step{display:flex;gap:8px}
+.sh-step button{width:64px;min-height:44px;border-radius:12px;border:1px solid #3A4252;background:#2A313E;color:#E8ECF2;font-size:22px;padding:0}
+.sh-wide{min-height:48px;border-radius:12px;border:1px solid #3A4252;background:#2A313E;color:#E8ECF2;font-size:15px}
+.sh-navrow{flex-direction:row;gap:8px;padding-bottom:16px}
+.sh-navrow button{flex:1;min-height:48px;border-radius:12px;border:1px solid #3A4252;background:#2A313E;color:#E8ECF2;font-size:14px;padding:0 4px}
+#scene-btns.sheet > div{background:transparent}
+#scene-btns.sheet button{min-height:52px;border-radius:12px!important;font-size:14px}
 /* --- Panneau du bas glissable pour TOUS les modes (grille, paroles, image, partition) sur mobile / tablette --- */
 #scene-btns.sheet{position:fixed;left:0;right:0;bottom:0;z-index:2400;background:#232830;border-top:none;border-radius:20px 20px 0 0;box-shadow:0 -6px 22px rgba(0,0,0,.5);color:#E8ECF2;padding:0 10px env(safe-area-inset-bottom,0);overflow:hidden;align-content:flex-start;gap:8px;transition:height .2s ease}
 #scene-sheet-handle{flex:0 0 100%;height:30px;display:flex;align-items:center;justify-content:center;touch-action:none;cursor:grab}
@@ -1018,7 +1039,7 @@ body.scene-dark #osmd-render-target svg{filter:invert(.9) hue-rotate(180deg)}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.183.1</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.184.0</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
 </div>
 
 <div id="pages">
@@ -8203,23 +8224,33 @@ function tabBuildSheet(_bar) {
   var _more = document.createElement("div"); _more.id = "tab-sheet-more";
   _bar.style.cssText = "display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;padding:8px 10px;color:#E8ECF2;font-size:14px";
   _more.appendChild(_bar);
-  // affichage : mesures par ligne, taille, thème
-  var _row = document.createElement("div"); _row.className = "sh-row";
-  var _bl = document.createElement("span"); _bl.textContent = "Mesures/ligne";
-  var _bs = document.createElement("select"); _bs.style.cssText = "background:#2E3645;color:#E8ECF2;border:1px solid #4A5468;border-radius:10px;padding:0 10px";
-  [["Auto", -1], ["2", 2], ["3", 3], ["4", 4], ["5", 5], ["6", 6]].forEach(function (_a) { var _o = document.createElement("option"); _o.textContent = _a[0]; _o.value = _a[1]; _bs.appendChild(_o); });
-  _bs.value = tabDisplayPrefs().bars;
-  _bs.onchange = function () { prefs.tabBars = parseInt(_bs.value, 10); try { dbSave(); } catch (_e) {} tabApplyDisplay(); };
-  var _zm = document.createElement("button"); _zm.textContent = "A−"; _zm.onclick = function () { prefs.tabScale = Math.max(0.4, Math.round((tabDisplayPrefs().scale - 0.1) * 10) / 10); try { dbSave(); } catch (_e) {} tabApplyDisplay(); };
-  var _zp = document.createElement("button"); _zp.textContent = "A+"; _zp.style.fontWeight = "700"; _zp.onclick = function () { prefs.tabScale = Math.min(1.8, Math.round((tabDisplayPrefs().scale + 0.1) * 10) / 10); try { dbSave(); } catch (_e) {} tabApplyDisplay(); };
-  var _th = document.createElement("button"); _th.className = "sheet-theme-btn"; _th.textContent = tabDisplayPrefs().dark ? "☀ Clair" : "🌙 Sombre";
-  _th.onclick = toggleSceneDark;
-  [_bl, _bs, _zm, _zp, _th].forEach(function (_e) { _row.appendChild(_e); });
-  _more.appendChild(_row);
-  var _nav = document.createElement("div"); _nav.className = "sh-row";
-  var _pv = document.createElement("button"); _pv.textContent = "‹ Préc"; _pv.onclick = function () { prevSong(); };
-  var _nx = document.createElement("button"); _nx.textContent = "Suiv ›"; _nx.onclick = function () { nextSong(); };
-  var _lv = document.createElement("button"); _lv.textContent = "📡"; _lv.onclick = function () { liveOpenModal(); };
+  var _lbl = _bar.querySelector("span"); if (_lbl && /Instrument/.test(_lbl.textContent)) _lbl.textContent = "Piste";
+  // reglages : sections nettes (Piste / Affichage / Morceaux)
+  var _mk = function (_t, _c, _f) { var _e = document.createElement(_t); if (_c) _e.className = _c; if (_f) _f(_e); return _e; };
+  var _cap = function (_txt) { return _mk("div", "sh-cap", function (_e) { _e.textContent = _txt; }); };
+  var _sec = _mk("div", "sh-sec");
+  _sec.appendChild(_cap("Affichage"));
+  var _seg = _mk("div", "sh-seg");
+  var _curB = tabDisplayPrefs().bars;
+  [["Auto", -1], ["2", 2], ["3", 3], ["4", 4], ["5", 5], ["6", 6]].forEach(function (_a) {
+    var _b = _mk("button", "sh-chip" + (_curB === _a[1] ? " on" : ""), function (_e) { _e.textContent = _a[0]; });
+    _b.onclick = function () { prefs.tabBars = _a[1]; try { dbSave(); } catch (_x) {} Array.prototype.forEach.call(_seg.children, function (_c) { _c.classList.toggle("on", _c === _b); }); tabApplyDisplay(); };
+    _seg.appendChild(_b);
+  });
+  var _l1 = _mk("div", "sh-line"); _l1.appendChild(_mk("span", "", function (_e) { _e.textContent = "Mesures par ligne"; })); _sec.appendChild(_l1); _sec.appendChild(_seg);
+  var _l2 = _mk("div", "sh-line");
+  _l2.appendChild(_mk("span", "", function (_e) { _e.textContent = "Taille"; }));
+  var _st = _mk("div", "sh-step");
+  var _zm = _mk("button", "", function (_e) { _e.textContent = "−"; _e.title = "Plus petit"; }); _zm.onclick = function () { prefs.tabScale = Math.max(0.4, Math.round((tabDisplayPrefs().scale - 0.1) * 10) / 10); try { dbSave(); } catch (_x) {} tabApplyDisplay(); };
+  var _zp = _mk("button", "", function (_e) { _e.textContent = "+"; _e.title = "Plus grand"; }); _zp.onclick = function () { prefs.tabScale = Math.min(1.8, Math.round((tabDisplayPrefs().scale + 0.1) * 10) / 10); try { dbSave(); } catch (_x) {} tabApplyDisplay(); };
+  _st.appendChild(_zm); _st.appendChild(_zp); _l2.appendChild(_st); _sec.appendChild(_l2);
+  var _th = _mk("button", "sheet-theme-btn sh-wide"); _th.textContent = tabDisplayPrefs().dark ? "☀ Thème clair" : "🌙 Thème sombre"; _th.onclick = toggleSceneDark;
+  _sec.appendChild(_th);
+  _more.appendChild(_sec);
+  var _nav = _mk("div", "sh-sec sh-navrow");
+  var _pv = _mk("button", "", function (_e) { _e.textContent = "‹ Précédent"; }); _pv.onclick = function () { prevSong(); };
+  var _nx = _mk("button", "", function (_e) { _e.textContent = "Suivant ›"; }); _nx.onclick = function () { nextSong(); };
+  var _lv = _mk("button", "", function (_e) { _e.textContent = "📡 Live"; }); _lv.onclick = function () { liveOpenModal(); };
   [_pv, _nx, _lv].forEach(function (_e) { _nav.appendChild(_e); });
   _more.appendChild(_nav);
   _sh.appendChild(_hd); _sh.appendChild(_main); _sh.appendChild(_more);
@@ -8234,7 +8265,7 @@ function tabBuildSheet(_bar) {
   _hd.addEventListener("pointerup", _up); _hd.addEventListener("pointercancel", _up);
   _gear.onclick = function () { _full = _fullH(); _setH((parseInt(_more.style.height, 10) || 0) > 0 ? 0 : _full, true); };
 }
-function sceneApplyTheme() { document.body.classList.toggle("scene-dark", !!tabDisplayPrefs().dark); var _t = tabDisplayPrefs().dark ? "☀ Clair" : "🌙 Sombre"; document.querySelectorAll(".sheet-theme-btn").forEach(function (_b) { _b.textContent = _t; }); }
+function sceneApplyTheme() { document.body.classList.toggle("scene-dark", !!tabDisplayPrefs().dark); var _t = tabDisplayPrefs().dark ? "☀ Thème clair" : "🌙 Thème sombre"; document.querySelectorAll(".sheet-theme-btn").forEach(function (_b) { _b.textContent = _t; }); }
 function toggleSceneDark() {
   prefs.tabDark = !tabDisplayPrefs().dark;
   try { dbSave(); } catch (_e) {}
@@ -16690,7 +16721,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.183.1 · 23/11/2026 19:00<span id="license-watermark"></span>
+  v2.184.0 · 23/11/2026 20:00<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
