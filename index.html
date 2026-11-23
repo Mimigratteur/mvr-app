@@ -873,6 +873,17 @@ body.fullscreen #fs-float{display:block}
 #scene-btns.sheet > button{flex:0 1 auto;min-width:80px}
 #scene-btns.sheet .sheet-extra{display:flex;flex-wrap:wrap}
 body.sheet-on #stage,body.sheet-on #grid-paper,body.sheet-on #img-stage,body.sheet-on #osmd-stage{padding-bottom:150px!important}
+/* --- Grille : mesures compactes (une mesure = un gros accord) et plusieurs mesures par ligne sur mobile --- */
+.gp-measure-box.gp-measure-simple{flex:1 1 92px;min-width:84px;width:auto}
+.gp-measure-box.gp-measure-simple .gp-beat-tick{width:7px;height:7px;background:#C9CDD6}
+.gp-measure-box.gp-measure-simple .gp-beat-tick-active{background:#1F7AFF}
+body.scene-dark .gp-measure-box.gp-measure-simple .gp-beat-tick{background:#4A5468}
+body.scene-dark .gp-measure-box.gp-measure-simple .gp-beat-tick-active{background:#5AA0FF}
+@media (max-width:700px){
+  .gp-measure-box:not(.gp-measure-simple){width:auto!important;flex:1 1 46%;min-width:150px}
+  .gp-measure-box:not(.gp-measure-simple) .gp-beatcells{width:100%!important}
+  .gp-beatcell,.gp-beatcell-labeled{font-size:min(var(--gp-font-size,17px),5.6vw)}
+}
 /* --- Theme sombre commun a tous les modes de la scene --- */
 body.scene-dark #stage.lyr-theme{background:#1B1F27}
 body.scene-dark #stage.lyr-theme .s-row{border-bottom-color:rgba(255,255,255,.08)}
@@ -984,7 +995,7 @@ body.scene-dark #osmd-render-target svg{filter:invert(.9) hue-rotate(180deg)}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.181.0</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.182.0</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
 </div>
 
 <div id="pages">
@@ -5890,17 +5901,26 @@ function renderGridPaper(_0x574c49, _0x13f2b6, _0x1ec8d8) {
           if (_0xneed > _0xwidestCellPxRead) _0xwidestCellPxRead = _0xneed;
         });
         var _0x2a6082Read = Math.max(150, _0x564ba8 * _0xwidestCellPxRead + (_0x564ba8 - 1) * 3 + 6);
-        _0xbf55e2 += "<div class=\"gp-measure-box\" data-flatidx=\"" + _0x5b9d89 + "\" style=\"width:" + _0x2a6082Read + "px\"" + _0x34240a + ">";
+        // Mesure a UN seul accord (sur le 1er temps) : affichage epure, un gros accord + petits reperes de temps
+        // (plus de cases vides) -> plusieurs mesures par ligne sur mobile, comme une fiche d'accords
+        var _0xsimple = !!_0x52f5da[0] && _0x52f5da.filter(Boolean).length === 1;
+        _0xbf55e2 += "<div class=\"gp-measure-box" + (_0xsimple ? " gp-measure-simple" : "") + "\" data-flatidx=\"" + _0x5b9d89 + "\"" + (_0xsimple ? "" : " style=\"width:" + _0x2a6082Read + "px\"") + _0x34240a + ">";
         _0xbf55e2 += "<span class=\"gp-measure-num\">" + (_0x5b9d89 + 1) + "</span>";
         if (_0x574c49.fermatas && _0x574c49.fermatas[_0x5b9d89]) {
           _0xbf55e2 += "<span class=\"gp-fermata-badge\" title=\"Point d'orgue : +" + _0x574c49.fermatas[_0x5b9d89] + " temps\">𝄐</span>";
         }
+        if (_0xsimple) {
+          _0xbf55e2 += "<div class=\"gp-simple-chord\"><span class=\"gp-simple-chord-name\">" + gpChordLabelHTML(_0x52f5da[0]) + "</span><div class=\"gp-beat-ticks\">";
+          _0x52f5da.forEach(function (_0xtk, _0xtki) { _0xbf55e2 += "<span class=\"gp-beat-tick\" data-subidx=\"" + _0xtki + "\"></span>"; });
+          _0xbf55e2 += "</div></div>";
+        } else {
         _0xbf55e2 += "<div class=\"gp-beatcells\" data-gmrow=\"" + _0x4b382c + "\" data-gmmeasure=\"" + _0x39aa1a + "\" style=\"width:" + _0x2a6082Read + "px\">";
         _0x52f5da.forEach(function (_0x1317cd, _0xd0e4e4) {
           var _0x3d6e94 = gpMode === "play" ? " onclick=\"event.stopPropagation();gpJumpToMeasure(" + _0x5b9d89 + "," + _0xd0e4e4 + ")\"" : "";
           _0xbf55e2 += "<span class=\"gp-beatcell" + (_0x1317cd ? " gp-beatcell-labeled" : "") + "\" data-subidx=\"" + _0xd0e4e4 + "\"" + _0x3d6e94 + ">" + gpChordLabelHTML(_0x1317cd) + "</span>";
         });
         _0xbf55e2 += "</div>";
+        }
       }
       if (_0x5109ae) {
         _0xbf55e2 += "<button type=\"button\" class=\"gp-measure-handle\" title=\"Actions sur cette mesure\" onclick=\"gpOpenMeasureActions(" + _0x4b382c + "," + _0x39aa1a + ")\">⋮</button>";
@@ -16589,7 +16609,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.181.0 · 23/11/2026 16:00<span id="license-watermark"></span>
+  v2.182.0 · 23/11/2026 17:00<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
