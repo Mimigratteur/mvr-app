@@ -443,6 +443,7 @@ input[type=range]{accent-color:var(--G);touch-action:pan-y}
   background:#fff;-webkit-overflow-scrolling:touch;
 }
 #tab-stage-inner{max-width:960px;margin:0 auto;padding:14px 10px 100px}
+body.touch-ui #tab-stage-inner{max-width:none;padding:8px 6px 100px}
 .tab-mode-only{display:none}
 /* Curseur de lecture natif d'alphaTab — repeint aux couleurs de l'app
    (ambre) plutôt que ses couleurs par défaut (bleu). Le son étant coupé
@@ -1304,7 +1305,7 @@ body.scene-dark #osmd-render-target svg{filter:invert(.9) hue-rotate(180deg)}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.191.5</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.191.6</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
 </div>
 
 <div id="pages">
@@ -8482,6 +8483,7 @@ function tabInitDisplay(_s, _at) {
   var _p = tabDisplayPrefs();
   _s.display.scale = _p.scale;
   _s.display.barsPerRow = _p.bars;
+  try { _s.display.padding = [6, 6]; } catch (_e) {} /* v2.191.6 : marges réduites */
   /* v2.191 : rythme (noires, croches, triolets...) sous la tablature, chiffres plus lisibles */
   try {
     var _tabOnly = _p.nota === "tab";
@@ -17283,7 +17285,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.191.5 · 24/11/2026 08:30<span id="license-watermark"></span>
+  v2.191.6 · 24/11/2026 09:00<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
