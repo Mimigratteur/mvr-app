@@ -1030,7 +1030,8 @@ body.touch-ui .pg-title .pg-logo{width:34px;height:34px;opacity:.55;flex:0 0 aut
 
 /* v2.191.9 : menu unique — la rangée d'onglets de la scène est remplacée par le menu du logo */
 body.touch-ui #topbar .tabs{display:none!important}
-#nav-menu,.nm-chev{display:none}
+#nav-menu,.nm-chev,#nav-back{display:none}
+body.touch-ui[data-back="1"] #nav-back{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;margin-right:2px;border-radius:50%;border:none!important;background:rgba(255,255,255,.07)!important;color:#E8ECF2;box-shadow:none!important;padding:0}
 body.touch-ui[data-page="scene"] .nm-chev{display:inline-flex;color:#8B95A8;margin-left:-4px}
 body.touch-ui[data-page="scene"] #topbar h1{cursor:pointer;width:100%}
 body.touch-ui[data-page="scene"] #topbar h1 #fs-top{margin-left:auto!important}
@@ -1322,7 +1323,7 @@ body.scene-dark #osmd-render-target svg{filter:invert(.9) hue-rotate(180deg)}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.191.9</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.191.10</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
 </div>
 
 <div id="pages">
@@ -8800,8 +8801,20 @@ var MVR_NAV = [["songs", "Morceaux", '<path d="M9 18V5l11-2v13"/><circle cx="6.5
   ["pdf", "Importer", '<path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 20h16"/>'],
   ["tools", "Outils", '<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>'],
   ["cfg", "Réglages", '<circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/>']];
+/* v2.191.10 : retour à l'écran précédent (bouton ‹ en haut + bouton Retour d'Android) */
+var mvrHist = [], mvrCurPage = null, mvrGoingBack = false;
+function mvrBack() {
+  if (!mvrHist.length) return false;
+  var _p = mvrHist.pop(); mvrGoingBack = true;
+  try { go(_p); } finally { mvrGoingBack = false; }
+  return true;
+}
+window.addEventListener("popstate", function () { if (document.body.classList.contains("touch-ui") && mvrHist.length) mvrBack(); });
 function homeSync(_p) {
   try { scClosePop(); } catch (_e) {}
+  if (!mvrGoingBack && mvrCurPage && mvrCurPage !== _p) { if (mvrHist[mvrHist.length - 1] !== mvrCurPage) mvrHist.push(mvrCurPage); if (mvrHist.length > 20) mvrHist.shift(); try { history.pushState({ mvr: 1 }, ""); } catch (_e) {} }
+  mvrCurPage = _p;
+  document.body.setAttribute("data-back", mvrHist.length ? "1" : "0");
   document.body.setAttribute("data-page", _p);
   document.querySelectorAll("#bottom-nav button").forEach(function (_b) { _b.classList.toggle("on", _b.getAttribute("data-p") === _p); });
   var _f = document.getElementById("fab"), _m = document.getElementById("fab-menu");
@@ -8939,6 +8952,9 @@ function mvrNavMenu() {
     _m.appendChild(_b);
   });
   document.body.appendChild(_m);
+  var _bk = document.createElement("button"); _bk.id = "nav-back"; _bk.setAttribute("aria-label", "Retour"); _bk.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>';
+  _bk.onclick = function (_e) { _e.stopPropagation(); mvrBack(); };
+  _h1.insertBefore(_bk, _h1.firstChild);
   var _chev = document.createElement("span"); _chev.className = "nm-chev"; _chev.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
   var _logo = _h1.querySelector(".logo"); if (_logo && _logo.nextSibling) _h1.insertBefore(_chev, _logo.nextSibling.nextSibling || null);
   _h1.addEventListener("click", function (_e) {
@@ -17338,7 +17354,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.191.9 · 24/11/2026 11:00<span id="license-watermark"></span>
+  v2.191.10 · 24/11/2026 11:30<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
