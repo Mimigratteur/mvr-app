@@ -1139,7 +1139,7 @@ body.touch-ui #scene-btns.sheet > :not(#pp-bar){display:none!important}
 #tab-sheet.nm-open #tab-sheet-main > #tab-loop-btn::after{content:"Boucle"}
 #tab-sheet.nm-open #tab-sheet-main > #tab-loop-btn.pc-on::after{color:#F4B740}
 
-/* v2.191.18 : relief des tuiles (lumière en haut, ombre en bas, effet d'appui) */
+/* v2.191.19 : relief des tuiles (lumière en haut, ombre en bas, effet d'appui) */
 body.touch-ui #nav-menu .nm-grid button,
 #tab-sheet.nm-open .sh-pop .sh-r,#nav-menu #sc-pop .sh-r,
 #tab-sheet.nm-open .sh-seg .sh-chip,#tab-sheet.nm-open .sh-step .sh-chip,#nav-menu #sc-pop .sh-chip,
@@ -1163,6 +1163,8 @@ body.touch-ui #nav-menu .nm-grid button:active,
   box-shadow:inset 0 2px 5px rgba(0,0,0,.45),0 1px 2px rgba(0,0,0,.3)!important}
 /* les boutons internes des tuiles (−, +, Tap) gardent un relief plus léger */
 #nav-menu #sc-pop .sh-r .sh-chip,#tab-sheet.nm-open .sh-r .sh-chip{box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 2px 4px rgba(0,0,0,.35)!important}
+body.touch-ui[data-back="1"]:not([data-page="scene"]) #nav-back{display:none!important}
+body.touch-ui[data-back="1"]:not([data-page="scene"]) #topbar h1{cursor:pointer}
 /* v2.190.6 : le bouton + ne masque plus le dernier élément */
 body.touch-ui:not([data-page="scene"]) .pg::after{content:"";display:block;flex:0 0 150px;height:150px}
 body.touch-ui:not([data-page="scene"]) #bottom-nav{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:1000;background:#1B2029;border-top:1px solid #2A3140;padding:8px 4px calc(8px + env(safe-area-inset-bottom,0));justify-content:space-around}
@@ -1448,7 +1450,7 @@ body.scene-dark #osmd-render-target svg{filter:invert(.9) hue-rotate(180deg)}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.191.18</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.191.19</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
 </div>
 
 <div id="pages">
@@ -9134,8 +9136,9 @@ function mvrNavMenu() {
   var _chev = document.createElement("span"); _chev.className = "nm-chev"; _chev.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
   var _logo = _h1.querySelector(".logo"); if (_logo && _logo.nextSibling) _h1.insertBefore(_chev, _logo.nextSibling.nextSibling || null);
   _h1.addEventListener("click", function (_e) {
-    if (!document.body.classList.contains("touch-ui") || document.body.getAttribute("data-page") !== "scene") return;
+    if (!document.body.classList.contains("touch-ui")) return;
     if (_e.target.closest && _e.target.closest("#fs-top,#nav-back")) return;
+    if (document.body.getAttribute("data-page") !== "scene") { if (document.body.getAttribute("data-back") === "1") mvrBack(); return; }
     if (_m.classList.contains("open")) mvrNavClose(); else mvrNavOpen();
   });
   document.addEventListener("pointerdown", function (_e) { if (!_m.classList.contains("open")) return; if (!_e.target.closest || !_e.target.closest("#nav-menu,#topbar h1,#tab-sheet.nm-open")) mvrNavClose(); }, true);
@@ -17528,7 +17531,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.191.18 · 24/11/2026 15:30<span id="license-watermark"></span>
+  v2.191.19 · 24/11/2026 15:30<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
