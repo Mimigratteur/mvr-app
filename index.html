@@ -1043,12 +1043,12 @@ body.touch-ui #nav-menu .nm-grid button.on{background:rgba(244,183,64,.14);color
 body.touch-ui #tab-sheet-handle,body.touch-ui #scene-sheet-handle{display:none!important}
 body.touch-ui #tab-sheet:not(.nm-open) #tab-sheet-more{display:none!important}
 body.touch-ui #tab-sheet:not(.nm-open) #tab-sheet-main{justify-content:center}
-body.touch-ui #tab-sheet:not(.nm-open) #tab-sheet-main > :not(.sh-play):not(#tab-loop-btn){display:none!important}
+body.touch-ui #tab-sheet:not(.nm-open) #tab-sheet-main > :not(.sh-play):not(#tab-loop-btn):not(.bar-cd){display:none!important}
 body.touch-ui #tab-sheet:not(.nm-open) #tab-sheet-main{gap:30px}
 body.touch-ui #pp-bar{justify-content:center}
 body.touch-ui #pp-bar{padding-bottom:16px!important}
 body.touch-ui #pp-bar .pp-play{width:64px!important;min-width:64px!important;max-width:64px!important;height:64px!important;min-height:64px!important;border-radius:50%!important;flex:0 0 64px!important;padding:0!important}
-body.touch-ui #pp-bar > :not(.pp-play){display:none!important}
+body.touch-ui #pp-bar > :not(.pp-play):not(.bar-cd){display:none!important}
 body.touch-ui #scene-btns.sheet{height:auto!important;overflow:visible!important}
 body.touch-ui #scene-btns.sheet > :not(#pp-bar){display:none!important}
 #tab-sheet.nm-open{position:fixed!important;top:54px;left:8px;right:8px;bottom:8px!important;height:auto!important;max-height:none!important;overflow-y:auto;z-index:2900;border-radius:18px;background:#1B212C;box-shadow:0 14px 40px rgba(0,0,0,.55)}
@@ -1139,7 +1139,7 @@ body.touch-ui #scene-btns.sheet > :not(#pp-bar){display:none!important}
 #tab-sheet.nm-open #tab-sheet-main > #tab-loop-btn::after{content:"Boucle"}
 #tab-sheet.nm-open #tab-sheet-main > #tab-loop-btn.pc-on::after{color:#F4B740}
 
-/* v2.191.20 : relief des tuiles (lumière en haut, ombre en bas, effet d'appui) */
+/* v2.191.21 : relief des tuiles (lumière en haut, ombre en bas, effet d'appui) */
 body.touch-ui #nav-menu .nm-grid button,
 #tab-sheet.nm-open .sh-pop .sh-r,#nav-menu #sc-pop .sh-r,
 #tab-sheet.nm-open .sh-seg .sh-chip,#tab-sheet.nm-open .sh-step .sh-chip,#nav-menu #sc-pop .sh-chip,
@@ -1169,6 +1169,12 @@ body.touch-ui[data-back="1"]:not([data-page="scene"]) #topbar h1{cursor:pointer}
 body.touch-ui #nav-menu .nm-hub button{height:72px}
 body:not([data-nmsub]) #tab-sheet.nm-open > .sh-pop,body:not([data-nmsub]) #nav-menu #sc-pop .nm-sec:not([data-nm="Lecture"]){display:none!important}
 body[data-nmsub] #tab-sheet.nm-open > #tab-sheet-main,body[data-nmsub] #tab-sheet.nm-open > #tab-sheet-more,body[data-nmsub] #tab-sheet.nm-open > .sh-pop:not(.sub-on),body[data-nmsub] #nav-menu #sc-pop .nm-sec:not(.sub-on){display:none!important}
+body.touch-ui #page-scene .cd-btn.bar-cd,body.touch-ui .bar-cd{display:flex!important;align-items:center;justify-content:center;width:48px!important;min-width:48px!important;height:48px!important;padding:0!important;border-radius:50%!important;font-size:13px!important;font-weight:800;letter-spacing:0;color:#C9D1DE!important;background:rgba(255,255,255,.07)!important;border:1px solid rgba(255,255,255,.14)!important;flex:0 0 48px}
+body.touch-ui .bar-cd.pc-on{background:rgba(244,183,64,.2)!important;border-color:#F4B740!important;color:#F4B740!important}
+body.touch-ui .bar-cd.pc-off{opacity:1}
+body.touch-ui #pp-bar{gap:22px}
+body.touch-ui #tab-sheet-main#tab-sheet-main > .bar-cd.bar-cd,body.touch-ui #pp-bar > .bar-cd{display:flex!important;width:48px!important;min-width:48px!important;max-width:48px!important;height:48px!important;min-height:48px!important;flex:0 0 48px!important;padding:0!important;border-radius:50%!important;font-size:13px!important;font-weight:800!important;line-height:1!important;color:#C9D1DE!important;background:rgba(255,255,255,.07)!important;border:1px solid rgba(255,255,255,.14)!important}
+body.touch-ui #tab-sheet-main#tab-sheet-main > .bar-cd.pc-on.pc-on,body.touch-ui #pp-bar > .bar-cd.pc-on{background:rgba(244,183,64,.2)!important;border-color:#F4B740!important;color:#F4B740!important}
 /* v2.190.6 : le bouton + ne masque plus le dernier élément */
 body.touch-ui:not([data-page="scene"]) .pg::after{content:"";display:block;flex:0 0 150px;height:150px}
 body.touch-ui:not([data-page="scene"]) #bottom-nav{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:1000;background:#1B2029;border-top:1px solid #2A3140;padding:8px 4px calc(8px + env(safe-area-inset-bottom,0));justify-content:space-around}
@@ -1454,7 +1460,7 @@ body.scene-dark #osmd-render-target svg{filter:invert(.9) hue-rotate(180deg)}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.191.20</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.191.21</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
 </div>
 
 <div id="pages">
@@ -8686,7 +8692,9 @@ function tabBuildSheet(_bar) {
   var _play = document.createElement("button"); _play.id = "tab-sheet-play"; _play.className = "sh-play"; _play.innerHTML = mvrIcon("play"); _play.onclick = tabTogglePlay;
   var _rs = document.createElement("button"); _rs.innerHTML = mvrIcon("restart"); _rs.title = "Début"; _rs.onclick = tabRestart;
   _main.appendChild(_rs); _main.appendChild(_play);
+  var _cdBar = document.createElement("button"); _cdBar.className = "cd-btn bar-cd pc-off nm-hide"; _cdBar.textContent = "3·2·1"; _cdBar.onclick = toggleCountdown; _main.appendChild(_cdBar);
   var _lb = _bar.querySelector("#tab-loop-btn"); if (_lb) _main.appendChild(_lb);
+  try { updateCountdownBtn(); } catch (_e) {}
   var _sp = document.createElement("select"); _sp.id = "tab-sheet-speed"; _sp.title = "Vitesse";
   [50, 60, 70, 80, 90, 100, 110, 120].forEach(function (_v) { var _o = document.createElement("option"); _o.value = _v; _o.textContent = _v + " %"; _sp.appendChild(_o); });
   var _cur = Math.round(((tabApi && tabApi.playbackSpeed) || 1) * 10) * 10; _sp.value = Math.max(50, Math.min(120, _cur));
@@ -8707,7 +8715,6 @@ function tabBuildSheet(_bar) {
       var _r = _mk("div", "sh-r"); _r.appendChild(_mk("span", "", function (_e) { _e.textContent = _label; }));
       var _b = _mk("button", "sh-switch " + _cls + (_on ? " on" : "")); _b.onclick = function () { _fn(_b); }; _r.appendChild(_b); return _r;
     };
-    _msub.appendChild(_sw("Précompte", "cd-switch", !!prefs.countdown, function () { toggleCountdown(); }));
     _msub.appendChild(_sw("Tic du métronome", "mt-switch", !!prefs.tabMetro, function (_b) {
       prefs.tabMetro = !prefs.tabMetro; _sv(); _b.classList.toggle("on", !!prefs.tabMetro);
       try { if (tabApi) tabApi.metronomeVolume = prefs.tabMetro ? 1 : 0; } catch (_x) {}
@@ -8800,7 +8807,8 @@ function initSceneSheet() {
   var _b2 = document.createElement("button"); _b2.className = "pp-play"; _b2.innerHTML = mvrIcon("play"); _b2.onclick = ppToggle;
   var _bm = document.createElement("button"); _bm.className = "pp-metro"; _bm.title = "Métronome et tempo"; _bm.innerHTML = mvrIcon("metro") + '<span id="pp-bpm"></span>'; _bm.onclick = function (_e) { _e.stopPropagation(); scPop("metro", _bm); };
   var _b3 = document.createElement("button"); _b3.className = "pp-gear"; _b3.innerHTML = mvrIcon("gear"); _b3.title = "Affichage"; _b3.onclick = function (_e) { _e.stopPropagation(); scPop("disp", _b3); };
-  _pb.appendChild(_b1); _pb.appendChild(_b2); _pb.appendChild(_bm); _pb.appendChild(_b3); _sb.insertBefore(_pb, _hd.nextSibling);
+  var _bc = document.createElement("button"); _bc.className = "cd-btn bar-cd pc-off"; _bc.textContent = "3·2·1"; _bc.onclick = toggleCountdown;
+  _pb.appendChild(_b1); _pb.appendChild(_b2); _pb.appendChild(_bc); _pb.appendChild(_bm); _pb.appendChild(_b3); _sb.insertBefore(_pb, _hd.nextSibling);
   Array.prototype.forEach.call(_sb.querySelectorAll(":scope > button"), function (_b) { var _o = _b.getAttribute("onclick") || ""; if (/prevSong/.test(_o)) _b.textContent = "‹ Précédent"; else if (/nextSong/.test(_o)) _b.textContent = "Suivant ›"; else if (/liveOpenModal/.test(_o)) _b.textContent = "📡 Live"; else if (/openCurrentSongFiche/.test(_o)) { _b.textContent = "Fiche du morceau"; _b.classList.add("sc-fiche"); } });
   sceneApplyTheme();
   var _open = false, _full = 0, _y0 = 0, _h0 = 0, _drag = false, _moved = false;
@@ -8854,7 +8862,6 @@ function scBuildMetro(_p) {
   _p.appendChild(scRow("Tap tempo", _tap));
   _p.appendChild(scRow("Tic du métronome", (function () { var _b = document.createElement("button"); _b.className = "sh-switch" + (metroOn ? " on" : ""); _b.onclick = function (_e) { _e.stopPropagation(); toggleMetro(); _b.classList.toggle("on", !!metroOn); }; return _b; })()));
   _p.appendChild(scRow("Précompte", (function () { var _b = document.createElement("button"); _b.className = "sh-switch" + (prefs.precount !== false ? " on" : ""); _b.onclick = function (_e) { _e.stopPropagation(); togglePrecountBtn(); _b.classList.toggle("on", prefs.precount !== false); }; return _b; })()));
-  _p.appendChild(scRow("Compte à rebours 3·2·1", (function () { var _b = document.createElement("button"); _b.className = "sh-switch cd-switch" + (prefs.countdown ? " on" : ""); _b.onclick = function (_e) { _e.stopPropagation(); toggleCountdown(); }; return _b; })()));
   var _ts = document.getElementById("timesig");
   _p.appendChild(scRow("Signature", scSelect([["4", "4/4"], ["3", "3/4"], ["6", "6/8"], ["2", "2/4"]], _ts ? _ts.value : "4", function (_v) { if (_ts) { _ts.value = _v; _ts.dispatchEvent(new Event("change")); } })));
   _p.appendChild(scRow("Levée (temps)", scSelect([["0", "0"], ["1", "1"], ["2", "2"], ["3", "3"], ["4", "4"]], String(typeof gpLeadInBeats === "number" ? gpLeadInBeats : 0), function (_v) { setLeadInBeats(+_v); })));
@@ -17555,7 +17562,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.191.20 · 24/11/2026 15:30<span id="license-watermark"></span>
+  v2.191.21 · 24/11/2026 15:30<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
