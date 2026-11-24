@@ -1035,9 +1035,39 @@ body.touch-ui[data-back="1"] #nav-back{display:inline-flex;align-items:center;ju
 body.touch-ui[data-page="scene"] .nm-chev{display:inline-flex;color:#8B95A8;margin-left:-4px}
 body.touch-ui[data-page="scene"] #topbar h1{cursor:pointer;width:100%}
 body.touch-ui[data-page="scene"] #topbar h1 #fs-top{margin-left:auto!important}
-body.touch-ui #nav-menu.open{display:flex;position:fixed;top:54px;left:10px;width:236px;flex-direction:column;padding:8px;gap:2px;background:#1B212C;border:1px solid #2C3544;border-radius:18px;box-shadow:0 14px 40px rgba(0,0,0,.55);z-index:2900}
-body.touch-ui #nav-menu button{box-shadow:none!important;border:none!important;display:flex;align-items:center;gap:14px;height:48px;padding:0 14px;border:none;border-radius:12px;background:transparent;color:#C9D1DE;font-size:15px;font-weight:500;text-align:left}
-body.touch-ui #nav-menu button.on{background:rgba(244,183,64,.14);color:#F4B740}
+body.touch-ui #nav-menu.open{display:flex;flex-direction:column;position:fixed;top:54px;left:10px;width:min(380px,calc(100vw - 20px));max-height:calc(100vh - 150px);overflow-y:auto;background:#1B212C;border:1px solid #2C3544;border-radius:18px;box-shadow:0 14px 40px rgba(0,0,0,.55);z-index:2900;color:#E8ECF2}
+#nav-menu .nm-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:10px}
+body.touch-ui #nav-menu .nm-grid button{box-shadow:none!important;border:none!important;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;height:66px;border-radius:14px;background:rgba(255,255,255,.04);color:#C9D1DE;font-size:13px;font-weight:500}
+body.touch-ui #nav-menu .nm-grid button.on{background:rgba(244,183,64,.14);color:#F4B740}
+/* v2.191.11 : réglages de la scène dans le menu unique ; la barre du bas ne garde que Lecture */
+body.touch-ui #tab-sheet-handle,body.touch-ui #scene-sheet-handle{display:none!important}
+body.touch-ui #tab-sheet:not(.nm-open) #tab-sheet-more{display:none!important}
+body.touch-ui #tab-sheet:not(.nm-open) #tab-sheet-main{justify-content:center}
+body.touch-ui #tab-sheet:not(.nm-open) #tab-sheet-main > :not(.sh-play){display:none!important}
+body.touch-ui #pp-bar{justify-content:center}
+body.touch-ui #pp-bar{padding-bottom:16px!important}
+body.touch-ui #pp-bar .pp-play{width:64px!important;min-width:64px!important;max-width:64px!important;height:64px!important;min-height:64px!important;border-radius:50%!important;flex:0 0 64px!important;padding:0!important}
+body.touch-ui #pp-bar > :not(.pp-play){display:none!important}
+body.touch-ui #scene-btns.sheet{height:auto!important;overflow:visible!important}
+body.touch-ui #scene-btns.sheet > :not(#pp-bar){display:none!important}
+#tab-sheet.nm-open{position:fixed!important;top:54px;left:8px;right:8px;bottom:8px!important;height:auto!important;max-height:none!important;overflow-y:auto;z-index:2900;border-radius:18px;background:#1B212C;box-shadow:0 14px 40px rgba(0,0,0,.55)}
+#tab-sheet.nm-open{display:flex!important;flex-direction:column}
+#tab-sheet.nm-open > *{flex:0 0 auto!important}
+#tab-sheet.nm-open > #nav-menu{order:0}
+#tab-sheet.nm-open > #tab-sheet-main{order:1;margin:0 8px}
+#tab-sheet.nm-open > .sh-pop{order:2}
+#tab-sheet.nm-open > #tab-sheet-more{order:3}
+#tab-sheet.nm-open .sh-pop:empty{display:none!important}
+#tab-sheet.nm-open #nav-menu.in-sheet{display:flex!important;flex-direction:column;position:static;width:auto;max-height:none;overflow:visible;background:transparent;border:none;box-shadow:none}
+#tab-sheet.nm-open #tab-sheet-main > .sh-play,#tab-sheet.nm-open #tab-sheet-main > .nm-hide{display:none!important}
+#tab-sheet.nm-open #tab-sheet-main{display:flex!important;flex-wrap:wrap;justify-content:center;gap:10px;padding:6px 12px}
+#tab-sheet.nm-open .sh-pop{display:block!important;position:static!important;left:auto;right:auto;bottom:auto;max-height:none;box-shadow:none;margin:6px 8px;background:#1E2430;border-radius:14px}
+#tab-sheet.nm-open .sh-pop::before,#nav-menu #sc-pop .nm-sec::before{content:attr(data-nm);display:block;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#8B95A8;padding:12px 16px 2px}
+#tab-sheet.nm-open #tab-sheet-more{display:block!important;height:auto!important;overflow:visible!important;background:transparent!important}
+#nav-menu #sc-pop.inline{display:block;position:static;max-height:none;overflow:visible;background:transparent;box-shadow:none;border-radius:0}
+#nav-menu #sc-pop .nm-sec{margin:6px 8px;background:#1E2430;border-radius:14px;overflow:hidden}
+#nav-menu #sc-pop .nm-chips{padding:8px 10px;gap:6px}
+#nav-menu #sc-pop .nm-chips .sh-chip{flex:1;font-size:14px;padding:0 6px}
 /* v2.190.6 : le bouton + ne masque plus le dernier élément */
 body.touch-ui:not([data-page="scene"]) .pg::after{content:"";display:block;flex:0 0 150px;height:150px}
 body.touch-ui:not([data-page="scene"]) #bottom-nav{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:1000;background:#1B2029;border-top:1px solid #2A3140;padding:8px 4px calc(8px + env(safe-area-inset-bottom,0));justify-content:space-around}
@@ -1323,7 +1353,7 @@ body.scene-dark #osmd-render-target svg{filter:invert(.9) hue-rotate(180deg)}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.191.10</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.191.11</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
 </div>
 
 <div id="pages">
@@ -8561,9 +8591,9 @@ function tabBuildSheet(_bar) {
   var _cur = Math.round(((tabApi && tabApi.playbackSpeed) || 1) * 10) * 10; _sp.value = Math.max(50, Math.min(120, _cur));
   _sp.onchange = function () { if (tabFileTempo) setBPM(Math.round(tabFileTempo * parseInt(_sp.value, 10) / 100)); };
   _main.appendChild(_sp);
-  var _mb = document.createElement("button"); _mb.innerHTML = mvrIcon("metro"); _mb.title = "Métronome"; _main.appendChild(_mb);
-  var _pb = document.createElement("button"); _pb.innerHTML = mvrIcon("tracks"); _pb.title = "Pistes"; _main.appendChild(_pb);
-  var _gear = document.createElement("button"); _gear.className = "pp-gear"; _gear.innerHTML = mvrIcon("gear"); _gear.title = "Réglages"; _main.appendChild(_gear);
+  var _mb = document.createElement("button"); _mb.innerHTML = mvrIcon("metro"); _mb.title = "Métronome"; _mb.className = "nm-hide"; _main.appendChild(_mb);
+  var _pb = document.createElement("button"); _pb.innerHTML = mvrIcon("tracks"); _pb.title = "Pistes"; _pb.className = "nm-hide"; _main.appendChild(_pb);
+  var _gear = document.createElement("button"); _gear.className = "pp-gear nm-hide"; _gear.innerHTML = mvrIcon("gear"); _gear.title = "Réglages"; _main.appendChild(_gear);
   var _more = document.createElement("div"); _more.id = "tab-sheet-more";
   _bar.style.cssText = "display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;padding:8px 10px;color:#E8ECF2;font-size:14px";
   _more.appendChild(_bar);
@@ -8571,7 +8601,7 @@ function tabBuildSheet(_bar) {
   // reglages : cartes a lignes (style liste)
   var _cdb = _bar.querySelector(".cd-btn");
   if (_cdb) {
-    var _msub = _mk("div", "sh-pop");
+    var _msub = _mk("div", "sh-pop"); _msub.setAttribute("data-nm", "Métronome");
     var _sw = function (_label, _cls, _on, _fn) {
       var _r = _mk("div", "sh-r"); _r.appendChild(_mk("span", "", function (_e) { _e.textContent = _label; }));
       var _b = _mk("button", "sh-switch " + _cls + (_on ? " on" : "")); _b.onclick = function () { _fn(_b); }; _r.appendChild(_b); return _r;
@@ -8584,7 +8614,7 @@ function tabBuildSheet(_bar) {
     _cdb.style.display = "none";
   }
   var _selEl = _bar.querySelector("select"), _labEl = _bar.querySelector("span");
-  var _popP = _mk("div", "sh-pop");
+  var _popP = _mk("div", "sh-pop"); _popP.setAttribute("data-nm", "Piste");
   if (_selEl && _labEl) { var _w = _mk("div", "sh-r"); _w.appendChild(_labEl); _w.appendChild(_selEl); _popP.appendChild(_w); }
   var _muteB = Array.prototype.filter.call(_bar.children, function (_c) { return _c.tagName === "BUTTON" && !_c.classList.contains("cd-btn") && _c.id !== "tab-loop-btn"; })[0];
   if (_muteB) { var _mp = _muteB.nextElementSibling; if (_mp && _mp.tagName === "DIV") _mp.remove(); _muteB.remove(); }
@@ -8602,7 +8632,7 @@ function tabBuildSheet(_bar) {
     _closePops();
   }, true);
   var _card = _mk("div", "sh-card");
-  var _sub2 = _mk("div", "sh-pop");
+  var _sub2 = _mk("div", "sh-pop"); _sub2.setAttribute("data-nm", "Affichage");
   var _r1 = _mk("div", "sh-r col");
   _r1.appendChild(_mk("span", "", function (_e) { _e.textContent = "Mesures par ligne"; }));
   var _seg = _mk("div", "sh-seg");
@@ -8812,6 +8842,7 @@ function mvrBack() {
 window.addEventListener("popstate", function () { if (document.body.classList.contains("touch-ui") && mvrHist.length) mvrBack(); });
 function homeSync(_p) {
   try { scClosePop(); } catch (_e) {}
+  try { mvrNavClose(); } catch (_e) {}
   if (!mvrGoingBack && mvrCurPage && mvrCurPage !== _p) { if (mvrHist[mvrHist.length - 1] !== mvrCurPage) mvrHist.push(mvrCurPage); if (mvrHist.length > 20) mvrHist.shift(); try { history.pushState({ mvr: 1 }, ""); } catch (_e) {} }
   mvrCurPage = _p;
   document.body.setAttribute("data-back", mvrHist.length ? "1" : "0");
@@ -8941,29 +8972,58 @@ function homeDecorate() {
   window.addEventListener("load", function () { setTimeout(function () { _wrap("renderSongs"); _wrap("renderSets"); homeDecorate(); }, 350); });
 })();
 /* v2.191.9 : un seul menu — sur la scène, l'ancienne rangée d'onglets disparaît ; le logo MVR ouvre le même menu que la barre du bas */
+function mvrNavClose() {
+  var _m = document.getElementById("nav-menu"); if (!_m) return;
+  _m.classList.remove("open", "in-sheet");
+  var _sh = document.getElementById("tab-sheet"); if (_sh) _sh.classList.remove("nm-open");
+  var _sp = document.getElementById("sc-pop"); if (_sp && _sp.parentNode === _m) { _sp.classList.remove("inline", "open"); document.body.appendChild(_sp); }
+  if (_m.parentNode !== document.body) document.body.appendChild(_m);
+}
+function mvrNavOpen() {
+  var _m = document.getElementById("nav-menu"); if (!_m) return;
+  _m.querySelectorAll(".nm-grid button").forEach(function (_b) { _b.classList.toggle("on", _b.getAttribute("data-p") === "scene"); });
+  var _mode = ""; try { _mode = ppMode(); } catch (_e) {}
+  var _sh = document.getElementById("tab-sheet");
+  if (_mode === "tab" && _sh) { _sh.insertBefore(_m, _sh.firstChild); _sh.classList.add("nm-open"); _m.classList.add("in-sheet"); }
+  else {
+    var _p = document.getElementById("sc-pop"); if (!_p) { _p = document.createElement("div"); _p.id = "sc-pop"; document.body.appendChild(_p); }
+    _p.innerHTML = "";
+    var _add = function (_t, _fn) { var _d = document.createElement("div"); _d.className = "nm-sec"; _d.setAttribute("data-nm", _t); _p.appendChild(_d); _fn(_d); };
+    _add("Lecture", function (_d) {
+      var _w = document.createElement("div"); _w.className = "sh-seg nm-chips";
+      _w.appendChild(scBtn("↺ Début", function () { ppRestart(); }));
+      _w.appendChild(scBtn("‹ Précédent", function () { prevSong(); mvrNavClose(); }));
+      _w.appendChild(scBtn("Suivant ›", function () { nextSong(); mvrNavClose(); }));
+      _d.appendChild(_w);
+    });
+    _add("Métronome", scBuildMetro); _add("Affichage", scBuildDisp);
+    _p.classList.add("inline", "open"); _m.appendChild(_p);
+  }
+  _m.classList.add("open");
+}
 function mvrNavMenu() {
   if (document.getElementById("nav-menu")) return;
   var _h1 = document.querySelector("#topbar h1"); if (!_h1) return;
   var _m = document.createElement("div"); _m.id = "nav-menu";
+  var _g = document.createElement("div"); _g.className = "nm-grid"; _m.appendChild(_g);
   MVR_NAV.forEach(function (_n) {
     var _b = document.createElement("button"); _b.setAttribute("data-p", _n[0]);
-    _b.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">' + _n[2] + "</svg><span>" + _n[1] + "</span>";
-    _b.onclick = function (_e) { _e.stopPropagation(); _m.classList.remove("open"); go(_n[0]); };
-    _m.appendChild(_b);
+    _b.innerHTML = '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">' + _n[2] + "</svg><span>" + _n[1] + "</span>";
+    _b.onclick = function (_e) { _e.stopPropagation(); mvrNavClose(); go(_n[0]); };
+    _g.appendChild(_b);
   });
   document.body.appendChild(_m);
   var _bk = document.createElement("button"); _bk.id = "nav-back"; _bk.setAttribute("aria-label", "Retour"); _bk.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>';
-  _bk.onclick = function (_e) { _e.stopPropagation(); mvrBack(); };
+  _bk.onclick = function (_e) { _e.stopPropagation(); mvrNavClose(); mvrBack(); };
   _h1.insertBefore(_bk, _h1.firstChild);
   var _chev = document.createElement("span"); _chev.className = "nm-chev"; _chev.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
   var _logo = _h1.querySelector(".logo"); if (_logo && _logo.nextSibling) _h1.insertBefore(_chev, _logo.nextSibling.nextSibling || null);
   _h1.addEventListener("click", function (_e) {
     if (!document.body.classList.contains("touch-ui") || document.body.getAttribute("data-page") !== "scene") return;
-    if (_e.target.closest && _e.target.closest("#fs-top")) return;
-    _m.querySelectorAll("button").forEach(function (_b) { _b.classList.toggle("on", _b.getAttribute("data-p") === "scene"); });
-    _m.classList.toggle("open");
+    if (_e.target.closest && _e.target.closest("#fs-top,#nav-back")) return;
+    if (_m.classList.contains("open")) mvrNavClose(); else mvrNavOpen();
   });
-  document.addEventListener("pointerdown", function (_e) { if (!_e.target.closest || !_e.target.closest("#nav-menu,#topbar h1")) _m.classList.remove("open"); }, true);
+  document.addEventListener("pointerdown", function (_e) { if (!_m.classList.contains("open")) return; if (!_e.target.closest || !_e.target.closest("#nav-menu,#topbar h1,#tab-sheet.nm-open")) mvrNavClose(); }, true);
 }
 function homeApply() {
   var _td = document.getElementById("scene-tempo-display"); if (_td && tabUseSheet()) _td.onclick = function () { var _b = document.querySelector("#pp-bar .pp-metro"); if (_b) scPop("metro", _b); }; var _on = tabUseSheet(); document.body.classList.toggle("touch-ui", !!_on); if (_on) { homeInit(); mvrNavMenu(); } }
@@ -17354,7 +17414,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.191.10 · 24/11/2026 11:30<span id="license-watermark"></span>
+  v2.191.11 · 24/11/2026 12:00<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
