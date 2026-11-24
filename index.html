@@ -1139,7 +1139,7 @@ body.touch-ui #scene-btns.sheet > :not(#pp-bar){display:none!important}
 #tab-sheet.nm-open #tab-sheet-main > #tab-loop-btn::after{content:"Boucle"}
 #tab-sheet.nm-open #tab-sheet-main > #tab-loop-btn.pc-on::after{color:#F4B740}
 
-/* v2.191.21 : relief des tuiles (lumière en haut, ombre en bas, effet d'appui) */
+/* v2.191.22 : relief des tuiles (lumière en haut, ombre en bas, effet d'appui) */
 body.touch-ui #nav-menu .nm-grid button,
 #tab-sheet.nm-open .sh-pop .sh-r,#nav-menu #sc-pop .sh-r,
 #tab-sheet.nm-open .sh-seg .sh-chip,#tab-sheet.nm-open .sh-step .sh-chip,#nav-menu #sc-pop .sh-chip,
@@ -1175,6 +1175,15 @@ body.touch-ui .bar-cd.pc-off{opacity:1}
 body.touch-ui #pp-bar{gap:22px}
 body.touch-ui #tab-sheet-main#tab-sheet-main > .bar-cd.bar-cd,body.touch-ui #pp-bar > .bar-cd{display:flex!important;width:48px!important;min-width:48px!important;max-width:48px!important;height:48px!important;min-height:48px!important;flex:0 0 48px!important;padding:0!important;border-radius:50%!important;font-size:13px!important;font-weight:800!important;line-height:1!important;color:#C9D1DE!important;background:rgba(255,255,255,.07)!important;border:1px solid rgba(255,255,255,.14)!important}
 body.touch-ui #tab-sheet-main#tab-sheet-main > .bar-cd.pc-on.pc-on,body.touch-ui #pp-bar > .bar-cd.pc-on{background:rgba(244,183,64,.2)!important;border-color:#F4B740!important;color:#F4B740!important}
+.at-cursor-bar{background:rgba(244,183,64,.14)!important}
+.at-cursor-beat{background:#F4B740!important}
+.at-highlight *{fill:#F4B740!important;stroke:#F4B740!important}
+#tab-stage.tab-dark .at-cursor-bar{background:rgba(244,183,64,.16)!important}
+#tab-stage.tab-dark .at-cursor-beat{background:#F4B740!important}
+body.touch-ui .snav-item.on{background:rgba(244,183,64,.16)!important;color:#F4B740!important;box-shadow:inset 0 0 0 1px rgba(244,183,64,.5)}
+body.touch-ui #tab-sheet-main#tab-sheet-main > .sh-play,body.touch-ui #pp-bar > .pp-play{background:#F4B740!important;color:#1B1F27!important;box-shadow:0 4px 14px rgba(244,183,64,.28)!important}
+body.touch-ui #tab-sheet-main#tab-sheet-main > #tab-loop-btn#tab-loop-btn{color:#C9D1DE!important;background:rgba(255,255,255,.07)!important;border:1px solid rgba(255,255,255,.14)!important;width:48px!important;min-width:48px!important;height:48px!important}
+body.touch-ui #tab-sheet-main#tab-sheet-main > #tab-loop-btn#tab-loop-btn.pc-on{background:rgba(244,183,64,.2)!important;border-color:#F4B740!important;color:#F4B740!important}
 /* v2.190.6 : le bouton + ne masque plus le dernier élément */
 body.touch-ui:not([data-page="scene"]) .pg::after{content:"";display:block;flex:0 0 150px;height:150px}
 body.touch-ui:not([data-page="scene"]) #bottom-nav{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:1000;background:#1B2029;border-top:1px solid #2A3140;padding:8px 4px calc(8px + env(safe-area-inset-bottom,0));justify-content:space-around}
@@ -1460,7 +1469,7 @@ body.scene-dark #osmd-render-target svg{filter:invert(.9) hue-rotate(180deg)}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.191.21</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.191.22</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
 </div>
 
 <div id="pages">
@@ -9200,8 +9209,8 @@ function tabBarIndexAtPos(_x, _y) {
 function tabMakeHandle(_isStart) {
   var _h = document.createElement("div");
   _h.style.cssText = "position:absolute;width:48px;margin-left:" + (_isStart ? "-6" : "-42") + "px;pointer-events:auto;touch-action:none;cursor:ew-resize;z-index:3;display:flex;align-items:center;justify-content:center";
-  _h.innerHTML = '<div style="position:absolute;left:' + (_isStart ? 2 : 38) + 'px;top:0;bottom:0;width:8px;background:#0A5CFF;border:2px solid #fff;border-radius:4px;box-shadow:0 0 0 2px #1B1F27"></div>'
-    + '<div style="position:relative;width:38px;height:38px;border-radius:50%;background:#0A5CFF;color:#fff;font:800 26px/34px sans-serif;text-align:center;border:3px solid #fff;box-shadow:0 0 0 2px #1B1F27,0 2px 6px rgba(0,0,0,.6)">' + (_isStart ? "›" : "‹") + '</div>';
+  _h.innerHTML = '<div style="position:absolute;left:' + (_isStart ? 2 : 38) + 'px;top:0;bottom:0;width:8px;background:#F4B740;border:2px solid #fff;border-radius:4px;box-shadow:0 0 0 2px #1B1F27"></div>'
+    + '<div style="position:relative;width:38px;height:38px;border-radius:50%;background:#F4B740;color:#1B1F27;font:800 26px/34px sans-serif;text-align:center;border:3px solid #fff;box-shadow:0 0 0 2px #1B1F27,0 2px 6px rgba(0,0,0,.6)">' + (_isStart ? "›" : "‹") + '</div>';
   _h.addEventListener("pointerdown", function (_e) {
     _e.preventDefault(); _e.stopPropagation();
     try { _h.setPointerCapture(_e.pointerId); } catch (_x) {}
@@ -17562,7 +17571,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.191.21 · 24/11/2026 15:30<span id="license-watermark"></span>
+  v2.191.22 · 24/11/2026 15:30<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
