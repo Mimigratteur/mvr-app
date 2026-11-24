@@ -1117,11 +1117,27 @@ body.touch-ui #scene-btns.sheet > :not(#pp-bar){display:none!important}
 #tab-sheet.nm-open #tab-sheet-main > button::after,#tab-sheet.nm-open #tab-sheet-main > select::after{display:none}
 #tab-sheet.nm-open #tab-sheet-main > button,#tab-sheet.nm-open #tab-sheet-main > select{height:72px!important;min-height:72px!important}
 #tab-sheet.nm-open #tab-sheet-main > select{appearance:none!important;-webkit-appearance:none!important;line-height:72px!important;padding:0 8px!important;width:100%!important;display:block!important}
-#tab-sheet.nm-open #tab-sheet-main{padding-bottom:4px!important;margin-bottom:14px!important}
+#tab-sheet.nm-open #tab-sheet-main{padding-bottom:4px!important;margin-bottom:24px!important}
 #tab-sheet.nm-open #tab-sheet-main > select{text-align:center!important;text-align-last:center!important;-moz-text-align-last:center!important;font-weight:600}
 #tab-sheet.nm-open #tab-sheet-more .loop-rng{grid-column:1/-1}
 #tab-sheet.nm-open #tab-sheet-more .sh-navrow button{height:64px!important}
 #tab-sheet.nm-open #tab-sheet-more .sh-navrow button{font-size:14px!important}
+
+/* v2.191.17 : listes déroulantes et vitesse en tuiles */
+#tab-sheet.nm-open .sh-pop .sh-r.nm-sel,#nav-menu #sc-pop .sh-r.nm-sel{grid-column:auto;flex-direction:column!important;justify-content:center!important;align-items:center!important;gap:4px!important;height:84px;padding:8px 6px!important;text-align:center}
+#nav-menu #sc-pop .nm-chips{display:grid!important;grid-template-columns:repeat(3,1fr);gap:8px!important;grid-column:1/-1}
+#nav-menu #sc-pop .nm-chips .sh-chip{height:64px!important;min-height:64px!important;border-radius:14px!important;background:rgba(255,255,255,.045)!important;width:auto!important;min-width:0!important}
+#tab-sheet.nm-open .sh-pop .sh-r.nm-sel.nm-wide,#nav-menu #sc-pop .sh-r.nm-sel.nm-wide{grid-column:1/-1}
+#tab-sheet.nm-open .sh-pop .sh-r.nm-sel > span:first-child,#nav-menu #sc-pop .sh-r.nm-sel > span:first-child{order:2;flex:none;font-size:11px;color:#8B95A8;letter-spacing:.04em;white-space:normal}
+.nm-val{flex:none!important;order:1;font-size:16px;font-weight:600;color:#E8ECF2;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#tab-sheet.nm-open .sh-r.nm-sel select,#nav-menu #sc-pop .sh-r.nm-sel select,#tab-sheet.nm-open .nm-speed select{position:absolute!important;inset:0;width:100%!important;height:100%!important;max-width:none!important;opacity:0;z-index:2;border-radius:14px!important}
+#tab-sheet.nm-open .nm-speed{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;height:84px;border-radius:14px;background:rgba(255,255,255,.045)}
+#tab-sheet.nm-open .nm-speed .nm-lab{font-size:11px;color:#8B95A8;letter-spacing:.04em}
+#tab-sheet.nm-open #tab-sheet-main > button{flex-direction:column;gap:6px;height:84px!important;min-height:84px!important}
+#tab-sheet.nm-open #tab-sheet-main > button::after{display:block!important;font-size:11px;color:#8B95A8;letter-spacing:.04em}
+#tab-sheet.nm-open #tab-sheet-main > button[title="Début"]::after{content:"Début"}
+#tab-sheet.nm-open #tab-sheet-main > #tab-loop-btn::after{content:"Boucle"}
+#tab-sheet.nm-open #tab-sheet-main > #tab-loop-btn.pc-on::after{color:#F4B740}
 /* v2.190.6 : le bouton + ne masque plus le dernier élément */
 body.touch-ui:not([data-page="scene"]) .pg::after{content:"";display:block;flex:0 0 150px;height:150px}
 body.touch-ui:not([data-page="scene"]) #bottom-nav{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:1000;background:#1B2029;border-top:1px solid #2A3140;padding:8px 4px calc(8px + env(safe-area-inset-bottom,0));justify-content:space-around}
@@ -1407,7 +1423,7 @@ body.scene-dark #osmd-render-target svg{filter:invert(.9) hue-rotate(180deg)}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.191.16</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.191.17</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
 </div>
 
 <div id="pages">
@@ -9026,6 +9042,26 @@ function homeDecorate() {
   window.addEventListener("load", function () { setTimeout(function () { _wrap("renderSongs"); _wrap("renderSets"); homeDecorate(); }, 350); });
 })();
 /* v2.191.9 : un seul menu — sur la scène, l'ancienne rangée d'onglets disparaît ; le logo MVR ouvre le même menu que la barre du bas */
+/* v2.191.17 : listes déroulantes du menu présentées comme des tuiles (valeur au centre, choix au toucher) */
+function mvrSelectTiles(_root) {
+  if (!_root) return;
+  var _upd = function (_sel, _v) { var _o = _sel.options[_sel.selectedIndex]; _v.textContent = _o ? _o.text : ""; };
+  _root.querySelectorAll(".sh-r").forEach(function (_r) {
+    var _sel = _r.querySelector("select"); if (!_sel || _r.getAttribute("data-st")) return;
+    _r.setAttribute("data-st", "1"); _r.classList.add("nm-sel");
+    var _v = document.createElement("span"); _v.className = "nm-val"; _upd(_sel, _v); _r.insertBefore(_v, _sel);
+    _sel.addEventListener("change", function () { _upd(_sel, _v); });
+    if ((_v.textContent || "").length > 14) _r.classList.add("nm-wide");
+  });
+  var _main = _root.querySelector("#tab-sheet-main"), _sp = _main && _main.querySelector(":scope > select");
+  if (_sp && !_sp.parentNode.classList.contains("nm-speed")) {
+    var _w = document.createElement("div"); _w.className = "nm-speed";
+    var _v2 = document.createElement("span"); _v2.className = "nm-val"; _upd(_sp, _v2);
+    var _l = document.createElement("span"); _l.className = "nm-lab"; _l.textContent = "Vitesse";
+    _sp.parentNode.insertBefore(_w, _sp); _w.appendChild(_v2); _w.appendChild(_l); _w.appendChild(_sp);
+    _sp.addEventListener("change", function () { _upd(_sp, _v2); });
+  } else if (_sp === null && _main) { var _sp2 = _main.querySelector(".nm-speed select"), _vv = _main.querySelector(".nm-speed .nm-val"); if (_sp2 && _vv) _upd(_sp2, _vv); }
+}
 function mvrNavClose() {
   var _m = document.getElementById("nav-menu"); if (!_m) return;
   _m.classList.remove("open", "in-sheet");
@@ -9038,7 +9074,7 @@ function mvrNavOpen() {
   _m.querySelectorAll(".nm-grid button").forEach(function (_b) { _b.classList.toggle("on", _b.getAttribute("data-p") === "scene"); });
   var _mode = ""; try { _mode = ppMode(); } catch (_e) {}
   var _sh = document.getElementById("tab-sheet");
-  if (_mode === "tab" && _sh) { _sh.insertBefore(_m, _sh.firstChild); _sh.classList.add("nm-open"); _m.classList.add("in-sheet"); }
+  if (_mode === "tab" && _sh) { _sh.insertBefore(_m, _sh.firstChild); _sh.classList.add("nm-open"); _m.classList.add("in-sheet"); mvrSelectTiles(_sh); }
   else {
     var _p = document.getElementById("sc-pop"); if (!_p) { _p = document.createElement("div"); _p.id = "sc-pop"; document.body.appendChild(_p); }
     _p.innerHTML = "";
@@ -9051,7 +9087,7 @@ function mvrNavOpen() {
       _d.appendChild(_w);
     });
     _add("Métronome", scBuildMetro); _add("Affichage", scBuildDisp);
-    _p.classList.add("inline", "open"); _m.appendChild(_p);
+    _p.classList.add("inline", "open"); _m.appendChild(_p); mvrSelectTiles(_p);
   }
   _m.classList.add("open");
 }
@@ -17467,7 +17503,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.191.16 · 24/11/2026 14:30<span id="license-watermark"></span>
+  v2.191.17 · 24/11/2026 15:00<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
