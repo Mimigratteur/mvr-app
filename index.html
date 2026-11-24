@@ -1069,6 +1069,33 @@ body.touch-ui #scene-btns.sheet > :not(#pp-bar){display:none!important}
 #nav-menu #sc-pop .nm-sec{margin:6px 8px;background:#1E2430;border-radius:14px;overflow:hidden}
 #nav-menu #sc-pop .nm-chips{padding:8px 10px;gap:6px}
 #nav-menu #sc-pop .nm-chips .sh-chip{flex:1;font-size:14px;padding:0 6px}
+
+/* v2.191.15 : menu unique homogène — tout est fait de tuiles comme la grille du haut ; accent ambré partout */
+#tab-sheet.nm-open .sh-pop,#nav-menu #sc-pop .nm-sec{background:transparent!important;border-radius:0!important;margin:14px 10px 0!important;padding:0!important;overflow:visible!important}
+#tab-sheet.nm-open .sh-pop::before,#nav-menu #sc-pop .nm-sec::before,#tab-sheet.nm-open #tab-sheet-more::before{content:attr(data-nm);display:block;font-size:12px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:#8B95A8;padding:0 4px 8px}
+#tab-sheet.nm-open .sh-pop .sh-r,#nav-menu #sc-pop .sh-r{display:flex!important;align-items:center;justify-content:space-between;gap:12px;min-height:56px;margin:0 0 8px!important;padding:0 16px!important;background:rgba(255,255,255,.045)!important;border:none!important;border-radius:14px!important;font-size:16px;color:#DCE2EC}
+#tab-sheet.nm-open .sh-pop .sh-r.col{flex-direction:column;align-items:stretch;justify-content:center;gap:10px;padding:12px 14px!important}
+#tab-sheet.nm-open .sh-pop .sh-r > span,#nav-menu #sc-pop .sh-r > span{flex:1;white-space:nowrap}
+#tab-sheet.nm-open .sh-seg,#nav-menu #sc-pop .sh-seg{background:transparent!important;padding:0!important;gap:6px!important;border-radius:0!important}
+#tab-sheet.nm-open .sh-seg .sh-chip,#nav-menu #sc-pop .sh-chip,#tab-sheet.nm-open .sh-step .sh-chip{flex:1;height:44px!important;min-height:44px!important;border:none!important;background:rgba(255,255,255,.07)!important;color:#C9D1DE!important;font-size:15px!important;border-radius:11px!important;box-shadow:none!important}
+#tab-sheet.nm-open .sh-seg .sh-chip.on,#nav-menu #sc-pop .sh-chip.on{background:rgba(244,183,64,.16)!important;color:#F4B740!important;font-weight:700;box-shadow:inset 0 0 0 1px rgba(244,183,64,.55)!important}
+#tab-sheet.nm-open .sh-pop .sh-switch,#nav-menu #sc-pop .sh-switch{background:rgba(255,255,255,.14)!important}
+#tab-sheet.nm-open .sh-pop .sh-switch.on,#nav-menu #sc-pop .sh-switch.on{background:#F4B740!important}
+#tab-sheet.nm-open .sh-pop .sh-r select,#nav-menu #sc-pop .sh-r select,#tab-sheet.nm-open #tab-sheet-more select{background:rgba(255,255,255,.08)!important;border:none!important;color:#E8ECF2!important;border-radius:11px!important;height:44px!important}
+#tab-sheet.nm-open #tab-sheet-main{display:grid!important;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px 10px 0!important;margin:0!important}
+#tab-sheet.nm-open #tab-sheet-main > button,#tab-sheet.nm-open #tab-sheet-main > select{width:auto!important;min-width:0!important;height:60px!important;min-height:60px!important;border-radius:14px!important;border:none!important;background:rgba(255,255,255,.045)!important;color:#DCE2EC!important;display:flex!important;align-items:center;justify-content:center;padding:0!important;font-size:16px!important;text-align:center;text-align-last:center;box-shadow:none!important}
+#tab-sheet.nm-open #tab-sheet-main > #tab-loop-btn.pc-on{background:rgba(244,183,64,.16)!important;color:#F4B740!important;box-shadow:inset 0 0 0 1px rgba(244,183,64,.55)!important}
+#tab-sheet.nm-open #tab-sheet-more{margin:14px 10px 0!important;padding:0!important;background:transparent!important;border:none!important;border-top:none!important;box-shadow:none!important}
+#tab-sheet.nm-open #tab-sheet-main{padding-bottom:6px!important}
+#tab-sheet.nm-open #tab-sheet-more::before{content:"Lecture"}
+#tab-sheet.nm-open #tab-sheet-more #tab-track-bar,#tab-sheet.nm-open #tab-sheet-more .sh-card{background:transparent!important;margin:0!important;padding:0!important;border:none!important}
+#tab-sheet.nm-open #tab-sheet-more .loop-rng{background:rgba(255,255,255,.045)!important;border-radius:14px!important;min-height:56px;padding:0 16px!important;margin:0 0 8px!important;border:none!important}
+#tab-sheet.nm-open #tab-sheet-more .loop-rng input{background:rgba(255,255,255,.08)!important;border:none!important;border-radius:11px!important;color:#E8ECF2!important}
+#tab-sheet.nm-open #tab-sheet-more .sh-navrow{display:grid!important;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 0 14px!important;margin:0!important}
+#tab-sheet.nm-open #tab-sheet-more .sh-navrow button{height:56px!important;min-height:56px!important;border:none!important;border-radius:14px!important;background:rgba(255,255,255,.045)!important;color:#DCE2EC!important;font-size:14px!important}
+#tab-sheet.nm-open #tab-sheet-more .loop-pick{display:none!important}
+#nav-menu #sc-pop .nm-chips{padding:0!important}
+#nav-menu #sc-pop .sh-step .sh-chip{min-width:56px}
 /* v2.190.6 : le bouton + ne masque plus le dernier élément */
 body.touch-ui:not([data-page="scene"]) .pg::after{content:"";display:block;flex:0 0 150px;height:150px}
 body.touch-ui:not([data-page="scene"]) #bottom-nav{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:1000;background:#1B2029;border-top:1px solid #2A3140;padding:8px 4px calc(8px + env(safe-area-inset-bottom,0));justify-content:space-around}
@@ -1354,7 +1381,7 @@ body.scene-dark #osmd-render-target svg{filter:invert(.9) hue-rotate(180deg)}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.191.14</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.191.15</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
 </div>
 
 <div id="pages">
@@ -17414,7 +17441,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.191.14 · 24/11/2026 13:30<span id="license-watermark"></span>
+  v2.191.15 · 24/11/2026 14:00<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
