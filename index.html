@@ -1139,7 +1139,7 @@ body.touch-ui #scene-btns.sheet > :not(#pp-bar){display:none!important}
 #tab-sheet.nm-open #tab-sheet-main > #tab-loop-btn::after{content:"Boucle"}
 #tab-sheet.nm-open #tab-sheet-main > #tab-loop-btn.pc-on::after{color:#F4B740}
 
-/* v2.191.19 : relief des tuiles (lumière en haut, ombre en bas, effet d'appui) */
+/* v2.191.20 : relief des tuiles (lumière en haut, ombre en bas, effet d'appui) */
 body.touch-ui #nav-menu .nm-grid button,
 #tab-sheet.nm-open .sh-pop .sh-r,#nav-menu #sc-pop .sh-r,
 #tab-sheet.nm-open .sh-seg .sh-chip,#tab-sheet.nm-open .sh-step .sh-chip,#nav-menu #sc-pop .sh-chip,
@@ -1165,6 +1165,10 @@ body.touch-ui #nav-menu .nm-grid button:active,
 #nav-menu #sc-pop .sh-r .sh-chip,#tab-sheet.nm-open .sh-r .sh-chip{box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 2px 4px rgba(0,0,0,.35)!important}
 body.touch-ui[data-back="1"]:not([data-page="scene"]) #nav-back{display:none!important}
 body.touch-ui[data-back="1"]:not([data-page="scene"]) #topbar h1{cursor:pointer}
+#nav-menu .nm-hub{padding:0 10px 4px}
+body.touch-ui #nav-menu .nm-hub button{height:72px}
+body:not([data-nmsub]) #tab-sheet.nm-open > .sh-pop,body:not([data-nmsub]) #nav-menu #sc-pop .nm-sec:not([data-nm="Lecture"]){display:none!important}
+body[data-nmsub] #tab-sheet.nm-open > #tab-sheet-main,body[data-nmsub] #tab-sheet.nm-open > #tab-sheet-more,body[data-nmsub] #tab-sheet.nm-open > .sh-pop:not(.sub-on),body[data-nmsub] #nav-menu #sc-pop .nm-sec:not(.sub-on){display:none!important}
 /* v2.190.6 : le bouton + ne masque plus le dernier élément */
 body.touch-ui:not([data-page="scene"]) .pg::after{content:"";display:block;flex:0 0 150px;height:150px}
 body.touch-ui:not([data-page="scene"]) #bottom-nav{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:1000;background:#1B2029;border-top:1px solid #2A3140;padding:8px 4px calc(8px + env(safe-area-inset-bottom,0));justify-content:space-around}
@@ -1450,7 +1454,7 @@ body.scene-dark #osmd-render-target svg{filter:invert(.9) hue-rotate(180deg)}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.191.19</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.191.20</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
 </div>
 
 <div id="pages">
@@ -9089,8 +9093,16 @@ function mvrSelectTiles(_root) {
     _sp.addEventListener("change", function () { _upd(_sp, _v2); });
   } else if (_sp === null && _main) { var _sp2 = _main.querySelector(".nm-speed select"), _vv = _main.querySelector(".nm-speed .nm-val"); if (_sp2 && _vv) _upd(_sp2, _vv); }
 }
+function mvrSub(_n) {
+  var _cur = document.body.getAttribute("data-nmsub") || "";
+  if (_cur === _n) _n = "";
+  if (_n) document.body.setAttribute("data-nmsub", _n); else document.body.removeAttribute("data-nmsub");
+  document.querySelectorAll("#tab-sheet > .sh-pop, #sc-pop .nm-sec").forEach(function (_e) { _e.classList.toggle("sub-on", !!_n && _e.getAttribute("data-nm") === _n); });
+  document.querySelectorAll("#nav-menu .nm-hub button").forEach(function (_b) { _b.classList.toggle("on", _b.getAttribute("data-s") === _n); });
+}
 function mvrNavClose() {
   var _m = document.getElementById("nav-menu"); if (!_m) return;
+  mvrSub("");
   _m.classList.remove("open", "in-sheet");
   var _sh = document.getElementById("tab-sheet"); if (_sh) _sh.classList.remove("nm-open");
   var _sp = document.getElementById("sc-pop"); if (_sp && _sp.parentNode === _m) { _sp.classList.remove("inline", "open"); document.body.appendChild(_sp); }
@@ -9116,6 +9128,18 @@ function mvrNavOpen() {
     _add("Métronome", scBuildMetro); _add("Affichage", scBuildDisp);
     _p.classList.add("inline", "open"); _m.appendChild(_p); mvrSelectTiles(_p);
   }
+  var _hb = _m.querySelector(".nm-hub"); if (_hb) _hb.remove();
+  _hb = document.createElement("div"); _hb.className = "nm-grid nm-hub";
+  var _ico = { "Métronome": '<path d="M8 21h8l-1.6-14h-4.8z"/><path d="M12 15l4-8"/><path d="M10 4h4"/>', "Piste": '<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>', "Affichage": '<circle cx="12" cy="12" r="3"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"/>' };
+  ["Métronome", "Piste", "Affichage"].forEach(function (_t) {
+    var _pp = document.querySelector('#tab-sheet > .sh-pop[data-nm="' + _t + '"], #sc-pop .nm-sec[data-nm="' + _t + '"]');
+    if (!_pp || (_t === "Piste" && !_pp.children.length)) return;
+    var _b = document.createElement("button"); _b.setAttribute("data-s", _t);
+    _b.innerHTML = '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">' + _ico[_t] + "</svg><span>" + _t + "</span>";
+    _b.onclick = function (_e) { _e.stopPropagation(); mvrSub(_t); };
+    _hb.appendChild(_b);
+  });
+  var _g0 = _m.querySelector(".nm-grid"); if (_g0 && _hb.children.length) _g0.parentNode.insertBefore(_hb, _g0.nextSibling);
   _m.classList.add("open");
 }
 function mvrNavMenu() {
@@ -9139,7 +9163,7 @@ function mvrNavMenu() {
     if (!document.body.classList.contains("touch-ui")) return;
     if (_e.target.closest && _e.target.closest("#fs-top,#nav-back")) return;
     if (document.body.getAttribute("data-page") !== "scene") { if (document.body.getAttribute("data-back") === "1") mvrBack(); return; }
-    if (_m.classList.contains("open")) mvrNavClose(); else mvrNavOpen();
+    if (_m.classList.contains("open")) { if (document.body.getAttribute("data-nmsub")) mvrSub(""); else mvrNavClose(); } else mvrNavOpen();
   });
   document.addEventListener("pointerdown", function (_e) { if (!_m.classList.contains("open")) return; if (!_e.target.closest || !_e.target.closest("#nav-menu,#topbar h1,#tab-sheet.nm-open")) mvrNavClose(); }, true);
 }
@@ -17531,7 +17555,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.191.19 · 24/11/2026 15:30<span id="license-watermark"></span>
+  v2.191.20 · 24/11/2026 15:30<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
