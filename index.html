@@ -1043,7 +1043,8 @@ body.touch-ui #nav-menu .nm-grid button.on{background:rgba(244,183,64,.14);color
 body.touch-ui #tab-sheet-handle,body.touch-ui #scene-sheet-handle{display:none!important}
 body.touch-ui #tab-sheet:not(.nm-open) #tab-sheet-more{display:none!important}
 body.touch-ui #tab-sheet:not(.nm-open) #tab-sheet-main{justify-content:center}
-body.touch-ui #tab-sheet:not(.nm-open) #tab-sheet-main > :not(.sh-play){display:none!important}
+body.touch-ui #tab-sheet:not(.nm-open) #tab-sheet-main > :not(.sh-play):not(#tab-loop-btn){display:none!important}
+body.touch-ui #tab-sheet:not(.nm-open) #tab-sheet-main{gap:30px}
 body.touch-ui #pp-bar{justify-content:center}
 body.touch-ui #pp-bar{padding-bottom:16px!important}
 body.touch-ui #pp-bar .pp-play{width:64px!important;min-width:64px!important;max-width:64px!important;height:64px!important;min-height:64px!important;border-radius:50%!important;flex:0 0 64px!important;padding:0!important}
@@ -1353,7 +1354,7 @@ body.scene-dark #osmd-render-target svg{filter:invert(.9) hue-rotate(180deg)}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.191.11</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.191.12</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
 </div>
 
 <div id="pages">
@@ -17414,7 +17415,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.191.11 · 24/11/2026 12:00<span id="license-watermark"></span>
+  v2.191.12 · 24/11/2026 12:30<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
