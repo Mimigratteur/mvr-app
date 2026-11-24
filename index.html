@@ -1304,7 +1304,7 @@ body.scene-dark #osmd-render-target svg{filter:invert(.9) hue-rotate(180deg)}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.190.9</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.191.0</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
 </div>
 
 <div id="pages">
@@ -8453,16 +8453,19 @@ function tabInitDisplay(_s, _at) {
   var _p = tabDisplayPrefs();
   _s.display.scale = _p.scale;
   _s.display.barsPerRow = _p.bars;
+  /* v2.191 : rythme (noires, croches, triolets...) sous la tablature, chiffres plus lisibles */
+  try { _s.notation.rhythmMode = _at.TabRhythmMode.ShowWithBars; _s.notation.rhythmHeight = 22; } catch (_e) {}
+  try { var _tf = _s.display.resources.tablatureFont; _tf.size = 14; _tf.weight = _at.model.FontWeight ? _at.model.FontWeight.Bold : 1; } catch (_e) {}
   try {
     var _C = _at.model.Color, _r = _s.display.resources;
     if (_p.dark) {
       _r.mainGlyphColor = new _C(232, 236, 242, 255); _r.secondaryGlyphColor = new _C(232, 236, 242, 140);
-      _r.staffLineColor = new _C(112, 120, 135, 255); _r.barSeparatorColor = new _C(170, 178, 192, 255);
-      _r.barNumberColor = new _C(240, 130, 130, 255); _r.scoreInfoColor = new _C(232, 236, 242, 255);
+      _r.staffLineColor = new _C(96, 104, 118, 255); _r.barSeparatorColor = new _C(150, 158, 172, 255);
+      _r.barNumberColor = new _C(140, 148, 162, 255); _r.scoreInfoColor = new _C(232, 236, 242, 255);
     } else {
       _r.mainGlyphColor = new _C(0, 0, 0, 255); _r.secondaryGlyphColor = new _C(0, 0, 0, 100);
-      _r.staffLineColor = new _C(165, 165, 165, 255); _r.barSeparatorColor = new _C(34, 34, 17, 255);
-      _r.barNumberColor = new _C(200, 0, 0, 255); _r.scoreInfoColor = new _C(0, 0, 0, 255);
+      _r.staffLineColor = new _C(175, 175, 175, 255); _r.barSeparatorColor = new _C(90, 90, 90, 255);
+      _r.barNumberColor = new _C(130, 130, 130, 255); _r.scoreInfoColor = new _C(0, 0, 0, 255);
     }
   } catch (_e) {}
 }
@@ -17233,7 +17236,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.190.9 · 23/11/2026 14:00<span id="license-watermark"></span>
+  v2.191.0 · 24/11/2026 06:00<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
