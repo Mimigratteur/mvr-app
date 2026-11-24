@@ -1304,7 +1304,7 @@ body.scene-dark #osmd-render-target svg{filter:invert(.9) hue-rotate(180deg)}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.191.1</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.191.2</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
 </div>
 
 <div id="pages">
@@ -8357,7 +8357,7 @@ function tabSelectTrack(_idx, _score, _song, _at) {
   var _t = _score.tracks[_idx];
   if (!_t || !tabApi) return;
   // tablature pour les instruments à cordes, portée classique pour piano/batterie/etc.
-  tabApi.settings.display.staveProfile = tabTrackIsFretted(_t) ? _at.StaveProfile.Tab : _at.StaveProfile.Score;
+  tabApi.settings.display.staveProfile = tabTrackIsFretted(_t) ? (tabDisplayPrefs().nota === "tab" ? _at.StaveProfile.Tab : _at.StaveProfile.ScoreTab) : _at.StaveProfile.Score;
   try { tabApi.updateSettings(); } catch (_e) {}
   tabApi.renderTracks([_t]);
   _song.tabTrack = _idx;
@@ -8446,6 +8446,7 @@ function tabDisplayPrefs() {
   return {
     scale: prefs.tabScale || (_w < 600 ? 0.7 : (_w < 1100 ? 0.85 : 1)),
     bars: prefs.tabBars || -1,
+    nota: prefs.tabNota || "scoretab",
     dark: prefs.tabDark === undefined ? tabUseSheet() : !!prefs.tabDark
   };
 }
@@ -8482,7 +8483,12 @@ function tabInitDisplay(_s, _at) {
   _s.display.scale = _p.scale;
   _s.display.barsPerRow = _p.bars;
   /* v2.191 : rythme (noires, croches, triolets...) sous la tablature, chiffres plus lisibles */
-  try { _s.notation.rhythmMode = _at.TabRhythmMode.ShowWithBars; _s.notation.rhythmHeight = 22; } catch (_e) {}
+  try {
+    var _tabOnly = _p.nota === "tab";
+    _s.notation.rhythmMode = _tabOnly ? _at.TabRhythmMode.ShowWithBars : _at.TabRhythmMode.Hidden; _s.notation.rhythmHeight = 22;
+    /* v2.191.2 : « Portée + tablature » (comme Guitar Pro) : le rythme est lu sur la portée du dessus */
+    if (_s.display.staveProfile !== _at.StaveProfile.Score) _s.display.staveProfile = _tabOnly ? _at.StaveProfile.Tab : _at.StaveProfile.ScoreTab;
+  } catch (_e) {}
   try { var _tf = _s.display.resources.tablatureFont; _tf.size = 14; _tf.weight = _at.model.FontWeight ? _at.model.FontWeight.Bold : 1; } catch (_e) {}
   try {
     var _C = _at.model.Color, _r = _s.display.resources;
@@ -8584,6 +8590,15 @@ function tabBuildSheet(_bar) {
     _seg.appendChild(_b);
   });
   _r1.appendChild(_seg); _sub2.appendChild(_r1);
+  var _rn = _mk("div", "sh-r col");
+  _rn.appendChild(_mk("span", "", function (_e) { _e.textContent = "Notation"; }));
+  var _sgn = _mk("div", "sh-seg"), _curN = tabDisplayPrefs().nota;
+  [["Portée + tablature", "scoretab"], ["Tablature seule", "tab"]].forEach(function (_a) {
+    var _b = _mk("button", "sh-chip" + (_curN === _a[1] ? " on" : ""), function (_e) { _e.textContent = _a[0]; });
+    _b.onclick = function () { prefs.tabNota = _a[1]; _sv(); Array.prototype.forEach.call(_sgn.children, function (_c) { _c.classList.toggle("on", _c === _b); }); tabApplyDisplay(); };
+    _sgn.appendChild(_b);
+  });
+  _rn.appendChild(_sgn); _sub2.insertBefore(_rn, _sub2.firstChild);
   var _r2 = _mk("div", "sh-r");
   _r2.appendChild(_mk("span", "", function (_e) { _e.textContent = "Taille"; }));
   var _st = _mk("div", "sh-seg sh-step");
@@ -9201,7 +9216,7 @@ async function renderSceneTab(_0x1905ab) {
     // on la place environ au quart de la hauteur, avec la ligne précédente encore visible au-dessus.
     _0x401296.player.scrollOffsetY = -Math.max(tabUseSheet() ? 50 : 110, Math.round((_0x2a97f5.clientHeight || 600) * (tabUseSheet() ? 0.12 : 0.24)));
     tabApi = new _0x307d3a.AlphaTabApi(_0x186bb2, _0x401296);
-    try { var _tidy = function () { tabTrimStems(_0x186bb2); }; ["partialRenderFinished", "renderFinished", "postRenderFinished"].forEach(function (_ev) { if (tabApi[_ev] && tabApi[_ev].on) tabApi[_ev].on(_tidy); }); } catch (_e) {}
+    try { var _tidy = function () { if (tabDisplayPrefs().nota === "tab") tabTrimStems(_0x186bb2); }; ["partialRenderFinished", "renderFinished", "postRenderFinished"].forEach(function (_ev) { if (tabApi[_ev] && tabApi[_ev].on) tabApi[_ev].on(_tidy); }); } catch (_e) {}
     tabApi.masterVolume = 1;
     if (_0xsfBuf) {
       // Le lecteur d'alphaTab se crée juste après le constructeur : un envoi immédiat serait ignoré.
@@ -17265,7 +17280,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.191.1 · 24/11/2026 06:30<span id="license-watermark"></span>
+  v2.191.2 · 24/11/2026 07:00<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
