@@ -1020,6 +1020,13 @@ body.touch-ui:not([data-page="scene"]) #topbar{padding:8px 14px}
 body.touch-ui:not([data-page="scene"]) #topbar h1{margin-left:0;width:100%}
 body.touch-ui:not([data-page="scene"]) #topbar h1 #fs-top{margin-left:auto!important}
 body.touch-ui:not([data-page="scene"]) #pages{padding-bottom:110px}
+
+/* v2.191.8 : accueil — logo discret et légère touche de couleur */
+body.touch-ui:not([data-page="scene"]) #pages{background:radial-gradient(120% 60% at 100% 0,rgba(244,183,64,.10),transparent 60%),linear-gradient(180deg,#19212E 0,#12161D 240px)}
+body.touch-ui:not([data-page="scene"]) .pg-title{display:flex!important;align-items:center;justify-content:space-between;position:relative;align-self:stretch;width:auto}
+body.touch-ui .pg-title .pg-tt{position:relative;padding-bottom:10px}
+body.touch-ui .pg-title .pg-tt::after{content:"";position:absolute;left:1px;bottom:0;width:30px;height:3px;border-radius:3px;background:linear-gradient(90deg,#F4B740,rgba(244,183,64,.25))}
+body.touch-ui .pg-title .pg-logo{width:34px;height:34px;opacity:.55;flex:0 0 auto;margin-right:6px;filter:drop-shadow(0 0 10px rgba(244,183,64,.25))}
 /* v2.190.6 : le bouton + ne masque plus le dernier élément */
 body.touch-ui:not([data-page="scene"]) .pg::after{content:"";display:block;flex:0 0 150px;height:150px}
 body.touch-ui:not([data-page="scene"]) #bottom-nav{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:1000;background:#1B2029;border-top:1px solid #2A3140;padding:8px 4px calc(8px + env(safe-area-inset-bottom,0));justify-content:space-around}
@@ -1305,7 +1312,7 @@ body.scene-dark #osmd-render-target svg{filter:invert(.9) hue-rotate(180deg)}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#F4B740"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.191.7</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.191.8</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
 </div>
 
 <div id="pages">
@@ -8794,7 +8801,7 @@ function homeSync(_p) {
 function homeInit() {
   if (document.getElementById("bottom-nav")) return;
   var _t = { songs: "Morceaux", sets: "Setlists", pdf: "Importer", tools: "Outils", cfg: "Réglages" };
-  Object.keys(_t).forEach(function (_k) { var _pg = document.getElementById("page-" + _k); if (!_pg) return; var _h = document.createElement("div"); _h.className = "pg-title"; _h.textContent = _t[_k]; _pg.insertBefore(_h, _pg.firstChild); });
+  Object.keys(_t).forEach(function (_k) { var _pg = document.getElementById("page-" + _k); if (!_pg) return; var _h = document.createElement("div"); _h.className = "pg-title"; _h.innerHTML = "<span class=\"pg-tt\"></span><svg class=\"pg-logo\" viewBox=\"0 0 140 140\" aria-hidden=\"true\"><rect x=\"26\" y=\"20\" width=\"60\" height=\"12\" rx=\"6\" fill=\"#4A5468\"/><rect x=\"22\" y=\"43\" width=\"96\" height=\"17\" rx=\"8.5\" fill=\"#F4B740\"/><rect x=\"26\" y=\"70\" width=\"72\" height=\"12\" rx=\"6\" fill=\"#4A5468\"/><rect x=\"26\" y=\"90\" width=\"44\" height=\"12\" rx=\"6\" fill=\"#3A4354\"/></svg>"; _h.firstChild.textContent = _t[_k]; _pg.insertBefore(_h, _pg.firstChild); });
   var _nav = document.createElement("div"); _nav.id = "bottom-nav";
   MVR_NAV.forEach(function (_n) {
     var _b = document.createElement("button"); _b.setAttribute("data-p", _n[0]);
@@ -17299,7 +17306,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.191.7 · 24/11/2026 10:00<span id="license-watermark"></span>
+  v2.191.8 · 24/11/2026 10:30<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
