@@ -1139,7 +1139,7 @@ body.touch-ui #scene-btns.sheet > :not(#pp-bar){display:none!important}
 #tab-sheet.nm-open #tab-sheet-main > #tab-loop-btn::after{content:"Boucle"}
 #tab-sheet.nm-open #tab-sheet-main > #tab-loop-btn.pc-on::after{color:#6BA5F2}
 
-/* v2.191.25 : relief des tuiles (lumière en haut, ombre en bas, effet d'appui) */
+/* v2.191.26 : relief des tuiles (lumière en haut, ombre en bas, effet d'appui) */
 body.touch-ui #nav-menu .nm-grid button,
 #tab-sheet.nm-open .sh-pop .sh-r,#nav-menu #sc-pop .sh-r,
 #tab-sheet.nm-open .sh-seg .sh-chip,#tab-sheet.nm-open .sh-step .sh-chip,#nav-menu #sc-pop .sh-chip,
@@ -1472,7 +1472,7 @@ body.scene-dark #osmd-render-target svg{filter:invert(.9) hue-rotate(180deg)}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#6BA5F2"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.191.25</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.191.26</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
 </div>
 
 <div id="pages">
@@ -8609,12 +8609,13 @@ function tabUseSheet() {
 }
 function tabTopBarH() { return tabUseSheet() ? 24 : ((document.getElementById("tab-track-bar") || {}).offsetHeight || 100); }
 function tabBottomInset() { return tabUseSheet() ? 130 : 0; }
+var tabDenseAuto = false, tabDenseOff = false;
 function tabDisplayPrefs() {
   var _w = window.innerWidth || 800;
   return {
     scale: prefs.tabScale || (_w < 600 ? 0.7 : (_w < 1100 ? 0.85 : 1)),
     bars: prefs.tabBars || -1,
-    nota: prefs.tabNota || "tabscore",
+    nota: (tabDenseAuto && !tabDenseOff) ? "tab" : (prefs.tabNota || "tabscore"),
     dark: prefs.tabDark === undefined ? tabUseSheet() : !!prefs.tabDark
   };
 }
@@ -8768,7 +8769,7 @@ function tabBuildSheet(_bar) {
   var _sgn = _mk("div", "sh-seg"), _curN = tabDisplayPrefs().nota;
   [["Tab + portée", "tabscore"], ["Portée + tab", "scoretab"], ["Tab seule", "tab"]].forEach(function (_a) {
     var _b = _mk("button", "sh-chip" + (_curN === _a[1] ? " on" : ""), function (_e) { _e.textContent = _a[0]; });
-    _b.onclick = function () { prefs.tabNota = _a[1]; _sv(); Array.prototype.forEach.call(_sgn.children, function (_c) { _c.classList.toggle("on", _c === _b); }); tabApplyDisplay(); };
+    _b.onclick = function () { tabDenseOff = true; prefs.tabNota = _a[1]; _sv(); Array.prototype.forEach.call(_sgn.children, function (_c) { _c.classList.toggle("on", _c === _b); }); tabApplyDisplay(); };
     _sgn.appendChild(_b);
   });
   _rn.appendChild(_sgn); _sub2.insertBefore(_rn, _sub2.firstChild);
@@ -9522,6 +9523,12 @@ async function renderSceneTab(_0x1905ab) {
       var _0x380d85 = _0x5d83fb / tabFileTempo;
       tabApi.playbackSpeed = Math.max(0.25, Math.min(2, _0x380d85));
       setBPM(_0x5d83fb);
+      try {
+        var _mx = 0; tabDenseOff = false;
+        (_0x35d0f6.tracks || []).forEach(function (_t) { (_t.staves || []).forEach(function (_st) { (_st.bars || []).forEach(function (_br) { (_br.voices || []).forEach(function (_vo) { if (_vo.beats && _vo.beats.length > _mx) _mx = _vo.beats.length; }); }); }); });
+        var _was = tabDenseAuto; tabDenseAuto = _mx > 24;
+        if (tabDenseAuto !== _was && tabDenseAuto) setTimeout(function () { try { tabInitDisplay(tabApi.settings, tabAtRef); tabApi.updateSettings(); tabApi.render(); } catch (_e) {} }, 0);
+      } catch (_e) {}
       tabBuildTrackBar(_0x35d0f6, _0x1905ab, _0x307d3a);
     });
     tabApi.playerReady.on(function () {
@@ -17574,7 +17581,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.191.25 · 24/11/2026 15:30<span id="license-watermark"></span>
+  v2.191.26 · 24/11/2026 15:30<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
