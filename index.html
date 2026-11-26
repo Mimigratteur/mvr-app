@@ -1139,7 +1139,7 @@ body.touch-ui #scene-btns.sheet > :not(#pp-bar){display:none!important}
 #tab-sheet.nm-open #tab-sheet-main > #tab-loop-btn::after{content:"Boucle"}
 #tab-sheet.nm-open #tab-sheet-main > #tab-loop-btn.pc-on::after{color:#6BA5F2}
 
-/* v2.191.26 : relief des tuiles (lumière en haut, ombre en bas, effet d'appui) */
+/* v2.191.27 : relief des tuiles (lumière en haut, ombre en bas, effet d'appui) */
 body.touch-ui #nav-menu .nm-grid button,
 #tab-sheet.nm-open .sh-pop .sh-r,#nav-menu #sc-pop .sh-r,
 #tab-sheet.nm-open .sh-seg .sh-chip,#tab-sheet.nm-open .sh-step .sh-chip,#nav-menu #sc-pop .sh-chip,
@@ -1472,7 +1472,7 @@ body.scene-dark #osmd-render-target svg{filter:invert(.9) hue-rotate(180deg)}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#6BA5F2"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.191.26</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.191.27</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
 </div>
 
 <div id="pages">
@@ -11405,6 +11405,10 @@ async function startTuner() {
   } catch (_0xbc0daa) {
     tunOn = false;
     document.getElementById("tun-note").textContent = "❌";
+    try { document.getElementById("tun-btn").textContent = "🎙 Démarrer"; } catch (_e) {}
+    var _nm = _0xbc0daa && _0xbc0daa.name || "";
+    var _msg = _nm === "NotAllowedError" || _nm === "SecurityError" ? "Micro refusé : autorisez le micro pour MVR dans les réglages du téléphone (Applications > MVR > Autorisations)." : _nm === "NotFoundError" ? "Aucun micro détecté sur cet appareil." : "Micro indisponible : " + (_nm || "erreur");
+    try { document.getElementById("tun-freq").textContent = _msg; document.getElementById("tun-freq").style.whiteSpace = "normal"; } catch (_e) {}
   }
 }
 function stopTuner() {
@@ -17581,7 +17585,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.191.26 · 24/11/2026 15:30<span id="license-watermark"></span>
+  v2.191.27 · 24/11/2026 15:30<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
