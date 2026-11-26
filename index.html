@@ -1139,7 +1139,7 @@ body.touch-ui #scene-btns.sheet > :not(#pp-bar){display:none!important}
 #tab-sheet.nm-open #tab-sheet-main > #tab-loop-btn::after{content:"Boucle"}
 #tab-sheet.nm-open #tab-sheet-main > #tab-loop-btn.pc-on::after{color:#6BA5F2}
 
-/* v2.191.27 : relief des tuiles (lumière en haut, ombre en bas, effet d'appui) */
+/* v2.191.28 : relief des tuiles (lumière en haut, ombre en bas, effet d'appui) */
 body.touch-ui #nav-menu .nm-grid button,
 #tab-sheet.nm-open .sh-pop .sh-r,#nav-menu #sc-pop .sh-r,
 #tab-sheet.nm-open .sh-seg .sh-chip,#tab-sheet.nm-open .sh-step .sh-chip,#nav-menu #sc-pop .sh-chip,
@@ -1472,7 +1472,7 @@ body.scene-dark #osmd-render-target svg{filter:invert(.9) hue-rotate(180deg)}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#6BA5F2"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.191.27</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.191.28</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
 </div>
 
 <div id="pages">
@@ -11393,10 +11393,12 @@ async function startTuner() {
   var _0x20d8e7 = _0x4bc6f9;
   try {
     tunStream = await navigator.mediaDevices.getUserMedia({
-      audio: true,
+      audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 },
       video: false
     });
     var _0x493198 = getAC();
+    try { if (_0x493198.state === "suspended") await _0x493198.resume(); } catch (_e) {}
+    tunHist = [];
     var _0x3e15ad = _0x493198.createMediaStreamSource(tunStream);
     tunAn = _0x493198.createAnalyser();
     tunAn.fftSize = 4096;
@@ -11441,6 +11443,7 @@ function tunLoop() {
   var _0x44fb07 = new Float32Array(tunAn.fftSize);
   tunAn.getFloatTimeDomainData(_0x44fb07);
   var _0x523464 = autoCorrelate(_0x44fb07, getAC().sampleRate);
+  if (_0x523464 > 0) { tunHist.push(_0x523464); if (tunHist.length > 5) tunHist.shift(); var _srt = tunHist.slice().sort(function (_p, _q) { return _p - _q; }); _0x523464 = _srt[_srt.length >> 1]; } else { if (tunHist.length) tunHist.shift(); if (!tunHist.length) { try { document.getElementById("tun-freq").textContent = tunLevel < 0.0006 ? "Jouez une corde, plus près du micro" : "—"; } catch (_e) {} } }
   if (_0x523464 > 0) {
     var _0x495466 = Math.log2(_0x523464 / tunerRef) * 12 + 57;
     var _0x1060f0 = Math.round(_0x495466) % 12;
@@ -11457,42 +11460,39 @@ function tunLoop() {
   }
   tunRaf = requestAnimationFrame(tunLoop);
 }
-function autoCorrelate(_0x215ed8, _0x224e14) {
-  var _0x422d4b = _0x552966;
-  var _0x17123c = _0x4bc6f9;
-  var _0x161308 = 0;
-  for (var _0x5c1b8a = 0; _0x5c1b8a < _0x215ed8.length; _0x5c1b8a++) {
-    _0x161308 += _0x215ed8[_0x5c1b8a] * _0x215ed8[_0x5c1b8a];
+function autoCorrelate(_buf, _sr) {
+  /* v2.191.28 : sensible aux sons faibles (guitare électrique non branchée) */
+  var _n = _buf.length, _i, _mx = 0, _sum = 0;
+  for (_i = 0; _i < _n; _i++) { var _a = Math.abs(_buf[_i]); if (_a > _mx) _mx = _a; _sum += _buf[_i] * _buf[_i]; }
+  var _rms = Math.sqrt(_sum / _n);
+  tunLevel = _rms;
+  if (_rms < 0.0006 || _mx < 0.002) return -1;
+  var _g = 0.5 / _mx, _x = new Float32Array(_n);
+  for (_i = 0; _i < _n; _i++) _x[_i] = _buf[_i] * _g;
+  var _minLag = Math.floor(_sr / 1000), _maxLag = Math.min(Math.floor(_sr / 60), (_n >> 1) - 2);
+  var _c = new Float32Array(_maxLag + 2), _lag, _k;
+  for (_lag = 0; _lag <= _maxLag + 1; _lag++) {
+    var _s = 0, _lim = _n - _lag;
+    for (_k = 0; _k < _lim; _k += 2) _s += _x[_k] * _x[_k + _lag];
+    _c[_lag] = _s;
   }
-  if (_0x161308 / _0x215ed8.length < 0.001) {
-    return -1;
+  if (_c[0] <= 0) return -1;
+  var _d = _minLag; while (_d < _maxLag && _c[_d] > _c[_d + 1]) _d++;
+  var _best = -1, _bl = _d;
+  for (_lag = _d; _lag <= _maxLag; _lag++) { if (_c[_lag] > _best) { _best = _c[_lag]; _bl = _lag; } }
+  if (_best < _c[0] * 0.35) return -1;
+  /* évite l'erreur à l'octave : si un pic proche de la moitié du retard est presque aussi fort, on le préfère */
+  var _half = Math.round(_bl / 2);
+  if (_half >= _minLag) {
+    var _hb = -1, _hl = _half;
+    for (_lag = _half - 2; _lag <= _half + 2; _lag++) { if (_lag >= _minLag && _c[_lag] > _hb) { _hb = _c[_lag]; _hl = _lag; } }
+    if (_hb > _best * 0.9) _bl = _hl;
   }
-  var _0x32762e = new Float32Array(_0x215ed8.length);
-  for (var _0xdff6e5 = 0; _0xdff6e5 < _0x215ed8.length; _0xdff6e5++) {
-    var _0x50dc00 = 0;
-    for (var _0x26e1f9 = 0; _0x26e1f9 < _0x215ed8.length - _0xdff6e5; _0x26e1f9++) {
-      _0x50dc00 += _0x215ed8[_0x26e1f9] * _0x215ed8[_0x26e1f9 + _0xdff6e5];
-    }
-    _0x32762e[_0xdff6e5] = _0x50dc00;
-  }
-  var _0x3dc93c = 0;
-  while (_0x3dc93c < _0x215ed8.length / 2 && _0x32762e[_0x3dc93c] > _0x32762e[_0x3dc93c + 1]) {
-    _0x3dc93c++;
-  }
-  var _0x4dc6e2 = -1;
-  var _0x28fea1 = _0x3dc93c;
-  for (var _0x56a553 = _0x3dc93c; _0x56a553 < _0x215ed8.length / 2; _0x56a553++) {
-    if (_0x32762e[_0x56a553] > _0x4dc6e2) {
-      _0x4dc6e2 = _0x32762e[_0x56a553];
-      _0x28fea1 = _0x56a553;
-    }
-  }
-  if (_0x4dc6e2 < _0x32762e[0] * 0.5) {
-    return -1;
-  } else {
-    return _0x224e14 / _0x28fea1;
-  }
+  var _y1 = _c[_bl - 1], _y2 = _c[_bl], _y3 = _c[_bl + 1], _den = _y1 - 2 * _y2 + _y3;
+  var _shift = _den ? 0.5 * (_y1 - _y3) / _den : 0;
+  return _sr / (_bl + _shift);
 }
+var tunLevel = 0, tunHist = [];
 var pdfRawText = "";
 var pdfFileName = "";
 var pdfDetectedTimesig = 4;
@@ -17585,7 +17585,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.191.27 · 24/11/2026 15:30<span id="license-watermark"></span>
+  v2.191.28 · 24/11/2026 15:30<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
