@@ -2,7 +2,9 @@ package fr.lutrin.mvr;
 
 import android.app.Activity;
 import android.content.ContentValues;
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -28,6 +30,8 @@ public class MainActivity extends Activity {
     private WebView web;
     private ValueCallback<Uri[]> filePathCallback;
     private static final int REQ_FILE = 42;
+    private static final int REQ_MIC = 43;
+    private PermissionRequest pendingMic;
 
     private static final String JS_HOOK =
         "(function(){if(window.__mvrHook)return;window.__mvrHook=1;"
@@ -78,7 +82,16 @@ public class MainActivity extends Activity {
                 catch (Exception e) { filePathCallback = null; return false; }
                 return true;
             }
-            @Override public void onPermissionRequest(PermissionRequest r) { r.grant(r.getResources()); }
+            @Override public void onPermissionRequest(final PermissionRequest r) {
+                runOnUiThread(new Runnable() { public void run() {
+                    boolean wantsMic = false;
+                    for (String x : r.getResources()) if (PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(x)) wantsMic = true;
+                    if (wantsMic && Build.VERSION.SDK_INT >= 23 && checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                        pendingMic = r;
+                        requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, REQ_MIC);
+                    } else r.grant(r.getResources());
+                } });
+            }
         });
         if (b != null) web.restoreState(b); else web.loadUrl(APP_URL);
         hideBars();
@@ -103,6 +116,15 @@ public class MainActivity extends Activity {
 
     private void toast(final String m) {
         runOnUiThread(new Runnable() { public void run() { Toast.makeText(MainActivity.this, m, Toast.LENGTH_LONG).show(); } });
+    }
+
+    @Override public void onRequestPermissionsResult(int req, String[] perms, int[] res) {
+        super.onRequestPermissionsResult(req, perms, res);
+        if (req == REQ_MIC && pendingMic != null) {
+            if (res.length > 0 && res[0] == PackageManager.PERMISSION_GRANTED) pendingMic.grant(pendingMic.getResources());
+            else pendingMic.deny();
+            pendingMic = null;
+        }
     }
 
     @Override protected void onActivityResult(int req, int res, Intent data) {
