@@ -1139,7 +1139,7 @@ body.touch-ui #scene-btns.sheet > :not(#pp-bar){display:none!important}
 #tab-sheet.nm-open #tab-sheet-main > #tab-loop-btn::after{content:"Boucle"}
 #tab-sheet.nm-open #tab-sheet-main > #tab-loop-btn.pc-on::after{color:#6BA5F2}
 
-/* v2.191.28 : relief des tuiles (lumière en haut, ombre en bas, effet d'appui) */
+/* v2.191.29 : relief des tuiles (lumière en haut, ombre en bas, effet d'appui) */
 body.touch-ui #nav-menu .nm-grid button,
 #tab-sheet.nm-open .sh-pop .sh-r,#nav-menu #sc-pop .sh-r,
 #tab-sheet.nm-open .sh-seg .sh-chip,#tab-sheet.nm-open .sh-step .sh-chip,#nav-menu #sc-pop .sh-chip,
@@ -1472,7 +1472,7 @@ body.scene-dark #osmd-render-target svg{filter:invert(.9) hue-rotate(180deg)}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#6BA5F2"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.191.28</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.191.29</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
 </div>
 
 <div id="pages">
@@ -2213,6 +2213,15 @@ Am | F | C | G"></textarea>
       Corrige les accords que la reconnaissance automatique a mal lus.
     </div>
     <button class="btn-sm" onclick="osmdOpenChordEditor()">✎ Corriger les accords</button>
+  </div>
+
+  <div id="sm-tab-chords" style="display:none;margin:10px 0 14px;padding:10px 12px;border:1px solid var(--bd);border-radius:8px">
+    <label style="font-size:12px;color:var(--tx2)">🎸 Tablature Guitar Pro</label>
+    <div style="font-size:11.5px;color:var(--tx3);margin:2px 0 8px">
+      Crée un nouveau morceau en grille d'accords, déduit des notes de la tablature. La tablature est conservée telle quelle.
+    </div>
+    <button class="btn-sm" onclick="tabToGridSong()">🎹 Créer une grille d'accords</button>
+    <div id="sm-tab-chords-status" style="font-size:12px;margin-top:6px;min-height:16px"></div>
   </div>
 
   <div id="sm-img-markers" style="display:none;margin:10px 0 14px;padding:10px 12px;border:1px solid var(--bd);border-radius:8px">
@@ -4649,6 +4658,8 @@ function openSongModal(_0x541ba6) {
   if (_0xsmOsmdEl) {
     _0xsmOsmdEl.style.display = _0x3639c3 && _0x3639c3.osmdKey ? "block" : "none";
   }
+  var _smTabEl = document.getElementById("sm-tab-chords");
+  if (_smTabEl) { _smTabEl.style.display = _0x3639c3 && _0x3639c3.tabKey ? "block" : "none"; var _smTs = document.getElementById("sm-tab-chords-status"); if (_smTs) _smTs.textContent = ""; }
   var _0xsmImgEl = document.getElementById("sm-img-markers");
   if (_0xsmImgEl) {
     _0xsmImgEl.style.display = _0x3639c3 && _0x3639c3.imgPageCount ? "block" : "none";
@@ -11461,7 +11472,7 @@ function tunLoop() {
   tunRaf = requestAnimationFrame(tunLoop);
 }
 function autoCorrelate(_buf, _sr) {
-  /* v2.191.28 : sensible aux sons faibles (guitare électrique non branchée) */
+  /* v2.191.29 : sensible aux sons faibles (guitare électrique non branchée) */
   var _n = _buf.length, _i, _mx = 0, _sum = 0;
   for (_i = 0; _i < _n; _i++) { var _a = Math.abs(_buf[_i]); if (_a > _mx) _mx = _a; _sum += _buf[_i] * _buf[_i]; }
   var _rms = Math.sqrt(_sum / _n);
@@ -15746,6 +15757,84 @@ async function tabCreate() {
     openSongModal(_0xb69727.id);
   }, 150);
 }
+/* v2.191.29 : grille d'accords déduite d'une tablature Guitar Pro */
+function gpScoreToGrid(_score) {
+  var _QT = 960, _bars = [], _notes = [], _names = [];
+  var _mbs = _score.masterBars || [];
+  (_score.tracks || []).forEach(function (_t) {
+    if (_t.isPercussion) return;
+    (_t.staves || []).forEach(function (_st) {
+      if (_st.isPercussion) return;
+      (_st.bars || []).forEach(function (_br, _bi) {
+        (_br.voices || []).forEach(function (_vo) {
+          (_vo.beats || []).forEach(function (_b) {
+            if (_b.isRest || !_b.notes || !_b.notes.length) return;
+            var _s0 = _b.absolutePlaybackStart, _d = _b.playbackDuration;
+            _b.notes.forEach(function (_n) {
+              var _v = _n.realValue; if (typeof _v !== "number" || _n.isDead) return;
+              _notes.push({ note: _v, start: _s0, end: _s0 + _d });
+            });
+            if (_b.chord && _b.chord.name && !_names[_bi]) _names[_bi] = String(_b.chord.name);
+          });
+        });
+      });
+    });
+  });
+  var _res = { grid: "", bpm: Math.round(_score.tempo || 0), timesig: 4, bars: _mbs.length, named: 0, found: 0 };
+  if (!_mbs.length || !_notes.length) return _res;
+  var _lines = [], _cur = [];
+  var _flush = function () { if (_cur.length) { _lines.push(_cur.join(" | ")); _cur = []; } };
+  _res.timesig = _mbs[0].timeSignatureNumerator || 4;
+  _mbs.forEach(function (_mb, _i) {
+    var _num = _mb.timeSignatureNumerator || 4, _den = _mb.timeSignatureDenominator || 4;
+    var _unit = _QT * 4 / _den, _bs = _mb.start;
+    var _chord = null;
+    if (_names[_i]) { _chord = _names[_i]; _res.named++; }
+    else {
+      var _votes = {};
+      for (var _k = 0; _k < _num; _k++) {
+        var _a = _bs + _k * _unit, _z = _a + _unit, _acc = {};
+        _notes.forEach(function (_nt) {
+          var _ov = Math.min(_nt.end, _z) - Math.max(_nt.start, _a);
+          if (_ov > 0) { var _pc = _nt.note % 12; _acc[_pc] = (_acc[_pc] || 0) + _ov; }
+        });
+        var _pcs = Object.keys(_acc).filter(function (_q) { return _acc[_q] >= _unit * 0.2; }).map(function (_q) { return parseInt(_q, 10); });
+        var _ch = _bestFitChord(_pcs); if (_ch) _votes[_ch] = (_votes[_ch] || 0) + 1;
+      }
+      var _bv = 0; Object.keys(_votes).forEach(function (_c) { if (_votes[_c] > _bv) { _bv = _votes[_c]; _chord = _c; } });
+      if (_chord) _res.found++;
+    }
+    if (_mb.section && _mb.section.text) { _flush(); _lines.push("", "[" + _mb.section.text + "]"); }
+    _cur.push(_chord || "%");
+    if (_cur.length === 4) _flush();
+  });
+  _flush();
+  _res.grid = _lines.join("\n").replace(/^\n+/, "");
+  return _res;
+}
+async function tabToGridSong() {
+  var _st = document.getElementById("sm-tab-chords-status");
+  var _say = function (_t, _c) { if (_st) { _st.textContent = _t; _st.style.color = _c || "var(--tx2)"; } };
+  var _sg = editingSong ? songs.find(function (_x) { return _x.id === editingSong; }) : null;
+  if (!_sg || !_sg.tabKey) { _say("Aucune tablature sur ce morceau.", "var(--A)"); return; }
+  _say("⏳ Analyse de la tablature…");
+  try {
+    var _b64 = await imgDbGet(_sg.tabKey);
+    if (!_b64) throw new Error("fichier de tablature introuvable");
+    var _at = await _ensureAlphaTab();
+    var _score = _at.importer.ScoreLoader.loadScoreFromBytes(_base64ToBytes(_b64), new _at.Settings());
+    var _r = gpScoreToGrid(_score);
+    if (!_r.grid) { _say("⚠️ Aucune note exploitable dans cette tablature.", "var(--A)"); return; }
+    var _ns = {
+      id: uid(), name: (_sg.name || "Morceau") + " (grille)", artist: _sg.artist || "", key: _sg.key || "",
+      bpm: _sg.bpm || _r.bpm || "", dur: "", timesig: _r.timesig, tags: "grille déduite d'une tablature (à vérifier)",
+      capo: _sg.capo || "0", grid: _r.grid, lyrics: "", notes: "Accords déduits des notes de la tablature (approximatif) — vérifier à l'oreille.", created: Date.now()
+    };
+    songs.push(_ns); dbSave();
+    hideModal("song-modal"); renderSongs();
+    setTimeout(function () { openSongModal(_ns.id); }, 150);
+  } catch (_e) { _say("❌ " + (_e && _e.message || "échec"), "var(--R)"); }
+}
 async function _extractChords(_0x55298e) {
   var _0x970c26 = /^[A-G][b#]?(°|m|maj|min|dim|aug|sus|add)?(2|4|5|6|7|9|11|13)?(\/[A-G][b#]?)?$/i;
   var _0x47c455 = await _0x55298e.getPage(1);
@@ -17585,7 +17674,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.191.28 · 24/11/2026 15:30<span id="license-watermark"></span>
+  v2.191.29 · 24/11/2026 15:30<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
