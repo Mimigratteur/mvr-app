@@ -1482,7 +1482,7 @@ body.scene-dark #osmd-render-target svg{filter:invert(.9) hue-rotate(180deg)}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#6BA5F2"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.191.33</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.191.34</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
 </div>
 
 <div id="pages">
@@ -2136,6 +2136,7 @@ Am | F | C | G"></textarea>
     <div class="cfg-row">
       <label id="cfg-update-label">✓ À jour</label>
       <button class="btn-sm" id="cfg-update-btn" style="display:none" onclick="applyPendingUpdate()">Mettre à jour</button>
+      <button class="btn-sm" id="cfg-check-btn" onclick="mvrCheckUpdate()">Vérifier</button>
     </div>
   </div>
   <div class="row" style="margin-top:10px">
@@ -17123,6 +17124,24 @@ function updateCfgUpdateRow() {
     _0x14eadd.style.display = "none";
   }
 }
+/* v2.191.34 : bouton « Vérifier » les mises à jour (toujours visible dans Réglages) */
+function mvrCheckUpdate() {
+  var _l = document.getElementById("cfg-update-label"), _c = document.getElementById("cfg-check-btn");
+  if (_l) _l.textContent = "⏳ Recherche…"; if (_c) _c.disabled = true;
+  var _end = function () { if (_c) _c.disabled = false; updateCfgUpdateRow(); };
+  if (!("serviceWorker" in navigator)) { if (_l) _l.textContent = "✓ À jour"; _end(); return; }
+  navigator.serviceWorker.getRegistration().then(function (_r) {
+    if (!_r) { _end(); return; }
+    if (_r.waiting && !_pendingUpdateWorker) handleUpdateAvailable(_r.waiting, true);
+    return _r.update().catch(function () {}).then(function () {
+      setTimeout(function () {
+        if (_r.waiting && !_pendingUpdateWorker) handleUpdateAvailable(_r.waiting, true);
+        _end();
+        if (!_pendingUpdateWorker && _l) _l.textContent = "✓ À jour (v" + ((document.getElementById("topbar-version") || {}).textContent || "").replace(/^v/, "") + ")";
+      }, 3500);
+    });
+  }).catch(_end);
+}
 function applyPendingUpdate() {
   var _0x28114d = _0x552966;
   var _0x172ad0 = _0x4bc6f9;
@@ -17720,7 +17739,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.191.33 · 27/11/2026 12:00<span id="license-watermark"></span>
+  v2.191.34 · 27/11/2026 12:30<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
