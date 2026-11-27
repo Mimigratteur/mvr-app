@@ -1043,7 +1043,7 @@ body.touch-ui #nav-menu .nm-grid button.on{background:rgba(107,165,242,.14);colo
 body.touch-ui #tab-sheet-handle,body.touch-ui #scene-sheet-handle{display:none!important}
 body.touch-ui #tab-sheet:not(.nm-open) #tab-sheet-more{display:none!important}
 body.touch-ui #tab-sheet:not(.nm-open) #tab-sheet-main{justify-content:center}
-body.touch-ui #tab-sheet:not(.nm-open) #tab-sheet-main > :not(.sh-play):not(#tab-loop-btn):not(.bar-cd){display:none!important}
+body.touch-ui #tab-sheet:not(.nm-open) #tab-sheet-main > :not(.sh-play):not(#tab-loop-btn):not(.bar-cd):not(.nm-speed){display:none!important}
 body.touch-ui #tab-sheet:not(.nm-open) #tab-sheet-main{gap:30px}
 body.touch-ui #pp-bar{justify-content:center}
 body.touch-ui #pp-bar{padding-bottom:16px!important}
@@ -1174,6 +1174,11 @@ html body.touch-ui:not([data-page="scene"]) #fab{bottom:calc(104px + env(safe-ar
 html body.touch-ui:not([data-page="scene"]) #fab-menu.open{bottom:calc(170px + env(safe-area-inset-bottom,0))}
 html body.touch-ui #tab-sheet,html body.touch-ui #scene-btns.sheet{left:14px;right:14px;bottom:16px;border-radius:20px}
 }
+/* v2.191.37 : la vitesse de lecture reste visible dans la barre du bas (menu fermé) */
+html body.touch-ui #tab-sheet:not(.nm-open) #tab-sheet-main#tab-sheet-main > .nm-speed{display:flex!important;position:relative;flex-direction:column;align-items:center;justify-content:center;width:62px;min-width:62px;height:48px;flex:0 0 62px;border-radius:24px;background:rgba(255,255,255,.06);border:1px solid #2C3544;color:#DCE2EC;cursor:pointer}
+html body.touch-ui #tab-sheet:not(.nm-open) .nm-speed .nm-val{font-size:13px;font-weight:700;line-height:1.1}
+html body.touch-ui #tab-sheet:not(.nm-open) .nm-speed .nm-lab{display:block;font-size:9px;color:#8B95A8;line-height:1}
+html body.touch-ui #tab-sheet:not(.nm-open) .nm-speed select{display:block!important;position:absolute!important;inset:0;width:100%!important;height:100%!important;min-width:0!important;opacity:0;cursor:pointer;z-index:2}
 body.touch-ui[data-back="1"]:not([data-page="scene"]) #nav-back{display:none!important}
 body.touch-ui[data-back="1"]:not([data-page="scene"]) #topbar h1{cursor:pointer}
 #nav-menu .nm-hub{padding:0 10px 4px}
@@ -1489,7 +1494,7 @@ body.scene-dark #osmd-render-target svg{filter:invert(.9) hue-rotate(180deg)}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#6BA5F2"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.191.36</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.191.37</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
 </div>
 
 <div id="pages">
@@ -9144,6 +9149,7 @@ function mvrSelectTiles(_root) {
     _sp.addEventListener("change", function () { _upd(_sp, _v2); });
   } else if (_sp === null && _main) { var _sp2 = _main.querySelector(".nm-speed select"), _vv = _main.querySelector(".nm-speed .nm-val"); if (_sp2 && _vv) _upd(_sp2, _vv); }
 }
+setInterval(function () { try { var _m = document.querySelector("#tab-sheet-main > select"); if (_m) mvrSelectTiles(document.getElementById("tab-sheet")); } catch (_e) {} }, 1200); /* v2.191.37 : vitesse visible dans la barre */
 function mvrSub(_n) {
   var _cur = document.body.getAttribute("data-nmsub") || "";
   if (_cur === _n) _n = "";
@@ -17746,7 +17752,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.191.36 · 27/11/2026 13:30<span id="license-watermark"></span>
+  v2.191.37 · 27/11/2026 14:00<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
