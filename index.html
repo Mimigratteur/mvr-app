@@ -1139,7 +1139,7 @@ body.touch-ui #scene-btns.sheet > :not(#pp-bar){display:none!important}
 #tab-sheet.nm-open #tab-sheet-main > #tab-loop-btn::after{content:"Boucle"}
 #tab-sheet.nm-open #tab-sheet-main > #tab-loop-btn.pc-on::after{color:#6BA5F2}
 
-/* v2.191.30 : relief des tuiles (lumière en haut, ombre en bas, effet d'appui) */
+/* v2.191.31 : relief des tuiles (lumière en haut, ombre en bas, effet d'appui) */
 body.touch-ui #nav-menu .nm-grid button,
 #tab-sheet.nm-open .sh-pop .sh-r,#nav-menu #sc-pop .sh-r,
 #tab-sheet.nm-open .sh-seg .sh-chip,#tab-sheet.nm-open .sh-step .sh-chip,#nav-menu #sc-pop .sh-chip,
@@ -1191,6 +1191,8 @@ body.touch-ui #tab-sheet-main#tab-sheet-main > #tab-loop-btn#tab-loop-btn.pc-on{
 #nav-menu #sc-pop .sh-r.col > span{grid-column:1/-1;font-size:13px;color:#8B95A8;padding:8px 4px 0;white-space:normal}
 #nav-menu #sc-pop .sh-r.col .sh-seg{display:contents!important}
 #nav-menu #sc-pop .sh-r.col .sh-chip{width:auto!important;height:56px!important;min-height:56px!important;border-radius:14px!important;font-size:15px!important;flex:none}
+/* v2.191.31 : plus de publication ni de récupération de setlists par groupe (le partage se fait par fichier : Réglages > Exporter / Importer) */
+button[onclick*="syncFetchGroupSetlists"],button[onclick*="syncPublishSetlist"],.row:has(> button[onclick*="syncFetchGroupSetlists"]){display:none!important}
 /* v2.190.6 : le bouton + ne masque plus le dernier élément */
 body.touch-ui:not([data-page="scene"]) .pg::after{content:"";display:block;flex:0 0 150px;height:150px}
 body.touch-ui:not([data-page="scene"]) #bottom-nav{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:1000;background:#1B2029;border-top:1px solid #2A3140;padding:8px 4px calc(8px + env(safe-area-inset-bottom,0));justify-content:space-around}
@@ -1476,7 +1478,7 @@ body.scene-dark #osmd-render-target svg{filter:invert(.9) hue-rotate(180deg)}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#6BA5F2"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.191.30</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.191.31</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
 </div>
 
 <div id="pages">
@@ -11478,7 +11480,7 @@ function tunLoop() {
   tunRaf = requestAnimationFrame(tunLoop);
 }
 function autoCorrelate(_buf, _sr) {
-  /* v2.191.30 : sensible aux sons faibles (guitare électrique non branchée) */
+  /* v2.191.31 : sensible aux sons faibles (guitare électrique non branchée) */
   var _n = _buf.length, _i, _mx = 0, _sum = 0;
   for (_i = 0; _i < _n; _i++) { var _a = Math.abs(_buf[_i]); if (_a > _mx) _mx = _a; _sum += _buf[_i] * _buf[_i]; }
   var _rms = Math.sqrt(_sum / _n);
@@ -15763,7 +15765,7 @@ async function tabCreate() {
     openSongModal(_0xb69727.id);
   }, 150);
 }
-/* v2.191.30 : choix de la vue d'une tablature : tablature / partition / grille */
+/* v2.191.31 : choix de la vue d'une tablature : tablature / partition / grille */
 function mvrCurSong() {
   try { return curSet && curSet.songIds ? songs.find(function (_x) { return _x.id === curSet.songIds[curIdx]; }) || null : null; } catch (_e) { return null; }
 }
@@ -15801,7 +15803,7 @@ function mvrViewChips(_mk) {
   });
   return _w;
 }
-/* v2.191.30 : grille d'accords déduite d'une tablature Guitar Pro */
+/* v2.191.31 : grille d'accords déduite d'une tablature Guitar Pro */
 function gpScoreToGrid(_score) {
   var _QT = 960, _bars = [], _notes = [], _names = [];
   var _mbs = _score.masterBars || [];
@@ -17714,7 +17716,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.191.30 · 24/11/2026 15:30<span id="license-watermark"></span>
+  v2.191.31 · 24/11/2026 15:30<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
