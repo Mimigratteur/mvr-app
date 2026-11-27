@@ -1494,7 +1494,7 @@ body.scene-dark #osmd-render-target svg{filter:invert(.9) hue-rotate(180deg)}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#6BA5F2"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.191.37</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.191.38</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
 </div>
 
 <div id="pages">
@@ -5961,7 +5961,7 @@ function renderScene() {
     _0x34dcf6.style.display = "none";
   });
   imgStopAutoScroll();
-  if (_0x7b139e.tabKey && _0x7b139e.viewMode !== "grid") {
+  if (_0x7b139e.tabKey && _0x7b139e.viewMode !== "grid" && _0x7b139e.viewMode !== "lyrics") {
     gpStopAutoScroll();
     imgStopAutoScroll();
     document.getElementById("grid-paper").style.display = "none";
@@ -15794,10 +15794,78 @@ async function tabSongGridData(_sg) {
   var _score = _at.importer.ScoreLoader.loadScoreFromBytes(_base64ToBytes(_b64), new _at.Settings());
   return gpScoreToGrid(_score);
 }
+/* v2.191.38 : vues Paroles et Batterie */
+async function mvrLoadScore(_sg) {
+  var _b64 = await imgDbGet(_sg.tabKey);
+  if (!_b64) throw new Error("fichier de tablature introuvable");
+  var _at = await _ensureAlphaTab();
+  return _at.importer.ScoreLoader.loadScoreFromBytes(_base64ToBytes(_b64), new _at.Settings());
+}
+function gpScoreLyrics(_score, _barChords) {
+  var _tr = null;
+  (_score.tracks || []).forEach(function (_t) {
+    if (_tr) return;
+    (_t.staves || []).forEach(function (_st) { (_st.bars || []).forEach(function (_br) { (_br.voices || []).forEach(function (_vo) { (_vo.beats || []).forEach(function (_b) {
+      if (!_tr && _b.lyrics && _b.lyrics.some(function (_x) { return _x && String(_x).trim(); })) _tr = _t;
+    }); }); }); });
+  });
+  if (!_tr) return "";
+  var _out = [], _txt = "", _chd = "", _lastCh = "", _barsOnLine = 0;
+  var _nl = function () { if (_txt.trim()) { if (_chd.trim()) _out.push(_chd.replace(/\s+$/, "")); _out.push(_txt.replace(/\s+$/, "")); } _txt = ""; _chd = ""; _barsOnLine = 0; };
+  var _st0 = _tr.staves[0];
+  (_st0.bars || []).forEach(function (_br, _bi) {
+    var _mb = _score.masterBars[_bi];
+    if (_mb && _mb.section && _mb.section.text) { _nl(); if (_out.length) _out.push(""); _out.push("[" + _mb.section.text + "]"); }
+    var _ch = _barChords && _barChords[_bi] || "", _placed = false;
+    (_br.voices[0] ? _br.voices[0].beats : []).forEach(function (_b) {
+      var _sy = (_b.lyrics || []).filter(function (_x) { return _x && String(_x).trim(); }).join(" ");
+      if (!_sy) return;
+      if (!_placed && _ch && _ch !== _lastCh) { while (_chd.length < _txt.length) _chd += " "; _chd += _ch + " "; _lastCh = _ch; }
+      _placed = true;
+      var _w = String(_sy).trim();
+      if (/-$/.test(_w)) { _txt += _w.replace(/-$/, ""); } else { _txt += _w + " "; }
+    });
+    _barsOnLine++;
+    if (_barsOnLine >= 4) _nl();
+  });
+  _nl();
+  return _out.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+}
+async function mvrSearchLyrics(_sg) {
+  var _q = function (_u) { return fetch(_u).then(function (_r) { return _r.ok ? _r.json() : []; }).catch(function () { return []; }); };
+  var _n = encodeURIComponent((_sg.name || "").trim()), _a = encodeURIComponent((_sg.artist || "").trim());
+  var _res = await _q("https://lrclib.net/api/search?track_name=" + _n + (_a ? "&artist_name=" + _a : ""));
+  if (!_res.length) _res = await _q("https://lrclib.net/api/search?q=" + encodeURIComponent(((_sg.artist || "") + " " + (_sg.name || "")).trim()));
+  var _h = (_res || []).filter(function (_x) { return _x && _x.plainLyrics && _x.plainLyrics.trim(); })[0];
+  return _h ? _h.plainLyrics.replace(/\r/g, "").trim() : "";
+}
 async function mvrSetView(_v) {
   var _sg = mvrCurSong(); if (!_sg || !_sg.tabKey) return;
   try { mvrNavClose(); } catch (_e) {}
-  if (_v === "grid") {
+  if (_v === "lyrics") {
+    if (!(_sg.lyrics && _sg.lyrics.trim())) {
+      var _txt = "";
+      try { var _sc = await mvrLoadScore(_sg); _txt = gpScoreLyrics(_sc, gpScoreToGrid(_sc).barChords); } catch (_e) {}
+      if (!_txt) {
+        var _ok = false; try { _ok = confirm("Aucune parole dans ce fichier.\n\nLes rechercher en ligne (« " + (_sg.name || "ce morceau") + (_sg.artist ? " — " + _sg.artist : "") + " ») ?"); } catch (_e) {}
+        if (_ok) {
+          try { _txt = await mvrSearchLyrics(_sg); } catch (_e) {}
+          if (!_txt) { try { alert("Paroles introuvables en ligne (ou pas de connexion). Tu peux les écrire ou les coller à la main."); } catch (_e) {} }
+          else _sg.lyricsFrom = "lrclib";
+        }
+      }
+      if (!_txt) { _txt = "(Colle ou écris les paroles ici)"; try { lycMode = "edit"; } catch (_e) {} }
+      _sg.lyrics = _txt;
+    }
+    _sg.viewMode = "lyrics";
+  } else if (_v === "drums") {
+    var _score;
+    try { _score = await mvrLoadScore(_sg); } catch (_e) { try { alert("Batterie impossible : " + (_e && _e.message || "erreur")); } catch (_x) {} return; }
+    var _di = -1; (_score.tracks || []).forEach(function (_t, _i) { if (_di < 0 && (_t.isPercussion || (_t.staves && _t.staves[0] && _t.staves[0].isPercussion))) _di = _i; });
+    if (_di < 0) { try { alert("Pas de piste batterie dans ce fichier."); } catch (_e) {} return; }
+    if (_sg.viewMode !== "drums") _sg.tabTrackPrev = typeof _sg.tabTrack === "number" ? _sg.tabTrack : 0;
+    _sg.tabTrack = _di; _sg.viewMode = "drums";
+  } else if (_v === "grid") {
     if (!(_sg.grid && String(_sg.grid).trim())) {
       try {
         var _r = await tabSongGridData(_sg);
@@ -15807,14 +15875,17 @@ async function mvrSetView(_v) {
       } catch (_e) { try { alert("Grille impossible : " + (_e && _e.message || "erreur")); } catch (_x) {} return; }
     }
     _sg.viewMode = "grid";
-  } else _sg.viewMode = _v === "score" ? "score" : "";
+  } else {
+    if (_sg.viewMode === "drums") { _sg.tabTrack = typeof _sg.tabTrackPrev === "number" ? _sg.tabTrackPrev : 0; }
+    _sg.viewMode = _v === "score" ? "score" : "";
+  }
   try { dbSave(); } catch (_e) {}
   renderScene();
 }
 function mvrViewChips(_mk) {
-  var _sg = mvrCurSong(), _cur = !_sg ? "tab" : (_sg.viewMode === "grid" ? "grid" : (_sg.viewMode === "score" ? "score" : "tab"));
-  var _w = document.createElement("div"); _w.className = "sh-seg";
-  [["Tablature", "tab"], ["Partition", "score"], ["Grille", "grid"]].forEach(function (_a) {
+  var _sg = mvrCurSong(), _vm = _sg && _sg.viewMode, _cur = !_sg ? "tab" : (["grid", "score", "lyrics", "drums"].indexOf(_vm) >= 0 ? _vm : "tab");
+  var _w = document.createElement("div"); _w.className = "sh-seg"; _w.style.flexWrap = "wrap";
+  [["Tablature", "tab"], ["Partition", "score"], ["Grille", "grid"], ["Paroles", "lyrics"], ["Batterie", "drums"]].forEach(function (_a) {
     var _b = document.createElement("button"); _b.className = "sh-chip" + (_cur === _a[1] ? " on" : ""); _b.textContent = _a[0];
     _b.onclick = function (_e) { _e.stopPropagation(); mvrSetView(_a[1]); };
     _w.appendChild(_b);
@@ -15844,7 +15915,7 @@ function gpScoreToGrid(_score) {
       });
     });
   });
-  var _res = { grid: "", bpm: Math.round(_score.tempo || 0), timesig: 4, bars: _mbs.length, named: 0, found: 0 };
+  var _res = { grid: "", bpm: Math.round(_score.tempo || 0), timesig: 4, bars: _mbs.length, named: 0, found: 0, barChords: [] };
   if (!_mbs.length || !_notes.length) return _res;
   var _lines = [], _cur = [];
   var _flush = function () { if (_cur.length) { _lines.push(_cur.join(" | ")); _cur = []; } };
@@ -15869,6 +15940,7 @@ function gpScoreToGrid(_score) {
       if (_chord) _res.found++;
     }
     if (_mb.section && _mb.section.text) { _flush(); _lines.push("", "[" + _mb.section.text + "]"); }
+    _res.barChords[_i] = _chord || "";
     _cur.push(_chord || "%");
     if (_cur.length === 4) _flush();
   });
@@ -17752,7 +17824,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.191.37 · 27/11/2026 14:00<span id="license-watermark"></span>
+  v2.191.38 · 27/11/2026 15:00<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
