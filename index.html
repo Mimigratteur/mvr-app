@@ -1502,7 +1502,7 @@ body.scene-dark #osmd-render-target svg{filter:invert(.9) hue-rotate(180deg)}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#6BA5F2"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.191.40</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.191.41</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
 </div>
 
 <div id="pages">
@@ -8591,8 +8591,31 @@ function tabToggleMute(_i) {
   try { dbSave(); } catch (_e) {}
   try { tabApi.changeTrackMute([tabScoreRef.tracks[_i]], _k < 0); } catch (_e) {}
 }
+/* v2.191.41 : noms de pistes courants traduits en français (le fichier Guitar Pro les donne souvent en anglais ou en espagnol) */
+function tabTrackFr(_n, _i) {
+  var _raw = String(_n || "").trim(); if (!_raw) return "Piste " + (_i + 1);
+  var _k = _raw.toLowerCase().replace(/[^a-zñáéíóúü0-9 ]/g, "").replace(/\s+/g, " ").trim();
+  var _map = [
+    [/^(voces?|vocals?|vocal|voice|voices|lead vocals?|lead voice|singer|vox|voz|vozes|chant|chant lead)$/, "Voix"],
+    [/^(backing vocals?|back vocals?|coros?|coro|choir|chorus|choeurs?|chœurs?|bv|bgv)$/, "Chœurs"],
+    [/^(drums?|drum set|drumkit|drum kit|percussions?|percussion|bateria|batería|batterie)$/, "Batterie"],
+    [/^(bass|bajo|bass guitar|electric bass|baixo|basse)$/, "Basse"],
+    [/^(guitars?|guitarra|guitarras|guitar|guitare|lead guitar|guitarra solista|guitarra lider)$/, "Guitare"],
+    [/^(rhythm guitar|guitarra ritmica|guitarra rítmica|rhythm|guitare rythmique)$/, "Guitare rythmique"],
+    [/^(acoustic guitar|guitarra acustica|guitarra acústica|acoustic|nylon guitar|guitare acoustique)$/, "Guitare acoustique"],
+    [/^(electric guitar|guitarra electrica|guitarra eléctrica|guitare electrique|guitare électrique)$/, "Guitare électrique"],
+    [/^(piano|pianos|grand piano|acoustic piano|piano electrico|electric piano)$/, "Piano"],
+    [/^(keys|keyboards?|keyboard|teclado|teclados|synth|synthesizer|synthesiser|sintetizador|claviers?)$/, "Clavier"],
+    [/^(strings?|cuerdas|string section|violins?|violin|violon|violines)$/, "Cordes"],
+    [/^(brass|horns?|metales|cuivres|trumpets?|trumpet|trompeta|saxophone|sax|saxo|saxofon|saxofón)$/, "Cuivres"],
+    [/^(flute|flauta|flûte)$/, "Flûte"],
+    [/^(organ|organo|órgano|orgue)$/, "Orgue"]
+  ];
+  for (var _a = 0; _a < _map.length; _a++) if (_map[_a][0].test(_k)) return _map[_a][1];
+  return _raw;
+}
 function tabTrackName(_t, _i) {
-  return (_t.name || _t.shortName || ("Piste " + (_i + 1))).trim() || ("Piste " + (_i + 1));
+  return tabTrackFr(_t.name || _t.shortName, _i);
 }
 function tabBuildMuteMenu(_bar) {
   var _btn = document.createElement("button");
@@ -9474,7 +9497,7 @@ function tabBuildTrackBar(_score, _song, _at) {
   _score.tracks.forEach(function (_t, _i) {
     var _o = document.createElement("option");
     _o.value = _i;
-    _o.textContent = (_t.name || _t.shortName || ("Piste " + (_i + 1))).trim() || ("Piste " + (_i + 1));
+    _o.textContent = tabTrackName(_t, _i);
     _sel.appendChild(_o);
   });
   var _saved = (typeof _song.tabTrack === "number" && _song.tabTrack < _score.tracks.length) ? _song.tabTrack : 0;
@@ -17832,7 +17855,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.191.40 · 27/11/2026 16:30<span id="license-watermark"></span>
+  v2.191.41 · 27/11/2026 17:00<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
