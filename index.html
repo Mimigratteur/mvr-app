@@ -1183,6 +1183,10 @@ html body.touch-ui #tab-sheet:not(.nm-open) .nm-speed select{display:block!impor
 @media (min-width:1100px){
 html body.touch-ui #tab-stage-inner{max-width:1700px;margin-left:auto;margin-right:auto;padding:12px 24px 150px}
 }
+/* v2.191.40 : listes déroulantes du menu lisibles sur PC (texte clair sur fond foncé) et sans sélection de texte */
+#tab-sheet select option,#nav-menu select option,#sc-pop select option,.nm-speed select option,.nm-sel select option{background:#1B212C!important;color:#E8ECF2!important}
+.nm-sel,.nm-speed,#nav-menu .nm-grid button,#tab-sheet.nm-open .sh-r{-webkit-user-select:none;user-select:none}
+#tab-sheet select,#nav-menu select,#sc-pop select{color-scheme:dark}
 body.touch-ui[data-back="1"]:not([data-page="scene"]) #nav-back{display:none!important}
 body.touch-ui[data-back="1"]:not([data-page="scene"]) #topbar h1{cursor:pointer}
 #nav-menu .nm-hub{padding:0 10px 4px}
@@ -1498,7 +1502,7 @@ body.scene-dark #osmd-render-target svg{filter:invert(.9) hue-rotate(180deg)}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#6BA5F2"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.191.39</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.191.40</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
 </div>
 
 <div id="pages">
@@ -17828,7 +17832,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.191.39 · 27/11/2026 16:00<span id="license-watermark"></span>
+  v2.191.40 · 27/11/2026 16:30<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
