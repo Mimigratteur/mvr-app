@@ -1502,7 +1502,7 @@ body.scene-dark #osmd-render-target svg{filter:invert(.9) hue-rotate(180deg)}
       <rect x="22" y="43" width="96" height="17" rx="8.5" fill="#6BA5F2"></rect>
       <rect x="26" y="70" width="72" height="12" rx="6" fill="#4A5468"></rect>
       <rect x="26" y="90" width="44" height="12" rx="6" fill="#3A4354"></rect>
-    </svg></span> MVR <span class="ver" id="topbar-version">v2.191.41</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
+    </svg></span> MVR <span class="ver" id="topbar-version">v2.191.42</span> <button class="btn-sm" id="fs-top" onclick="toggleImmersive()" title="Plein écran" style="margin-left:8px">⛶</button></h1>
 </div>
 
 <div id="pages">
@@ -8578,6 +8578,8 @@ var tabScoreRef = null, tabSongRef = null;
 function tabApplyMutes() {
   if (!tabApi || !tabScoreRef || !tabSongRef) return;
   var _m = tabSongRef.tabMuted || [];
+  /* v2.191.42 : un fichier Guitar Pro enregistré avec une piste en « solo » ne jouait que celle-là : on retire tous les solos pour entendre toutes les pistes */
+  try { tabApi.changeTrackSolo(tabScoreRef.tracks, false); } catch (_e) {}
   tabScoreRef.tracks.forEach(function (_t, _i) {
     try { tabApi.changeTrackMute([_t], _m.indexOf(_i) >= 0); } catch (_e) {}
   });
@@ -17855,7 +17857,7 @@ $('grille').value=S.text; fillSongs(); renderStyles(); syncCtl(); rebuild();
 <!-- Marqueur de version — mis à jour à chaque livraison -->
 <div style="position:fixed;bottom:2px;right:6px;font-size:9px;color:var(--tx3);
             opacity:.5;z-index:10;font-family:var(--font-mono);pointer-events:none">
-  v2.191.41 · 27/11/2026 17:00<span id="license-watermark"></span>
+  v2.191.42 · 28/11/2026 09:00<span id="license-watermark"></span>
 </div>
 <script>
   if(typeof LICENSED_TO === 'string' && LICENSED_TO.trim()){
